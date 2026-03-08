@@ -178,3 +178,40 @@ jobs:
           cmake --build build -j7
           # use dtvm to test evm abi wasm files
           # ./build/dtvm -m 2 -f call counter.wasm
+
+  build_test_wasi_on_x86:
+    name: Build and test DTVM WASI functionality on x86-64
+    runs-on: ubuntu-latest
+    container:
+      image: dtvmdev1/dtvm-dev-x64:main
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+      - name: Code Format Check
+        run: |
+          ./tools/format.sh check
+      - name: Test Git clone
+        run: |
+          git clone https://github.com/asmjit/asmjit.git
+      - name: Build and run WASI tests
+        run: |
+          echo "current home is $HOME"
+          export CUR_PROJECT=$(pwd)
+          cd /opt
+          cd $CUR_PROJECT
+          export LLVM_SYS_150_PREFIX=/opt/llvm15
+          export LLVM_DIR=$LLVM_SYS_150_PREFIX/lib/cmake/llvm
+          export PATH=$LLVM_SYS_150_PREFIX/bin:$PATH
+          cd tests/wast/spec
+          git apply ../spec.patch
+          cd $CUR_PROJECT
+          export CMAKE_BUILD_TARGET=Debug
+          export ENABLE_ASAN=true
+          export RUN_MODE=interpreter
+          export INPUT_FORMAT=wasm
+          export TestSuite=wasitestsuite
+          export CPU_EXCEPTION_TYPE='check'
+
+          bash .ci/run_test_suite.sh

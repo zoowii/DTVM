@@ -87,6 +87,18 @@ if(ZEN_ENABLE_SPEC_TEST)
     if(ZEN_BUILD_PLATFORM_LINUX)
       target_link_libraries(specUnitTests PRIVATE stdc++fs)
     endif()
+
+    if(ZEN_ENABLE_WASI_TEST)
+      add_executable(wasiUnitTests wasi_unit_tests.cpp)
+      target_link_libraries(
+        wasiUnitTests
+        PRIVATE dtvmcore gtest_main
+        PUBLIC ${GTEST_BOTH_LIBRARIES}
+      )
+      if(ZEN_BUILD_PLATFORM_LINUX)
+        target_link_libraries(wasiUnitTests PRIVATE stdc++fs)
+      endif()
+    endif()
   endif()
 
   if(ZEN_ENABLE_ASAN)
@@ -97,6 +109,10 @@ if(ZEN_ENABLE_SPEC_TEST)
       target_compile_options(evmInterpTests PRIVATE -fsanitize=address)
       target_compile_options(solidityContractTests PRIVATE -fsanitize=address)
       target_compile_options(mptCompareCpp PRIVATE -fsanitize=address)
+    endif()
+
+    if(ZEN_ENABLE_WASI_TEST AND NOT ZEN_ENABLE_EVM)
+      target_compile_options(wasiUnitTests PRIVATE -fsanitize=address)
     endif()
 
     if(ZEN_BUILD_PLATFORM_DARWIN)
@@ -136,6 +152,13 @@ if(ZEN_ENABLE_SPEC_TEST)
         endif()
         target_link_libraries(
           mptCompareCpp PRIVATE dtvmcore rapidjson mpt -fsanitize=address
+        )
+      endif()
+      if(ZEN_ENABLE_WASI_TEST AND NOT ZEN_ENABLE_EVM)
+        target_link_libraries(
+          wasiUnitTests
+          PRIVATE dtvmcore gtest_main -fsanitize=address
+          PUBLIC ${GTEST_BOTH_LIBRARIES}
         )
       endif()
     else()
@@ -194,6 +217,13 @@ if(ZEN_ENABLE_SPEC_TEST)
                                 -static-libasan
         )
       endif()
+      if(ZEN_ENABLE_WASI_TEST AND NOT ZEN_ENABLE_EVM)
+        target_link_libraries(
+          wasiUnitTests
+          PRIVATE dtvmcore gtest_main -fsanitize=address -static-libasan
+          PUBLIC ${GTEST_BOTH_LIBRARIES}
+        )
+      endif()
     endif()
   else()
     target_link_libraries(
@@ -242,6 +272,9 @@ if(ZEN_ENABLE_SPEC_TEST)
       COMMAND ${CMAKE_COMMAND} -DTEST_EXECUTABLE=$<TARGET_FILE:specUnitTests>
               -P ${CMAKE_CURRENT_SOURCE_DIR}/RunSpecTests.cmake
     )
+    if(ZEN_ENABLE_WASI_TEST)
+      add_test(NAME wasiUnitTests COMMAND wasiUnitTests)
+    endif()
   endif()
   add_test(NAME mempoolTests COMMAND mempoolTests)
   add_test(NAME cAPITests COMMAND cAPITests)
