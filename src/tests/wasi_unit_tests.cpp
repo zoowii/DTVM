@@ -187,8 +187,7 @@ static void runWasiTest(const WasiTestCase &TC) {
   ASSERT_NE(WASIMod, nullptr)
       << "failed to load WASI host module for " << TC.Name;
 
-  MayBe<Module *> ModRet =
-      RT->loadModule(TC.Name, TC.WasmData, TC.WasmSize);
+  MayBe<Module *> ModRet = RT->loadModule(TC.Name, TC.WasmData, TC.WasmSize);
   ASSERT_TRUE(ModRet) << "failed to load module " << TC.Name << ": "
                       << ModRet.getError().getFormattedMessage();
   Module *Mod = *ModRet;
@@ -237,8 +236,7 @@ TEST(WasiTest, ClockTimeGet) {
 }
 
 TEST(WasiTest, RandomGet) {
-  runWasiTest(
-      {"RandomGet", kWasiRandomGetWasm, sizeof(kWasiRandomGetWasm), 0});
+  runWasiTest({"RandomGet", kWasiRandomGetWasm, sizeof(kWasiRandomGetWasm), 0});
 }
 
 TEST(WasiTest, SchedYield) {
