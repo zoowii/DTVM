@@ -46,6 +46,8 @@ Supported additional CMake parameters:
 > `ZEN_ENABLE_JIT_BOUND_CHECK`: When enabled, singlepass JIT adds boundary check code for linear memory access during compilation, enabled by default
 > `ZEN_ENABLE_JIT_LOGGING`: When enabled, singlepass JIT outputs asmjit logs, enabled by default in Debug mode, disabled in other modes
 > `ZEN_ENABLE_SPEC_TEST`: Enable support for spec test suite, disabled by default
+>
+> `ZEN_ENABLE_EVM` is not compatible with singlepass JIT.
 
 ## Multipass JIT
 
@@ -74,6 +76,45 @@ Supported additional CMake parameters:
 > `ZEN_ENABLE_ASAN`: Enable memory leak detection, disabled by default
 > `ZEN_ENABLE_JIT_LOGGING`: When enabled, multipass JIT outputs IR and assembly during compilation, enabled by default in Debug mode, disabled in other modes
 > `ZEN_ENABLE_SPEC_TEST`: Enable support for spec test suite, disabled by default
+
+## EVM Builds
+
+EVM support is optional and is enabled with the `ZEN_ENABLE_EVM` CMake
+parameter.
+
+### EVM Interpreter
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DZEN_ENABLE_EVM=ON
+cmake --build build
+```
+
+### EVM Multipass JIT
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DZEN_ENABLE_EVM=ON -DZEN_ENABLE_MULTIPASS_JIT=ON -DLLVM_DIR=<llvm-project-upstream path>/build/lib/cmake/llvm
+cmake --build build
+```
+
+Optional related flags:
+
+> `ZEN_ENABLE_LIBEVM`: Build the EVMC VM interface (`dtvmapi`) and related tests
+>
+> `ZEN_ENABLE_EVM_GAS_REGISTER`: Enable gas register optimization for x86_64 multipass JIT
+
+### EVM Tests
+
+Run all enabled EVM tests with CTest:
+
+```sh
+cd build
+ctest --output-on-failure -R "evmInterpTests|solidityContractTests|evmStateTests|evmFallbackExecutionTests"
+```
+
+If `ZEN_ENABLE_LIBEVM` is disabled, `evmFallbackExecutionTests` will not be
+built and CTest will simply skip that test name.
+
+For CLI execution, use `--format evm` when loading EVM bytecode.
 
 ## Testing Spec Cases
 

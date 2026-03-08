@@ -6,9 +6,12 @@ The current features of `ZetaEngine` are controlled using macros. The main macro
 | --- | --- | --- |
 | ZEN_ENABLE_ASAN | Enable ASAN to check for memory leaks | OFF |
 | ZEN_ENABLE_DUMP_CALL_STACK | Enable call stack dumping on exceptions | OFF |
+| ZEN_ENABLE_EVM | Enable EVM support | OFF |
+| ZEN_ENABLE_LIBEVM | Build the EVMC VM interface (`dtvmapi`) | OFF |
 | ZEN_ENABLE_SINGLEPASS_JIT | Enable single-pass JIT functionality | OFF |
 | ZEN_ENABLE_MULTIPASS_JIT | Enable multi-pass JIT functionality | OFF |
 | ZEN_ENABLE_JIT_LOGGING | Enable logging in JIT | OFF |
+| ZEN_ENABLE_EVM_GAS_REGISTER | Enable gas register optimization for x86_64 multipass EVM JIT | OFF |
 | ZEN_ENABLE_BUILTIN_WASI | Enable built-in WASI | ON |
 | ZEN_ENABLE_BUILTIN_LIBC | Enable built-in libc (partial) | ON |
 | ZEN_ENABLE_CHECKED_ARITHMETIC | Enable overflow checks | OFF |
@@ -25,6 +28,9 @@ Explanation:
 
 - `CMAKE_BUILD_TYPE` can be set to `release` or `debug`. Other configuration features can be enabled by adding the corresponding macros as needed.
 - After compilation, two binary files, `dtvm` and `dtvmTest`, will be generated in the `build` directory.
+- `ZEN_ENABLE_EVM` is not compatible with `ZEN_ENABLE_SINGLEPASS_JIT`.
+- Enable `ZEN_ENABLE_LIBEVM` when you need the EVMC VM interface or
+  `evmFallbackExecutionTests`.
 
 <a name="WxBjy"></a>
 ## Command Line Instructions
@@ -32,13 +38,23 @@ Explanation:
 ### Commands for `dtvm`
 | Command | Description | Default Value |
 | --- | --- | --- |
+| --format | Input format: `wasm` / `evm` | `wasm` |
 | -dir | (directory) <br />type: string | "" |
 | -env | (environment variables)<br />type: string | "" |
 | -f | (function name) <br />type: string | "" |
 | -args | (function parameters) <br />type: string | "" |
+| --gas-limit | Gas limit | 0 |
 | -log | (log level: <br />0/trace <br />1/debug <br />2/info<br />3/warn<br />4/error<br />5/fatal) <br />type: string | "2"/"info" |
 | -mode | (execution mode: <br />0/interpreter<br />1/singlepass <br />2/multipass) <br />type: string | "0"/"interpreter" |
 | -repl | (REPL mode) type: bool | false |
+| --deploy | Deploy EVM contract mode | false |
+| --contract-address | Contract address for EVM call mode | "" |
+| --sender | Sender address for EVM transactions | `1000000000000000000000000000000000000000` |
+| --calldata | Hex calldata passed to EVM | "" |
+| --evm-revision | EVM revision, such as `cancun` or `osaka` | build default |
+
+When `ZEN_ENABLE_EVM` is enabled, use `--format evm`. EVM builds support
+interpreter and multipass modes, but not singlepass mode.
 
 <a name="AcMiv"></a>
 ### Commands for `dtvmTest`
@@ -53,3 +69,33 @@ Explanation:
 | -mode | (execution mode: <br />0/interpreter<br />1/singlepass <br />2/multipass) <br />type: string | "0"/"interpreter" |
 | -runTimes | (Set the number of execution runs) <br />type: uint32 | 1 |
 | -withWasi | (Use WASI in statistics mode) <br />type: bool | true |
+
+## EVM Build and Test Notes
+
+### Interpreter
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DZEN_ENABLE_EVM=ON
+cmake --build build
+```
+
+### Multipass JIT
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DZEN_ENABLE_EVM=ON -DZEN_ENABLE_MULTIPASS_JIT=ON -DLLVM_DIR=<llvm-project-upstream path>/build/lib/cmake/llvm
+cmake --build build
+```
+
+Optional:
+
+- `-DZEN_ENABLE_LIBEVM=ON`
+- `-DZEN_ENABLE_EVM_GAS_REGISTER=ON`
+
+Run EVM-focused tests:
+
+```sh
+cd build
+ctest --output-on-failure -R "evmInterpTests|solidityContractTests|evmStateTests|evmFallbackExecutionTests"
+```
+
+Use `dtvm --format evm` to execute EVM bytecode from the CLI.

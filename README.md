@@ -36,6 +36,10 @@ DTVM introduces:
 
 > For more information about SmartCogent, including an *introduction video* and *detailed documentation*, please visit [SmartCogent website](https://smartcogent.zan.top/).
 > You can also apply for a *trial license* there to experience SmartCogent's *powerful features* firsthand.
+>
+> SmartCogent itself is **not currently open-sourced in this repository**. The
+> DTVM repository contains the open-source runtime, compiler, tests, and public
+> SDK references.
 
 
 The DTVM Engine introduces a Lazy-JIT compilation framework(code name is **ZetaEngine**) with Wasm runtime environment.
@@ -135,6 +139,36 @@ The [DTVM Solidity SDK](https://github.com/DTVMStack/DTVM_SolSDK) enables develo
 - Testing framework
 - Documentation and guides
 
+## EVM Support Status
+
+DTVM already includes optional EVM execution support behind the `ZEN_ENABLE_EVM`
+build flag.
+
+Current repository support includes:
+
+- EVM bytecode loading and execution through the runtime APIs
+- interpreter and multipass JIT execution paths for EVM bytecode
+- optional EVMC VM build via `ZEN_ENABLE_LIBEVM`
+- dedicated EVM tests and CI workflows in this repository
+
+Typical local builds:
+
+```cpp
+# EVM interpreter build
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DZEN_ENABLE_EVM=ON
+cmake --build build
+
+# EVM multipass JIT build
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DZEN_ENABLE_EVM=ON -DZEN_ENABLE_MULTIPASS_JIT=ON -DLLVM_DIR=<llvm-path>/lib/cmake/llvm -DLLVM_SYS_150_PREFIX=<llvm-path>
+cmake --build build
+```
+
+Notes:
+
+- EVM execution is selected from the CLI with `--format evm`
+- EVM does **not** support singlepass JIT mode
+- See [docs/start.md](docs/start.md) and [docs/user-guide.md](docs/user-guide.md) for build and test details
+
 <a name="p8TeO"></a>
 ## Command-Line Execution
 Execute a `wasm` file using `dtvm` as follows:
@@ -161,11 +195,10 @@ Refer to [docs/user-guide.md](docs/user-guide.md) for command-line arguments.
 
 DTVM is continuously evolving to support more instruction sets and provide enhanced functionality. Our upcoming development plans include:
 
-1. **EVM Bytecode Support**
-   * Implementation of EVM bytecode as an input program format
-   * Development of EVM->dMIR translation layer
-   * EVMRuntime for executing EVM bytecode directly
-   * With this addition, DTVM will function as a complete EVM JIT virtual machine
+1. **Expanded EVM Support and Optimization**
+   * Continue broadening EVM opcode, runtime, and compatibility coverage
+   * Improve EVM JIT performance, gas metering, and developer tooling
+   * Expand EVM-focused documentation and test coverage
 
 2. **RISC-V Instruction Set Support**
    * Addition of RISC-V instruction set as an input program format
@@ -180,6 +213,12 @@ We welcome interested developers to join us in implementing these features and e
 ## Contributing
 
 We welcome contributions to DTVM! Before contributing, please read our [Contributing Guidelines](CONTRIBUTING.md).
+
+## Support and Security
+
+- General support, documentation links, SDK references, and SmartCogent status:
+  [SUPPORT.md](SUPPORT.md)
+- Private security reporting process: [SECURITY.md](SECURITY.md)
 
 <a name="Ry0Ak"></a>
 ## Test

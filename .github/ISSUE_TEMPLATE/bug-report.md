@@ -8,6 +8,11 @@ labels: type/bug
 
 Please answer these questions before submitting your issue. Thanks!
 
+> Security issue?
+>
+> Please do not report vulnerabilities in public issues. Follow the private
+> reporting instructions in `SECURITY.md`.
+
 ### 1. Minimal reproduce step (Required)
 
 <!-- a step by step guide for reproducing the bug. -->
