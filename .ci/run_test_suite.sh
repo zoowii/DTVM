@@ -64,6 +64,9 @@ case $TestSuite in
     "microsuite")
         CMAKE_OPTIONS="$CMAKE_OPTIONS -DZEN_ENABLE_SPEC_TEST=ON -DZEN_ENABLE_ASSEMBLYSCRIPT_TEST=ON -DZEN_ENABLE_CHECKED_ARITHMETIC=ON"
         ;;
+    "wasitestsuite")
+        CMAKE_OPTIONS="$CMAKE_OPTIONS -DZEN_ENABLE_WASI_TEST=ON"
+        ;;
     "evmtestsuite")
         CMAKE_OPTIONS="$CMAKE_OPTIONS -DZEN_ENABLE_SPEC_TEST=ON -DZEN_ENABLE_ASSEMBLYSCRIPT_TEST=ON -DZEN_ENABLE_CHECKED_ARITHMETIC=ON -DZEN_ENABLE_EVM=ON"
         ;;
@@ -110,6 +113,10 @@ if [[ $TestSuite == "benchmarksuite" ]]; then
     STACK_TYPES=("-DZEN_ENABLE_VIRTUAL_STACK=ON")
 fi
 
+if [[ $TestSuite == "wasitestsuite" ]]; then
+    STACK_TYPES=("-DZEN_ENABLE_VIRTUAL_STACK=OFF")
+fi
+
 export PATH=$PATH:$PWD/build
 CMAKE_OPTIONS_ORIGIN="$CMAKE_OPTIONS"
 
@@ -141,6 +148,11 @@ for STACK_TYPE in ${STACK_TYPES[@]}; do
             #     ./test_mir.sh
             #     cd ..
             # fi
+            ;;
+        "wasitestsuite")
+            cd build
+            ctest --verbose -R wasiUnitTests
+            cd ..
             ;;
         "evmtestsuite")
             cd build

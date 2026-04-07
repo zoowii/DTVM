@@ -41,3 +41,4 @@ bazel-testlogs
 
 # fuzzer
 /wtf
+build_wasi/
