@@ -203,6 +203,17 @@ public:
     }
   }
 
+  void removeIncoming(size_t Index) {
+    ZEN_ASSERT(Index < getNumIncoming());
+    for (size_t I = Index + 1; I < getNumIncoming(); ++I) {
+      Blocks[I - 1] = Blocks[I];
+      getOperand(static_cast<OperandNum>(I - 1)) =
+          const_cast<MInstruction *>(getIncomingValue(I));
+    }
+    Blocks.pop_back();
+    _operand_num--;
+  }
+
   // Update only the incoming block for an edge, leaving the incoming value
   // unchanged. Used when the CFG edge an incoming block represents is resolved
   // after the value has already been wired.

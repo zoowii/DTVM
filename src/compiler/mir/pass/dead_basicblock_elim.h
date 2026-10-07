@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2023 the DTVM authors. All Rights Reserved.
+// Copyright (C) 2021-2026 the DTVM authors. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
@@ -8,7 +8,9 @@
 #include "compiler/mir/instructions.h"
 #include "compiler/mir/module.h"
 #include "llvm/ADT/BitVector.h"
+#include "llvm/Support/Casting.h"
 #include <queue>
+#include <vector>
 
 namespace COMPILER {
 
@@ -36,10 +38,35 @@ public:
       }
     }
 
-    int32_t BBIdx = -1;
-    while ((BBIdx = LiveBBs.find_next_unset(BBIdx)) != -1) {
-      MBasicBlock *UnreachableBB = F.getBasicBlock(BBIdx);
-      UnreachableBB->clear();
+    for (uint32_t I = 0; I < NumBBs; ++I) {
+      MBasicBlock *BB = F.getBasicBlock(I);
+      if (!LiveBBs[I]) {
+        BB->clear();
+        continue;
+      }
+
+      std::vector<MBasicBlock *> DeadPreds;
+      for (MBasicBlock *Pred : BB->predecessors()) {
+        if (!LiveBBs[Pred->getIdx()]) {
+          DeadPreds.push_back(Pred);
+        }
+      }
+      for (MBasicBlock *Pred : DeadPreds) {
+        BB->removePredecessor(Pred);
+      }
+
+      for (MInstruction *Inst : *BB) {
+        auto *Phi = llvm::dyn_cast<PhiInstruction>(Inst);
+        if (!Phi) {
+          continue;
+        }
+        for (int J = static_cast<int>(Phi->getNumIncoming()) - 1; J >= 0; --J) {
+          MBasicBlock *Incoming = Phi->getIncomingBlock(static_cast<size_t>(J));
+          if (Incoming == nullptr || !LiveBBs[Incoming->getIdx()]) {
+            Phi->removeIncoming(static_cast<size_t>(J));
+          }
+        }
+      }
     }
 
 #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING

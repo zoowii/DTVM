@@ -54,6 +54,29 @@ public:
 
   void clear() { Statements.clear(); }
 
+  void replaceStatement(MInstruction *Old, MInstruction *New) {
+    ZEN_ASSERT(Old && New);
+    for (auto It = Statements.begin(); It != Statements.end(); ++It) {
+      if (*It == Old) {
+        *It = New;
+        New->setParentBB(this);
+        return;
+      }
+    }
+    ZEN_ASSERT(false && "replaceStatement: old instruction is not in this block");
+  }
+
+  void eraseStatement(MInstruction *Inst) {
+    ZEN_ASSERT(Inst);
+    for (auto It = Statements.begin(); It != Statements.end(); ++It) {
+      if (*It == Inst) {
+        Statements.erase(It);
+        return;
+      }
+    }
+    ZEN_ASSERT(false && "eraseStatement: instruction is not in this block");
+  }
+
   uint32_t getIdx() const { return BBIdx; }
 
   void setIdx(uint32_t Idx) { BBIdx = Idx; }
