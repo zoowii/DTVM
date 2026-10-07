@@ -1533,13 +1533,15 @@ TEST(EVMPeepholePhi, ConstFalseJumpiSharedMergeMatchesInterpreter) {
       0x5f,       // PC19 PUSH0
       0xf3,       // PC20 RETURN
   };
-  EXPECT_TRUE(expectInterpMatchesMultipass("const_false_jumpi_shared_merge",
-                                           Bytecode, {}));
+  const auto MergeOut = expectInterpMatchesMultipassWithGas(
+      "const_false_jumpi_shared_merge", Bytecode, {});
+  EXPECT_EQ(MergeOut,
+            "00000000000000000000000000000000000000000000000000000000000000BB");
 }
 
 // Loop header with a const-0 JUMPI pred plus the real entry JUMP and the
-// back-edge: three phi incomings, one of which D / foldConstBrIf must drop.
-// Starting from 0xAA (the dead incoming) would exit immediately with 170.
+// back-edge. i starts at 0, increments until i<3 fails, returns 3.
+// Taking the dead 0xAA incoming would return 0xAB after one increment.
 TEST(EVMPeepholePhi, LoopPhiWithDeadConstJumpiMatchesInterpreter) {
   const std::vector<uint8_t> Bytecode = {
       0x60, 0xaa, // PC0  PUSH1 0xAA (dead header incoming)
@@ -1551,34 +1553,22 @@ TEST(EVMPeepholePhi, LoopPhiWithDeadConstJumpiMatchesInterpreter) {
       0x60, 0x0d, // PC10 PUSH1 13
       0x56,       // PC12 JUMP
       0x5b,       // PC13 JUMPDEST loop
-      0x80,       // PC14 DUP1
-      0x60, 0x03, // PC15 PUSH1 3
-      0x10,       // PC17 LT
-      0x15,       // PC18 ISZERO
-      0x60, 0x1c, // PC19 PUSH1 28   (exit)
-      0x57,       // PC21 JUMPI
-      0x60, 0x01, // PC22 PUSH1 1
-      0x01,       // PC24 ADD
-      0x60, 0x0d, // PC25 PUSH1 13
-      0x56,       // PC27 JUMP
-      0x5b,       // PC28 JUMPDEST exit
-      0x5f,       // PC29 PUSH0
-      0x52,       // PC30 MSTORE
-      0x60, 0x20, // PC31 PUSH1 32
-      0x5f,       // PC33 PUSH0
-      0xf3,       // PC34 RETURN
+      0x60, 0x01, // PC14 PUSH1 1
+      0x01,       // PC16 ADD
+      0x80,       // PC17 DUP1
+      0x60, 0x03, // PC18 PUSH1 3
+      0x11, // PC20 GT   (3 > i  <=>  i < 3; EVM LT/GT compare top < second)
+      0x60, 0x0d, // PC21 PUSH1 13
+      0x57,       // PC23 JUMPI
+      0x5f,       // PC24 PUSH0
+      0x52,       // PC25 MSTORE
+      0x60, 0x20, // PC26 PUSH1 32
+      0x5f,       // PC28 PUSH0
+      0xf3,       // PC29 RETURN
   };
-  auto Interp = runEvmBytecode("loop_phi_dead_const_jumpi_interp", Bytecode,
-                               common::RunMode::InterpMode);
-  auto Multi = runEvmBytecode("loop_phi_dead_const_jumpi_multipass", Bytecode,
-                              common::RunMode::MultipassMode);
-#ifdef ZEN_ENABLE_JIT
-  EXPECT_TRUE(Multi.JITCompiled);
-#endif
-  EXPECT_EQ(Interp.Status, EVMC_SUCCESS);
-  EXPECT_EQ(Multi.Status, Interp.Status);
-  EXPECT_EQ(Multi.OutputHex, Interp.OutputHex);
-  EXPECT_EQ(Interp.OutputHex,
+  const auto LoopOut = expectInterpMatchesMultipassWithGas(
+      "loop_phi_dead_const_jumpi", Bytecode, {});
+  EXPECT_EQ(LoopOut,
             "0000000000000000000000000000000000000000000000000000000000000003");
 }
 
