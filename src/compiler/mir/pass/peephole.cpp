@@ -8,6 +8,7 @@
 #include "compiler/mir/instruction.h"
 #include "compiler/mir/instructions.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Casting.h"
 
 using namespace COMPILER;
@@ -26,8 +27,9 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
 
 void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
   CurBB = &BB;
-  // Snapshot statements: rewrite may replace/erase the current terminator.
-  CompileVector<MInstruction *> Stmts(F->getContext().MemPool);
+  // Snapshot on the host heap. A CompileVector here shares the LLVM
+  // bump slab with IR and can read ASan red zones on growth.
+  llvm::SmallVector<MInstruction *, 16> Stmts;
   llvm::SmallPtrSet<MInstruction *, 32> InBlock;
   for (MInstruction *Inst : BB) {
     Stmts.push_back(Inst);

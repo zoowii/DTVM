@@ -24,8 +24,10 @@ public:
     MBasicBlock *EntryBB = F.getEntryBasicBlock();
     LiveBBs.set(EntryBB->getIdx());
 
-    CompileQueue<MBasicBlock *> WorkList(
-        CompileAllocator<MBasicBlock *>(F.getContext().MemPool));
+    // Host heap, not CompileQueue: std::deque on the LLVM bump slab
+    // reads LLVM ASan red zones after small chunk allocations
+    // (Release+ASan CI, ConstBrIfBecomesUncondAndKillsDeadBlock).
+    std::queue<MBasicBlock *> WorkList;
     WorkList.push(EntryBB);
     while (!WorkList.empty()) {
       MBasicBlock *BB = WorkList.front();
