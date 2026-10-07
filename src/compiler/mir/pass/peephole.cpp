@@ -470,10 +470,10 @@ void MIRPeephole::removeEdgeAndPhiIncomings(MBasicBlock &From,
   From.removeSuccessor(To);
   // Drop may stay reachable via other preds (shared EVM JUMPDEST).
   // Strip this edge's phi incomings so pred-count == incoming-count.
-  for (MInstruction *Inst : *To) {
+  for (MInstruction *Inst : To->phis()) {
     auto *Phi = llvm::dyn_cast<PhiInstruction>(Inst);
     if (!Phi) {
-      break;
+      continue;
     }
     for (int J = static_cast<int>(Phi->getNumIncoming()) - 1; J >= 0; --J) {
       if (Phi->getIncomingBlock(static_cast<size_t>(J)) == &From) {

@@ -11,8 +11,11 @@
 #include "compiler/mir/variable.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMapInfo.h"
+#include <algorithm>
 #include <list>
+#include <map>
 #include <stdio.h>
+#include <vector>
 
 namespace COMPILER {
 
@@ -50,9 +53,7 @@ public:
 class MFunction : public ContextObject {
 public:
   MFunction(CompileContext &Context, uint32_t FuncIndex)
-      : ContextObject(Context), FuncIdx(FuncIndex), Variables(Context.MemPool),
-        BasicBlocks(Context.MemPool), Instructions(Context.MemPool),
-        ExceptionSetBBs(Context.MemPool) {}
+      : ContextObject(Context), FuncIdx(FuncIndex) {}
 
   ~MFunction() override { clearMFunction(); }
 
@@ -75,12 +76,15 @@ public:
     clearInstructions();
   }
 
-  // Drop IR pointers without walking bump-allocated objects. The mempool
-  // reclaims them when the CompileContext dies. Release+ASan otherwise
-  // hits LLVM bump red zones in ~MInstruction / ~CompileVector after a
-  // rewrite. Debug must not use this: deallocate() is what clears
+  // Drop IR pointers without walking bump-allocated instruction
+  // objects. Blocks are host-owned and must be deleted here.
+  // Instruction payloads stay in the mempool until CompileContext
+  // dies. Debug must not use this: deallocate() is what clears
   // AllocSizes.
   void detachFromPool() {
+    for (MBasicBlock *BB : BasicBlocks) {
+      delete BB;
+    }
     BasicBlocks.clear();
     Variables.clear();
     Instructions.clear();
@@ -89,8 +93,9 @@ public:
     ExceptionReturnBB = nullptr;
   }
 
-  // Only create basic block but not insert it into function
-  MBasicBlock *createBasicBlock() { return newObject<MBasicBlock>(*this); }
+  // Host-owned: statement/pred/succ lists must not live in the LLVM
+  // bump slab. Instruction payloads stay bump-allocated.
+  MBasicBlock *createBasicBlock() { return new MBasicBlock(*this); }
 
   // Insert basic block into the end of function
   void appendBlock(MBasicBlock *BB) {
@@ -116,7 +121,6 @@ public:
 
   uint32_t getNumBasicBlocks() const { return BasicBlocks.size(); }
 
-  // for BumpPtrAllocator, ignore this
   void deleteMBasicBlock(MBasicBlock *BB) {
     ZEN_ASSERT(BB);
     if (ExceptionHandlingBB == BB) {
@@ -125,7 +129,7 @@ public:
     if (ExceptionReturnBB == BB) {
       ExceptionReturnBB = nullptr;
     }
-    deleteObject(BB);
+    delete BB;
   }
 
   void clearMBasicBlocks() {
@@ -253,10 +257,10 @@ public:
 private:
   uint32_t FuncIdx = 0;
   MFunctionType *FuncType = nullptr;
-  CompileVector<Variable *> Variables;
-  CompileVector<MBasicBlock *> BasicBlocks;
-  CompileVector<MInstruction *> Instructions;
-  CompileMap<ErrorCode, MBasicBlock *> ExceptionSetBBs;
+  std::vector<Variable *> Variables;
+  std::vector<MBasicBlock *> BasicBlocks;
+  std::vector<MInstruction *> Instructions;
+  std::map<ErrorCode, MBasicBlock *> ExceptionSetBBs;
   MBasicBlock *ExceptionHandlingBB = nullptr;
   MBasicBlock *ExceptionReturnBB = nullptr;
 #ifdef ZEN_ENABLE_EVM_GAS_REGISTER

@@ -61,7 +61,11 @@ public:
         BB->removePredecessor(Pred);
       }
 
-      for (MInstruction *Inst : *BB) {
+      // Only registered phis. Walking every statement calls getOpcode
+      // (Phi::classof) on bump payloads; on a 4096-byte LLVM slab the
+      // unused tail is ASan-poisoned, and a const-br rewrite's last
+      // instruction sits against that slop (CI Release+ASan).
+      for (MInstruction *Inst : BB->phis()) {
         auto *Phi = llvm::dyn_cast<PhiInstruction>(Inst);
         if (!Phi) {
           continue;

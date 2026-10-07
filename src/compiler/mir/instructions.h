@@ -11,6 +11,7 @@
 #include "compiler/mir/opcode.h"
 #include "llvm/ADT/ArrayRef.h"
 #include <cstddef>
+#include <vector>
 
 namespace COMPILER {
 
@@ -237,7 +238,7 @@ private:
 
   PhiInstruction(CompileMemPool &MemPool, MType *Type, size_t NumIncoming)
       : DynamicOperandInstruction(MInstruction::PHI, OP_phi, NumIncoming, Type),
-        Blocks(NumIncoming, MemPool) {
+        Blocks(NumIncoming, nullptr) {
     for (size_t Index = 0; Index < NumIncoming; ++Index) {
       Blocks[Index] = nullptr;
       getOperand(static_cast<OperandNum>(Index)) = nullptr;
@@ -252,7 +253,7 @@ private:
     }
   }
 
-  CompileVector<MBasicBlock *> Blocks;
+  std::vector<MBasicBlock *> Blocks;
 };
 
 class DassignInstruction : public UnaryInstruction {

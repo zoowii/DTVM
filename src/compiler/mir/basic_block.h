@@ -31,6 +31,7 @@ public:
   void addStatement(MInstruction *Inst) {
     Statements.push_back(Inst);
     Inst->setParentBB(this);
+    notePhi(Inst);
   }
 
   void addStatementBeforeFirstNonPhi(MInstruction *Inst) {
@@ -49,11 +50,23 @@ public:
     std::advance(It, Idx);
     Statements.insert(It, Inst);
     Inst->setParentBB(this);
+    notePhi(Inst);
   }
 
   size_t getNumStatements() const { return Statements.size(); }
 
-  void clear() { Statements.clear(); }
+  void clear() {
+    Statements.clear();
+    Phis.clear();
+  }
+
+  llvm::iterator_range<llvm::SmallVector<MInstruction *, 2>::iterator> phis() {
+    return llvm::make_range(Phis.begin(), Phis.end());
+  }
+  llvm::iterator_range<llvm::SmallVector<MInstruction *, 2>::const_iterator>
+  phis() const {
+    return llvm::make_range(Phis.begin(), Phis.end());
+  }
 
   void replaceStatement(MInstruction *Old, MInstruction *New) {
     ZEN_ASSERT(Old && New);
@@ -61,6 +74,8 @@ public:
       if (*It == Old) {
         *It = New;
         New->setParentBB(this);
+        dropPhi(Old);
+        notePhi(New);
         return;
       }
     }
@@ -73,6 +88,7 @@ public:
     for (auto It = Statements.begin(); It != Statements.end(); ++It) {
       if (*It == Inst) {
         Statements.erase(It);
+        dropPhi(Inst);
         return;
       }
     }
@@ -124,9 +140,8 @@ public:
 #endif // ZEN_ENABLE_EVM
 
 private:
-  // Host SmallVector, not CompileList/CompileVector: bump-slab std
-  // containers + LLVM ASan red zones / container annotations poison
-  // neighboring IR (Release+ASan CI). Pred/succ order is not a
+  // Host SmallVector. The block itself is also host-owned
+  // (MFunction::createBasicBlock uses new). Pred/succ order is not a
   // contract. Statement order is preserved.
   static void eraseUnordered(BlockList &Vec, BlockList::iterator It) {
     if (It == Vec.end()) {
@@ -138,9 +153,28 @@ private:
     Vec.pop_back();
   }
 
+  void notePhi(MInstruction *Inst) {
+    if (Inst && Inst->getKind() == MInstruction::PHI) {
+      Phis.push_back(Inst);
+    }
+  }
+
+  void dropPhi(MInstruction *Inst) {
+    if (Inst == nullptr || Inst->getKind() != MInstruction::PHI) {
+      return;
+    }
+    for (auto It = Phis.begin(); It != Phis.end(); ++It) {
+      if (*It == Inst) {
+        Phis.erase(It);
+        return;
+      }
+    }
+  }
+
   uint32_t BBIdx = 0;
   MFunction &Parent;
   llvm::SmallVector<MInstruction *, 8> Statements;
+  llvm::SmallVector<MInstruction *, 2> Phis;
   BlockList Predecessors;
   BlockList Successors;
 #ifdef ZEN_ENABLE_EVM

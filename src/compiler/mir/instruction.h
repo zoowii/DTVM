@@ -128,7 +128,8 @@ protected:
   template <typename T>
   static void *allocMem(CompileMemPool &MemPool, OperandNum NumOperands) {
     uint32_t TotalSize = sizeof(T) + sizeof(MInstruction *) * NumOperands;
-    uint8_t *Start = reinterpret_cast<uint8_t *>(MemPool.allocate(TotalSize));
+    uint8_t *Start =
+        reinterpret_cast<uint8_t *>(MemPool.allocate(TotalSize, alignof(T)));
     uint8_t *Obj = Start + TotalSize - sizeof(T);
     return reinterpret_cast<void *>(Obj);
   }
