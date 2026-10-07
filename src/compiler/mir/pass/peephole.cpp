@@ -150,8 +150,8 @@ MInstruction *MIRPeephole::foldSelectICmp(MInstruction *Inst) {
 
   MInstruction *LHS = Cmp->getOperand<0>();
   MInstruction *RHS = Cmp->getOperand<1>();
-  const SelectInstruction *Sel = nullptr;
-  const MInstruction *Key = nullptr;
+  SelectInstruction *Sel = nullptr;
+  MInstruction *Key = nullptr;
   if (auto *S = llvm::dyn_cast<SelectInstruction>(LHS)) {
     Sel = S;
     Key = RHS;

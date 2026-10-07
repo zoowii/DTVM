@@ -310,7 +310,8 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "ctz_eqz", 1), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "ctz_eqz", 2), 0);
   EXPECT_EQ(callI32(*RT, *Inst, "ctz_eqz", -1), 1);
-  EXPECT_EQ(callI32(*RT, *Inst, "clz_eqz", 0x80000000), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "clz_eqz", static_cast<int32_t>(0x80000000u)),
+            1);
   EXPECT_EQ(callI32(*RT, *Inst, "clz_eqz", 1), 0);
   EXPECT_EQ(callI32(*RT, *Inst, "ctz_eq4", 16), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "ctz_eq4", 1), 0);
@@ -339,7 +340,8 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   ASSERT_TRUE(InstM);
   ASSERT_TRUE(InstS);
 
-  const int32_t Inputs[] = {0, 1, 2, 4, 16, -1, 42, 0x80000000};
+  const int32_t Inputs[] = {0, 1, 2, 4, 16, -1, 42,
+                            static_cast<int32_t>(0x80000000u)};
   const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
                        "add0",    "f3",      "f4",      "f14"};
   for (const char *Fn : Fns) {
