@@ -7,8 +7,7 @@
 using namespace COMPILER;
 
 MBasicBlock::MBasicBlock(MFunction &P)
-    : ContextObject(P.getContext()), Parent(P),
-      Statements(P.getContext().MemPool) {}
+    : ContextObject(P.getContext()), Parent(P) {}
 
 MBasicBlock::MBasicBlock(uint32_t Idx, MFunction &P) : MBasicBlock(P) {
   BBIdx = Idx;

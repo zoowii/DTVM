@@ -124,9 +124,10 @@ public:
 #endif // ZEN_ENABLE_EVM
 
 private:
-  // Host SmallVector, not CompileVector: bump-slab std::vector + LLVM
-  // ASan red zones / container annotations poison neighboring IR
-  // (Release+ASan CI). Pred/succ order is not a contract.
+  // Host SmallVector, not CompileList/CompileVector: bump-slab std
+  // containers + LLVM ASan red zones / container annotations poison
+  // neighboring IR (Release+ASan CI). Pred/succ order is not a
+  // contract. Statement order is preserved.
   static void eraseUnordered(BlockList &Vec, BlockList::iterator It) {
     if (It == Vec.end()) {
       return;
@@ -139,7 +140,7 @@ private:
 
   uint32_t BBIdx = 0;
   MFunction &Parent;
-  CompileList<MInstruction *> Statements;
+  llvm::SmallVector<MInstruction *, 8> Statements;
   BlockList Predecessors;
   BlockList Successors;
 #ifdef ZEN_ENABLE_EVM
