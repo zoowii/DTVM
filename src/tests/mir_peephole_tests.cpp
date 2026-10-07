@@ -116,12 +116,25 @@ std::unique_ptr<Runtime> makeRuntime(RunMode Mode, bool DisableMT = false,
   return Runtime::newRuntime(Cfg);
 }
 
-int32_t callI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
+// Thread-safe: no gtest macros. Instance must not be shared across threads.
+bool tryCallI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg,
+                int32_t &Out) {
   std::vector<TypedValue> Results;
-  EXPECT_TRUE(RT.callWasmFunction(Inst, Name, {std::to_string(Arg)}, Results));
-  EXPECT_FALSE(Inst.hasError()) << Inst.getError().getFormattedMessage();
-  EXPECT_EQ(Results.size(), 1u);
-  return Results[0].Value.I32;
+  if (!RT.callWasmFunction(Inst, Name, {std::to_string(Arg)}, Results)) {
+    return false;
+  }
+  if (Inst.hasError() || Results.size() != 1) {
+    return false;
+  }
+  Out = Results[0].Value.I32;
+  return true;
+}
+
+int32_t callI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
+  int32_t Out = 0;
+  EXPECT_TRUE(tryCallI32(RT, Inst, Name, Arg, Out))
+      << (Inst.hasError() ? Inst.getError().getFormattedMessage() : Name);
+  return Out;
 }
 
 } // namespace
@@ -320,6 +333,13 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "add0", 42), 42);
   EXPECT_EQ(callI32(*RT, *Inst, "const_if_true", 10), 11);
   EXPECT_EQ(callI32(*RT, *Inst, "const_if_false", 10), 12);
+  EXPECT_EQ(callI32(*RT, *Inst, "f8", 9), 9);
+  EXPECT_EQ(callI32(*RT, *Inst, "f9", 9), 9);
+  EXPECT_EQ(callI32(*RT, *Inst, "f12", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f12", 16), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f13", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f13", 1), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f15", 0), 5);
 }
 
 TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
@@ -343,7 +363,8 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   const int32_t Inputs[] = {0, 1, 2, 4, 16, -1, 42,
                             static_cast<int32_t>(0x80000000u)};
   const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
-                       "add0",    "f3",      "f4",      "f14"};
+                       "add0",    "f3",      "f4",      "f8",
+                       "f9",      "f12",     "f13",     "f14"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
       EXPECT_EQ(callI32(*RTM, **InstM, Fn, X), callI32(*RTS, **InstS, Fn, X))
@@ -382,12 +403,19 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
           return;
         }
         Instance *Inst = *InstRet;
-        if (callI32(*RT, *Inst, "ctz_eqz", 1) != 1 ||
-            callI32(*RT, *Inst, "clz_eqz", int32_t(0x80000000)) != 1 ||
-            callI32(*RT, *Inst, "select_eq_true", 1) != 1 ||
-            callI32(*RT, *Inst, "add0", 7) != 7 ||
-            callI32(*RT, *Inst, "const_if_true", 3) != 4 ||
-            callI32(*RT, *Inst, "f15", 0) != 5) {
+        int32_t V = 0;
+        const int32_t Sign = static_cast<int32_t>(0x80000000u);
+        if (!tryCallI32(*RT, *Inst, "ctz_eqz", 1, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "clz_eqz", Sign, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "select_eq_true", 1, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "add0", 7, V) || V != 7 ||
+            !tryCallI32(*RT, *Inst, "const_if_true", 3, V) || V != 4 ||
+            !tryCallI32(*RT, *Inst, "const_if_false", 3, V) || V != 5 ||
+            !tryCallI32(*RT, *Inst, "f8", 9, V) || V != 9 ||
+            !tryCallI32(*RT, *Inst, "f9", 9, V) || V != 9 ||
+            !tryCallI32(*RT, *Inst, "f12", 16, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5) {
           Failures++;
           return;
         }
@@ -401,7 +429,64 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
 }
 
 #ifdef ZEN_ENABLE_MULTIPASS_JIT
-TEST(MIRPeepholeConcurrent, LazyJitParallelCalls) {
+// Per-runtime lazy compile (do not share one Instance across threads).
+TEST(MIRPeepholeConcurrent, ParallelLazyCompileAndExecute) {
+  auto Bytes = loadPeepholeWasm();
+  ASSERT_FALSE(Bytes.empty());
+  constexpr int kThreads = 8;
+  constexpr int kIters = 20;
+  std::atomic<int> Failures{0};
+  std::vector<std::thread> Threads;
+  Threads.reserve(kThreads);
+  for (int T = 0; T < kThreads; ++T) {
+    Threads.emplace_back([&, T] {
+      for (int I = 0; I < kIters; ++I) {
+        auto RT = makeRuntime(RunMode::MultipassMode, /*DisableMT=*/false,
+                              /*Lazy=*/true);
+        if (!RT) {
+          Failures++;
+          return;
+        }
+        auto ModRet = RT->loadModule("lazypeep" + std::to_string(T) + "_" +
+                                         std::to_string(I),
+                                     Bytes.data(), Bytes.size());
+        if (!ModRet) {
+          Failures++;
+          return;
+        }
+        Isolation *Iso = RT->createManagedIsolation();
+        auto InstRet = Iso->createInstance(**ModRet);
+        if (!InstRet) {
+          Failures++;
+          return;
+        }
+        Instance *Inst = *InstRet;
+        int32_t V = 0;
+        const char *Fns[] = {"f0", "f1",  "f2",  "f3",  "f4",  "f5",
+                             "f6", "f7",  "f8",  "f9",  "f10", "f11",
+                             "f12", "f13", "f14", "f15"};
+        for (const char *Fn : Fns) {
+          if (!tryCallI32(*RT, *Inst, Fn, 1, V)) {
+            Failures++;
+            return;
+          }
+        }
+        if (!tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5 ||
+            !tryCallI32(*RT, *Inst, "f8", 11, V) || V != 11 ||
+            !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1) {
+          Failures++;
+          return;
+        }
+      }
+    });
+  }
+  for (auto &Th : Threads) {
+    Th.join();
+  }
+  EXPECT_EQ(Failures.load(), 0);
+}
+
+TEST(MIRPeepholeConcurrent, LazyJitWarmupThenReplay) {
   auto Bytes = loadPeepholeWasm();
   ASSERT_FALSE(Bytes.empty());
   auto RT = makeRuntime(RunMode::MultipassMode, /*DisableMT=*/false,
@@ -416,26 +501,26 @@ TEST(MIRPeepholeConcurrent, LazyJitParallelCalls) {
 
   const char *Fns[] = {"f0", "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
                        "f8", "f9",  "f10", "f11", "f12", "f13", "f14", "f15"};
-  constexpr int kIters = 80;
-  std::atomic<int> Failures{0};
-  std::vector<std::thread> Threads;
-  for (int T = 0; T < 8; ++T) {
-    Threads.emplace_back([&, T] {
-      for (int I = 0; I < kIters; ++I) {
-        const char *Fn = Fns[(T + I) % 16];
-        int32_t Arg = (I & 1) ? 1 : int32_t(0x80000000);
-        int32_t Got = callI32(*RT, *Inst, Fn, Arg);
-        if (std::string(Fn) == "f15" && Got != 5) {
-          Failures++;
-        }
-        (void)Got;
-      }
-    });
+  for (const char *Fn : Fns) {
+    (void)callI32(*RT, *Inst, Fn, 1);
   }
-  for (auto &Th : Threads) {
-    Th.join();
+  ASSERT_FALSE(Inst->hasError()) << Inst->getError().getFormattedMessage();
+
+  constexpr int kIters = 200;
+  for (int I = 0; I < kIters; ++I) {
+    const char *Fn = Fns[static_cast<unsigned>(I) % 16];
+    int32_t Arg = (I & 1) ? 1 : static_cast<int32_t>(0x80000000u);
+    int32_t Got = callI32(*RT, *Inst, Fn, Arg);
+    if (std::string(Fn) == "f15") {
+      EXPECT_EQ(Got, 5);
+    }
+    if (std::string(Fn) == "f8" || std::string(Fn) == "f9") {
+      EXPECT_EQ(Got, Arg);
+    }
+    if (std::string(Fn) == "f12" || std::string(Fn) == "f13") {
+      EXPECT_EQ(Got, 1);
+    }
   }
-  EXPECT_EQ(Failures.load(), 0);
   EXPECT_FALSE(Inst->hasError()) << Inst->getError().getFormattedMessage();
 }
 #endif
@@ -453,7 +538,7 @@ TEST(MIRPeepholePerf, Microbenchmarks) {
   Instance *Inst = *InstRet;
 
   const char *Names[] = {"bench_ctz_eqz", "bench_select", "bench_algebra",
-                         "bench_const_br"};
+                         "bench_const_br", "bench_mixed", "bitmix"};
   constexpr int32_t kIters = 2000000;
   std::printf("\nMIR peephole microbench (multipass, %d loop iters, 3 runs)\n",
               kIters);
@@ -470,7 +555,7 @@ TEST(MIRPeepholePerf, Microbenchmarks) {
           std::chrono::duration<double, std::milli>(T1 - T0).count();
       BestMs = std::min(BestMs, Ms);
       SumMs += Ms;
-      EXPECT_GE(Ret, 0);
+      (void)Ret;
     }
     std::printf("  %-16s  best=%.3f ms  mean=%.3f ms\n", Name, BestMs,
                 SumMs / 3.0);

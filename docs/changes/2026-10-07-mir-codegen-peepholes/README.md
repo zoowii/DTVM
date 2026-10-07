@@ -63,6 +63,29 @@ blocks) but must match interpreter/singlepass results.
 - [x] Concurrent compile + execute stress
 - [x] Before/after microbenchmarks on this agent VM
 
+Measured on this agent (Intel Xeon, 4×2400 MHz, Linux 6.12, Release,
+multipass, `--disable-multipass-multithread`). Same `peephole_mod.wasm`
+on parent `410c579` vs this branch; process wall time, 1 warmup + 7
+runs, 1+4 executions per process. Outputs matched.
+
+| Kernel | n | baseline min | PR min | Δ |
+| --- | ---: | ---: | ---: | ---: |
+| A `bench_ctz_eqz` | 20e6 | 201.1 ms | 153.7 ms | −23.6% |
+| B `bench_select` | 20e6 | 194.4 ms | 152.7 ms | −21.4% |
+| C `bench_algebra` | 20e6 | 105.0 ms | 54.6 ms | −47.9% |
+| D `bench_const_br` | 20e6 | 115.6 ms | 75.6 ms | −34.6% |
+| mixed A–D | 8e6 | 290.1 ms | 200.7 ms | −30.8% |
+| `bitmix` LCG kernel | 8e6 | 227.3 ms | 195.5 ms | −14.0% |
+
+In-tree paper `.wasm` artifacts are Git LFS stubs (~128 B, not valid
+modules), so they were not used. Compile-time (20 extra compilations of
+this module) was 30.1 → 28.5 ms min — noise, not a regression.
+
+Concurrent: `ParallelCompileAndExecute` 8×40 eager; `ParallelLazyCompileAndExecute`
+8×20 lazy (one runtime per thread); `LazyJitWarmupThenReplay` 200 calls;
+`--gtest_repeat=20 --gtest_break_on_failure` all passed. `lazyJitStubTests`
+`--gtest_repeat=50` passed.
+
 ## Compatibility Notes
 
 None. No migration.
