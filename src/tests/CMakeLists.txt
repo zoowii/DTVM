@@ -416,7 +416,9 @@ if(ZEN_ENABLE_SPEC_TEST)
     target_include_directories(
       mirPeepholeTests PRIVATE ${googletest_SOURCE_DIR}/googletest/include
     )
-    set(PEEP_MOD_WAT "${CMAKE_SOURCE_DIR}/tests/wast/multipass/peephole_mod.wat")
+    set(PEEP_MOD_WAT
+        "${CMAKE_SOURCE_DIR}/tests/wast/multipass/peephole_mod.wat"
+    )
     set(PEEP_MOD_WASM "${CMAKE_CURRENT_BINARY_DIR}/peephole_mod.wasm")
     add_custom_command(
       OUTPUT ${PEEP_MOD_WASM}
@@ -441,8 +443,12 @@ if(ZEN_ENABLE_SPEC_TEST)
       else()
         target_link_libraries(
           mirPeepholeTests
-          PRIVATE compiler dtvmcore gtest_main Threads::Threads
-                  -fsanitize=address -static-libasan
+          PRIVATE compiler
+                  dtvmcore
+                  gtest_main
+                  Threads::Threads
+                  -fsanitize=address
+                  -static-libasan
           PUBLIC ${GTEST_BOTH_LIBRARIES}
         )
       endif()

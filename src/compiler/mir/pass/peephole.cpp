@@ -104,11 +104,11 @@ MInstruction *MIRPeephole::foldBitCountEqZero(MInstruction *Inst) {
   MInstruction *LHS = Cmp->getOperand<0>();
   MInstruction *RHS = Cmp->getOperand<1>();
   MInstruction *BitCount = nullptr;
-  if (isIntZero(RHS) && LHS && (LHS->getOpcode() == OP_ctz ||
-                                LHS->getOpcode() == OP_clz)) {
+  if (isIntZero(RHS) && LHS &&
+      (LHS->getOpcode() == OP_ctz || LHS->getOpcode() == OP_clz)) {
     BitCount = LHS;
-  } else if (isIntZero(LHS) && RHS && (RHS->getOpcode() == OP_ctz ||
-                                       RHS->getOpcode() == OP_clz)) {
+  } else if (isIntZero(LHS) && RHS &&
+             (RHS->getOpcode() == OP_ctz || RHS->getOpcode() == OP_clz)) {
     BitCount = RHS;
   } else {
     return nullptr;
@@ -176,7 +176,8 @@ MInstruction *MIRPeephole::foldSelectICmp(MInstruction *Inst) {
     return makeIntConst(Cmp->getType(), Result ? 1 : 0);
   }
   if (KeyVal != TrueVal && KeyVal != FalseVal) {
-    return makeIntConst(Cmp->getType(), Pred == CmpInstruction::ICMP_EQ ? 0 : 1);
+    return makeIntConst(Cmp->getType(),
+                        Pred == CmpInstruction::ICMP_EQ ? 0 : 1);
   }
 
   const bool CmpToTrueArm = KeyVal == TrueVal;
@@ -290,14 +291,14 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     case OP_xor:
       return makeIntConst(Ty, (LV ^ RV).getZExtValue());
     case OP_shl:
-      return makeIntConst(Ty, LV.shl(RV.getZExtValue() & ShiftMask)
-                                  .getZExtValue());
+      return makeIntConst(Ty,
+                          LV.shl(RV.getZExtValue() & ShiftMask).getZExtValue());
     case OP_ushr:
-      return makeIntConst(Ty, LV.lshr(RV.getZExtValue() & ShiftMask)
-                                  .getZExtValue());
+      return makeIntConst(
+          Ty, LV.lshr(RV.getZExtValue() & ShiftMask).getZExtValue());
     case OP_sshr:
-      return makeIntConst(Ty, LV.ashr(RV.getZExtValue() & ShiftMask)
-                                  .getZExtValue());
+      return makeIntConst(
+          Ty, LV.ashr(RV.getZExtValue() & ShiftMask).getZExtValue());
     default:
       break;
     }
@@ -369,8 +370,8 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
       return RHS;
     }
     if (isIntAllOnes(LHS) || isIntAllOnes(RHS)) {
-      return makeIntConst(Ty, llvm::APInt::getAllOnes(Ty->getBitWidth())
-                                  .getZExtValue());
+      return makeIntConst(
+          Ty, llvm::APInt::getAllOnes(Ty->getBitWidth()).getZExtValue());
     }
     if (same(LHS, RHS)) {
       return LHS;

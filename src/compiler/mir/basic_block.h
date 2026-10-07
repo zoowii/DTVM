@@ -63,7 +63,8 @@ public:
         return;
       }
     }
-    ZEN_ASSERT(false && "replaceStatement: old instruction is not in this block");
+    ZEN_ASSERT(false &&
+               "replaceStatement: old instruction is not in this block");
   }
 
   void eraseStatement(MInstruction *Inst) {

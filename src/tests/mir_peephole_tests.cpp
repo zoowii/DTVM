@@ -32,8 +32,8 @@ using zen::common::RunMode;
 using zen::common::TypedValue;
 using zen::common::UntypedValue;
 using zen::common::WASMType;
-using zen::runtime::Isolation;
 using zen::runtime::Instance;
+using zen::runtime::Isolation;
 using zen::runtime::Module;
 using zen::runtime::Runtime;
 using zen::runtime::RuntimeConfig;
@@ -98,7 +98,7 @@ std::vector<uint8_t> loadPeepholeWasm() {
   std::ifstream In(Path, std::ios::binary);
   EXPECT_TRUE(In) << "failed to open " << Path;
   return std::vector<uint8_t>((std::istreambuf_iterator<char>(In)),
-                             std::istreambuf_iterator<char>());
+                              std::istreambuf_iterator<char>());
 }
 
 std::unique_ptr<Runtime> makeRuntime(RunMode Mode, bool DisableMT = false,
@@ -141,7 +141,8 @@ int32_t callI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
 
 TEST(MIRPeepholeLitmus, CtzEqzFoldsToBitTest) {
   MirBuilder B;
-  B.ret(B.cmp(CmpInstruction::ICMP_EQ, B.unary(OP_ctz, B.param()), B.iconst(0)));
+  B.ret(
+      B.cmp(CmpInstruction::ICMP_EQ, B.unary(OP_ctz, B.param()), B.iconst(0)));
   B.run();
   const std::string Dump = dumpFunc(B.F);
   EXPECT_EQ(Dump.find("ctz"), std::string::npos) << Dump;
@@ -151,7 +152,8 @@ TEST(MIRPeepholeLitmus, CtzEqzFoldsToBitTest) {
 
 TEST(MIRPeepholeLitmus, ClzEqzFoldsToSignTest) {
   MirBuilder B;
-  B.ret(B.cmp(CmpInstruction::ICMP_EQ, B.unary(OP_clz, B.param()), B.iconst(0)));
+  B.ret(
+      B.cmp(CmpInstruction::ICMP_EQ, B.unary(OP_clz, B.param()), B.iconst(0)));
   B.run();
   const std::string Dump = dumpFunc(B.F);
   EXPECT_EQ(Dump.find("clz"), std::string::npos) << Dump;
@@ -160,7 +162,8 @@ TEST(MIRPeepholeLitmus, ClzEqzFoldsToSignTest) {
 
 TEST(MIRPeepholeLitmus, CtzEqFourDoesNotFold) {
   MirBuilder B;
-  B.ret(B.cmp(CmpInstruction::ICMP_EQ, B.unary(OP_ctz, B.param()), B.iconst(4)));
+  B.ret(
+      B.cmp(CmpInstruction::ICMP_EQ, B.unary(OP_ctz, B.param()), B.iconst(4)));
   B.run();
   const std::string Dump = dumpFunc(B.F);
   EXPECT_NE(Dump.find("ctz"), std::string::npos) << Dump;
@@ -168,7 +171,8 @@ TEST(MIRPeepholeLitmus, CtzEqFourDoesNotFold) {
 
 TEST(MIRPeepholeLitmus, ClzNeZeroFoldsToSge) {
   MirBuilder B;
-  B.ret(B.cmp(CmpInstruction::ICMP_NE, B.unary(OP_clz, B.param()), B.iconst(0)));
+  B.ret(
+      B.cmp(CmpInstruction::ICMP_NE, B.unary(OP_clz, B.param()), B.iconst(0)));
   B.run();
   const std::string Dump = dumpFunc(B.F);
   EXPECT_EQ(Dump.find("clz"), std::string::npos) << Dump;
@@ -360,8 +364,8 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   ASSERT_TRUE(InstM);
   ASSERT_TRUE(InstS);
 
-  const int32_t Inputs[] = {0, 1, 2, 4, 16, -1, 42,
-                            static_cast<int32_t>(0x80000000u)};
+  const int32_t Inputs[] = {0,  1,  2,  4,
+                            16, -1, 42, static_cast<int32_t>(0x80000000u)};
   const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
                        "add0",    "f3",      "f4",      "f8",
                        "f9",      "f12",     "f13",     "f14"};
@@ -389,9 +393,9 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
           Failures++;
           return;
         }
-        auto ModRet = RT->loadModule("peep" + std::to_string(T) + "_" +
-                                         std::to_string(I),
-                                     Bytes.data(), Bytes.size());
+        auto ModRet =
+            RT->loadModule("peep" + std::to_string(T) + "_" + std::to_string(I),
+                           Bytes.data(), Bytes.size());
         if (!ModRet) {
           Failures++;
           return;
@@ -462,8 +466,8 @@ TEST(MIRPeepholeConcurrent, ParallelLazyCompileAndExecute) {
         }
         Instance *Inst = *InstRet;
         int32_t V = 0;
-        const char *Fns[] = {"f0", "f1",  "f2",  "f3",  "f4",  "f5",
-                             "f6", "f7",  "f8",  "f9",  "f10", "f11",
+        const char *Fns[] = {"f0",  "f1",  "f2",  "f3", "f4",  "f5",
+                             "f6",  "f7",  "f8",  "f9", "f10", "f11",
                              "f12", "f13", "f14", "f15"};
         for (const char *Fn : Fns) {
           if (!tryCallI32(*RT, *Inst, Fn, 1, V)) {
@@ -499,8 +503,8 @@ TEST(MIRPeepholeConcurrent, LazyJitWarmupThenReplay) {
   ASSERT_TRUE(InstRet) << InstRet.getError().getFormattedMessage();
   Instance *Inst = *InstRet;
 
-  const char *Fns[] = {"f0", "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
-                       "f8", "f9",  "f10", "f11", "f12", "f13", "f14", "f15"};
+  const char *Fns[] = {"f0", "f1", "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
+                       "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"};
   for (const char *Fn : Fns) {
     (void)callI32(*RT, *Inst, Fn, 1);
   }
@@ -537,8 +541,8 @@ TEST(MIRPeepholePerf, Microbenchmarks) {
   ASSERT_TRUE(InstRet);
   Instance *Inst = *InstRet;
 
-  const char *Names[] = {"bench_ctz_eqz", "bench_select", "bench_algebra",
-                         "bench_const_br", "bench_mixed", "bitmix"};
+  const char *Names[] = {"bench_ctz_eqz",  "bench_select", "bench_algebra",
+                         "bench_const_br", "bench_mixed",  "bitmix"};
   constexpr int32_t kIters = 2000000;
   std::printf("\nMIR peephole microbench (multipass, %d loop iters, 3 runs)\n",
               kIters);
@@ -551,8 +555,7 @@ TEST(MIRPeepholePerf, Microbenchmarks) {
       auto T0 = std::chrono::steady_clock::now();
       int32_t Ret = callI32(*RT, *Inst, Name, kIters);
       auto T1 = std::chrono::steady_clock::now();
-      double Ms =
-          std::chrono::duration<double, std::milli>(T1 - T0).count();
+      double Ms = std::chrono::duration<double, std::milli>(T1 - T0).count();
       BestMs = std::min(BestMs, Ms);
       SumMs += Ms;
       (void)Ret;
