@@ -75,6 +75,18 @@ public:
     clearInstructions();
   }
 
+  // Drop IR pointers without walking bump-allocated objects. The mempool
+  // reclaims them when the CompileContext dies. Needed so litmus tests do
+  // not hit ASan use-after-poison in Release (~MInstruction after rewrite).
+  void detachFromPool() {
+    BasicBlocks.clear();
+    Variables.clear();
+    Instructions.clear();
+    ExceptionSetBBs.clear();
+    ExceptionHandlingBB = nullptr;
+    ExceptionReturnBB = nullptr;
+  }
+
   // Only create basic block but not insert it into function
   MBasicBlock *createBasicBlock() { return newObject<MBasicBlock>(*this); }
 

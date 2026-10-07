@@ -141,7 +141,8 @@ protected:
 
   // only MFunction can create MInstruction
   MInstruction(Kind kind, Opcode opcode, OperandNum operand_num, MType *type)
-      : _kind(kind), _opcode(opcode), _operand_num(operand_num), _type(type) {}
+      : _kind(kind), _opcode(opcode), _operand_num(operand_num), _type(type),
+        _parent(static_cast<MBasicBlock *>(nullptr)) {}
 
   virtual ~MInstruction() = default;
 

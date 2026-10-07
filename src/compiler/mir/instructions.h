@@ -10,6 +10,7 @@
 #include "compiler/mir/instruction.h"
 #include "compiler/mir/opcode.h"
 #include "llvm/ADT/ArrayRef.h"
+#include <cstddef>
 
 namespace COMPILER {
 
@@ -203,15 +204,24 @@ public:
     }
   }
 
+  // Operand pointers live in the slots immediately before `this`
+  // (`getOperand(i) == this - _operand_num + i`). Decrementing
+  // `_operand_num` slides that window, so the compact must use a
+  // fixed base for the old N and only then rewrite the new window.
   void removeIncoming(size_t Index) {
     ZEN_ASSERT(Index < getNumIncoming());
-    for (size_t I = Index + 1; I < getNumIncoming(); ++I) {
-      Blocks[I - 1] = Blocks[I];
-      getOperand(static_cast<OperandNum>(I - 1)) =
-          const_cast<MInstruction *>(getIncomingValue(I));
+    const OperandNum OldN = _operand_num;
+    MInstruction **OldSlots = reinterpret_cast<MInstruction **>(this) - OldN;
+    for (size_t I = Index + 1; I < OldN; ++I) {
+      OldSlots[I - 1] = OldSlots[I];
     }
-    Blocks.pop_back();
+    Blocks.erase(Blocks.begin() + static_cast<std::ptrdiff_t>(Index));
     _operand_num--;
+    MInstruction **NewSlots =
+        reinterpret_cast<MInstruction **>(this) - _operand_num;
+    for (int J = static_cast<int>(_operand_num) - 1; J >= 0; --J) {
+      NewSlots[J] = OldSlots[J];
+    }
   }
 
   // Update only the incoming block for an edge, leaving the incoming value

@@ -1511,6 +1511,77 @@ TEST(EVMCallMemoryProofDifferential,
   }
 }
 
+// Const-0 JUMPI into a still-live JUMPDEST (second pred is a real JUMP)
+// forces foldConstBrIf to drop an edge without killing the target. The
+// merge phi must lose the dead incoming; a slot-window bug in
+// removeIncoming would silently swap the surviving 0xBB for 0xAA.
+TEST(EVMPeepholePhi, ConstFalseJumpiSharedMergeMatchesInterpreter) {
+  const std::vector<uint8_t> Bytecode = {
+      0x60, 0xaa, // PC0  PUSH1 0xAA (dead JUMPI incoming)
+      0x60, 0x00, // PC2  PUSH1 0    (const-false cond)
+      0x60, 0x0e, // PC4  PUSH1 14   (shared merge)
+      0x57,       // PC6  JUMPI
+      0x50,       // PC7  POP
+      0x60, 0xbb, // PC8  PUSH1 0xBB (live incoming)
+      0x60, 0x0e, // PC10 PUSH1 14
+      0x56,       // PC12 JUMP
+      0x00,       // PC13 STOP (padding)
+      0x5b,       // PC14 JUMPDEST merge
+      0x5f,       // PC15 PUSH0
+      0x52,       // PC16 MSTORE
+      0x60, 0x20, // PC17 PUSH1 32
+      0x5f,       // PC19 PUSH0
+      0xf3,       // PC20 RETURN
+  };
+  EXPECT_TRUE(expectInterpMatchesMultipass("const_false_jumpi_shared_merge",
+                                           Bytecode, {}));
+}
+
+// Loop header with a const-0 JUMPI pred plus the real entry JUMP and the
+// back-edge: three phi incomings, one of which D / foldConstBrIf must drop.
+// Starting from 0xAA (the dead incoming) would exit immediately with 170.
+TEST(EVMPeepholePhi, LoopPhiWithDeadConstJumpiMatchesInterpreter) {
+  const std::vector<uint8_t> Bytecode = {
+      0x60, 0xaa, // PC0  PUSH1 0xAA (dead header incoming)
+      0x60, 0x00, // PC2  PUSH1 0
+      0x60, 0x0d, // PC4  PUSH1 13   (loop header)
+      0x57,       // PC6  JUMPI
+      0x50,       // PC7  POP
+      0x60, 0x00, // PC8  PUSH1 0    (i = 0)
+      0x60, 0x0d, // PC10 PUSH1 13
+      0x56,       // PC12 JUMP
+      0x5b,       // PC13 JUMPDEST loop
+      0x80,       // PC14 DUP1
+      0x60, 0x03, // PC15 PUSH1 3
+      0x10,       // PC17 LT
+      0x15,       // PC18 ISZERO
+      0x60, 0x1c, // PC19 PUSH1 28   (exit)
+      0x57,       // PC21 JUMPI
+      0x60, 0x01, // PC22 PUSH1 1
+      0x01,       // PC24 ADD
+      0x60, 0x0d, // PC25 PUSH1 13
+      0x56,       // PC27 JUMP
+      0x5b,       // PC28 JUMPDEST exit
+      0x5f,       // PC29 PUSH0
+      0x52,       // PC30 MSTORE
+      0x60, 0x20, // PC31 PUSH1 32
+      0x5f,       // PC33 PUSH0
+      0xf3,       // PC34 RETURN
+  };
+  auto Interp = runEvmBytecode("loop_phi_dead_const_jumpi_interp", Bytecode,
+                               common::RunMode::InterpMode);
+  auto Multi = runEvmBytecode("loop_phi_dead_const_jumpi_multipass", Bytecode,
+                              common::RunMode::MultipassMode);
+#ifdef ZEN_ENABLE_JIT
+  EXPECT_TRUE(Multi.JITCompiled);
+#endif
+  EXPECT_EQ(Interp.Status, EVMC_SUCCESS);
+  EXPECT_EQ(Multi.Status, Interp.Status);
+  EXPECT_EQ(Multi.OutputHex, Interp.OutputHex);
+  EXPECT_EQ(Interp.OutputHex,
+            "0000000000000000000000000000000000000000000000000000000000000003");
+}
+
 TEST(EVMKeccakMemoryProofDifferential,
      TwoWordHelperWordGasOutOfGasBoundaryMatchesInterpreter) {
   const auto Bytecode = twoWordKeccakBytecode();

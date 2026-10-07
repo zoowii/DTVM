@@ -91,6 +91,8 @@ struct MirBuilder {
     DeadMBasicBlockElim DCE;
     DCE.runOnMFunction(F);
   }
+
+  ~MirBuilder() { F.detachFromPool(); }
 };
 
 std::vector<uint8_t> loadPeepholeWasm() {
@@ -258,6 +260,137 @@ TEST(MIRPeepholeLitmus, AlgebraIdentities) {
   }
 }
 
+TEST(PhiIncomingLayout, RemoveIncomingKeepsRemainingPairs) {
+  CompileContext Ctx;
+  MType *I32 = &CompileContext::I32Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *B0 = F.createBasicBlock();
+  MBasicBlock *B1 = F.createBasicBlock();
+  MBasicBlock *B2 = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(B0);
+  F.appendBlock(B1);
+  F.appendBlock(B2);
+
+  auto makeConst = [&](uint64_t V) {
+    return F.createInstruction<ConstantInstruction>(
+        false, *Entry, I32, *MConstantInt::get(Ctx, *I32, V));
+  };
+  MInstruction *V0 = makeConst(10);
+  MInstruction *V1 = makeConst(20);
+  MInstruction *V2 = makeConst(30);
+
+  {
+    PhiInstruction::Incoming Inc3[] = {{B0, V0}, {B1, V1}, {B2, V2}};
+    auto *Phi = F.createInstruction<PhiInstruction>(
+        false, *Entry, I32, llvm::ArrayRef<PhiInstruction::Incoming>(Inc3));
+    Phi->removeIncoming(1);
+    ASSERT_EQ(Phi->getNumIncoming(), 2u);
+    EXPECT_EQ(Phi->getIncomingBlock(0), B0);
+    EXPECT_EQ(Phi->getIncomingValue(0), V0);
+    EXPECT_EQ(Phi->getIncomingBlock(1), B2);
+    EXPECT_EQ(Phi->getIncomingValue(1), V2);
+  }
+  {
+    PhiInstruction::Incoming Inc2[] = {{B0, V0}, {B1, V1}};
+    auto *Phi = F.createInstruction<PhiInstruction>(
+        false, *Entry, I32, llvm::ArrayRef<PhiInstruction::Incoming>(Inc2));
+    Phi->removeIncoming(1);
+    ASSERT_EQ(Phi->getNumIncoming(), 1u);
+    EXPECT_EQ(Phi->getIncomingBlock(0), B0);
+    EXPECT_EQ(Phi->getIncomingValue(0), V0);
+  }
+  {
+    PhiInstruction::Incoming Inc3[] = {{B0, V0}, {B1, V1}, {B2, V2}};
+    auto *Phi = F.createInstruction<PhiInstruction>(
+        false, *Entry, I32, llvm::ArrayRef<PhiInstruction::Incoming>(Inc3));
+    Phi->removeIncoming(0);
+    ASSERT_EQ(Phi->getNumIncoming(), 2u);
+    EXPECT_EQ(Phi->getIncomingBlock(0), B1);
+    EXPECT_EQ(Phi->getIncomingValue(0), V1);
+    EXPECT_EQ(Phi->getIncomingBlock(1), B2);
+    EXPECT_EQ(Phi->getIncomingValue(1), V2);
+  }
+  F.detachFromPool();
+}
+
+TEST(MIRPeepholeLitmus, ConstBrIfStripsPhiOnLiveDropTarget) {
+  CompileContext Ctx;
+  MType *I32 = &CompileContext::I32Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *Left = F.createBasicBlock();
+  MBasicBlock *Merge = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(Left);
+  F.appendBlock(Merge);
+
+  auto *Zero = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I32, *MConstantInt::get(Ctx, *I32, 0));
+  auto *FromEntry = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I32, *MConstantInt::get(Ctx, *I32, 1));
+  F.createInstruction<BrIfInstruction>(true, *Entry, Ctx, Zero, Merge, Left);
+  Entry->addSuccessor(Merge);
+  Entry->addSuccessor(Left);
+
+  auto *FromLeft = F.createInstruction<ConstantInstruction>(
+      false, *Left, I32, *MConstantInt::get(Ctx, *I32, 42));
+  F.createInstruction<BrInstruction>(true, *Left, Ctx, Merge);
+  Left->addSuccessor(Merge);
+
+  PhiInstruction::Incoming Inc[] = {{Entry, FromEntry}, {Left, FromLeft}};
+  auto *Phi = F.createInstruction<PhiInstruction>(
+      false, *Merge, I32, llvm::ArrayRef<PhiInstruction::Incoming>(Inc));
+  Merge->addStatement(Phi);
+  F.createInstruction<ReturnInstruction>(true, *Merge, I32, Phi);
+
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+
+  ASSERT_EQ(Phi->getNumIncoming(), 1u);
+  EXPECT_EQ(Phi->getIncomingBlock(0), Left);
+  EXPECT_EQ(Phi->getIncomingValue(0), FromLeft);
+  EXPECT_EQ(dumpFunc(F).find("br_if"), std::string::npos) << dumpFunc(F);
+  F.detachFromPool();
+}
+
+TEST(MIRPeepholeLitmus, ConstZeroBrIfWithoutFalseFallsThrough) {
+  CompileContext Ctx;
+  MType *I32 = &CompileContext::I32Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *Trap = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(Trap);
+
+  auto *Zero = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I32, *MConstantInt::get(Ctx, *I32, 0));
+  F.createInstruction<BrIfInstruction>(true, *Entry, Ctx, Zero, Trap);
+  Entry->addSuccessor(Trap);
+  auto *Seven = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I32, *MConstantInt::get(Ctx, *I32, 7));
+  F.createInstruction<ReturnInstruction>(true, *Entry, I32, Seven);
+
+  auto *Z = F.createInstruction<ConstantInstruction>(
+      false, *Trap, I32, *MConstantInt::get(Ctx, *I32, 0));
+  F.createInstruction<ReturnInstruction>(true, *Trap, I32, Z);
+
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  DeadMBasicBlockElim DCE;
+  DCE.runOnMFunction(F);
+
+  const std::string Dump = dumpFunc(F);
+  EXPECT_EQ(Dump.find("br_if"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 7"), std::string::npos) << Dump;
+  EXPECT_TRUE(Trap->empty()) << Dump;
+  F.detachFromPool();
+}
+
 TEST(MIRPeepholeLitmus, ConstBrIfBecomesUncondAndKillsDeadBlock) {
   CompileContext Ctx;
   MType *I32 = &CompileContext::I32Type;
@@ -308,6 +441,7 @@ TEST(MIRPeepholeLitmus, ConstBrIfBecomesUncondAndKillsDeadBlock) {
   EXPECT_EQ(Dump.find("br_if"), std::string::npos) << Dump;
   EXPECT_NE(Dump.find("br @1"), std::string::npos) << Dump;
   EXPECT_TRUE(BB2->empty()) << Dump;
+  F.detachFromPool();
 }
 
 TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
@@ -344,8 +478,10 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "f13", 0), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "f13", 1), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "f15", 0), 5);
+  EXPECT_EQ(callI32(*RT, *Inst, "const_br_if_fallthrough", 0), 1);
 }
 
+#ifdef ZEN_ENABLE_SINGLEPASS_JIT
 TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   auto Bytes = loadPeepholeWasm();
   ASSERT_FALSE(Bytes.empty());
@@ -376,6 +512,7 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
     }
   }
 }
+#endif
 
 TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
   auto Bytes = loadPeepholeWasm();
@@ -419,7 +556,9 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
             !tryCallI32(*RT, *Inst, "f9", 9, V) || V != 9 ||
             !tryCallI32(*RT, *Inst, "f12", 16, V) || V != 1 ||
             !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
-            !tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5) {
+            !tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5 ||
+            !tryCallI32(*RT, *Inst, "const_br_if_fallthrough", 0, V) ||
+            V != 1) {
           Failures++;
           return;
         }

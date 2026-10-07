@@ -7,6 +7,7 @@
 #include "compiler/mir/constants.h"
 #include "compiler/mir/instruction.h"
 #include "compiler/mir/instructions.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Support/Casting.h"
 
 using namespace COMPILER;
@@ -27,18 +28,13 @@ void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
   CurBB = &BB;
   // Snapshot statements: rewrite may replace/erase the current terminator.
   CompileVector<MInstruction *> Stmts(F->getContext().MemPool);
+  llvm::SmallPtrSet<MInstruction *, 32> InBlock;
   for (MInstruction *Inst : BB) {
     Stmts.push_back(Inst);
+    InBlock.insert(Inst);
   }
   for (MInstruction *Inst : Stmts) {
-    bool StillInBlock = false;
-    for (MInstruction *Cur : BB) {
-      if (Cur == Inst) {
-        StillInBlock = true;
-        break;
-      }
-    }
-    if (!StillInBlock) {
+    if (!InBlock.contains(Inst)) {
       continue;
     }
     for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
@@ -52,7 +48,13 @@ void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
       }
     }
     if (auto *BrIf = llvm::dyn_cast<BrIfInstruction>(Inst)) {
-      foldConstBrIf(BB, *BrIf);
+      if (foldConstBrIf(BB, *BrIf)) {
+        InBlock.erase(BrIf);
+        InBlock.clear();
+        for (MInstruction *Cur : BB) {
+          InBlock.insert(Cur);
+        }
+      }
     }
   }
 }
@@ -171,11 +173,17 @@ MInstruction *MIRPeephole::foldSelectICmp(MInstruction *Inst) {
 
   MInstruction *Cond = Sel->getOperand<0>();
   if (TrueVal == FalseVal) {
+    if (!isPureExpr(Sel)) {
+      return nullptr;
+    }
     const bool Eq = TrueVal == KeyVal;
     const bool Result = Pred == CmpInstruction::ICMP_EQ ? Eq : !Eq;
     return makeIntConst(Cmp->getType(), Result ? 1 : 0);
   }
   if (KeyVal != TrueVal && KeyVal != FalseVal) {
+    if (!isPureExpr(Sel)) {
+      return nullptr;
+    }
     return makeIntConst(Cmp->getType(),
                         Pred == CmpInstruction::ICMP_EQ ? 0 : 1);
   }
@@ -198,13 +206,19 @@ MInstruction *MIRPeephole::foldSelectConstCond(MInstruction *Inst) {
   MInstruction *TrueV = Sel->getOperand<1>();
   MInstruction *FalseV = Sel->getOperand<2>();
   if (TrueV == FalseV) {
-    return TrueV;
+    // Dropping Cond is only safe if it has no effects.
+    return isPureExpr(Cond) ? TrueV : nullptr;
   }
   llvm::APInt CondVal;
   if (!matchIntConst(Cond, CondVal)) {
     return nullptr;
   }
-  return CondVal.isZero() ? FalseV : TrueV;
+  MInstruction *Keep = CondVal.isZero() ? FalseV : TrueV;
+  MInstruction *Drop = CondVal.isZero() ? TrueV : FalseV;
+  if (!isPureExpr(Drop)) {
+    return nullptr;
+  }
+  return Keep;
 }
 
 MInstruction *MIRPeephole::foldConstCmp(MInstruction *Inst) {
@@ -214,7 +228,7 @@ MInstruction *MIRPeephole::foldConstCmp(MInstruction *Inst) {
   }
   MInstruction *LHS = Cmp->getOperand<0>();
   MInstruction *RHS = Cmp->getOperand<1>();
-  if (LHS == RHS && LHS->getType()->isInteger()) {
+  if (LHS == RHS && LHS->getType()->isInteger() && isPureExpr(LHS)) {
     switch (Cmp->getPredicate()) {
     case CmpInstruction::ICMP_EQ:
     case CmpInstruction::ICMP_UGE:
@@ -306,42 +320,52 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
 
   auto same = [&](MInstruction *A, MInstruction *B) { return A == B; };
 
+  // Folds that return a constant or one operand discard the other
+  // subtree. Refuse that unless the discarded tree is pure (no load /
+  // call / wasm-check). Frontend nesting currently avoids this, but the
+  // pass must not rely on that discipline.
   switch (Opc) {
   case OP_add:
-    if (isIntZero(RHS)) {
+    if (isIntZero(RHS) && isPureExpr(RHS)) {
       return LHS;
     }
-    if (isIntZero(LHS)) {
+    if (isIntZero(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
     break;
   case OP_sub:
-    if (isIntZero(RHS)) {
+    if (isIntZero(RHS) && isPureExpr(RHS)) {
       return LHS;
     }
-    if (same(LHS, RHS)) {
+    if (same(LHS, RHS) && isPureExpr(LHS)) {
       return makeIntConst(Ty, 0);
     }
     break;
   case OP_mul:
-    if (isIntZero(LHS) || isIntZero(RHS)) {
+    if (isIntZero(LHS) && isPureExpr(RHS)) {
       return makeIntConst(Ty, 0);
     }
-    if (isIntOne(RHS)) {
+    if (isIntZero(RHS) && isPureExpr(LHS)) {
+      return makeIntConst(Ty, 0);
+    }
+    if (isIntOne(RHS) && isPureExpr(RHS)) {
       return LHS;
     }
-    if (isIntOne(LHS)) {
+    if (isIntOne(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
     break;
   case OP_and:
-    if (isIntZero(LHS) || isIntZero(RHS)) {
+    if (isIntZero(LHS) && isPureExpr(RHS)) {
       return makeIntConst(Ty, 0);
     }
-    if (isIntAllOnes(RHS)) {
+    if (isIntZero(RHS) && isPureExpr(LHS)) {
+      return makeIntConst(Ty, 0);
+    }
+    if (isIntAllOnes(RHS) && isPureExpr(RHS)) {
       return LHS;
     }
-    if (isIntAllOnes(LHS)) {
+    if (isIntAllOnes(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
     if (same(LHS, RHS)) {
@@ -349,27 +373,34 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     }
     // x & (x | y) -> x ; (x | y) & x -> x
     if (RHS->getOpcode() == OP_or &&
-        (RHS->getOperand<0>() == LHS || RHS->getOperand<1>() == LHS)) {
+        (RHS->getOperand<0>() == LHS || RHS->getOperand<1>() == LHS) &&
+        isPureExpr(RHS)) {
       return LHS;
     }
     if (LHS->getOpcode() == OP_or &&
-        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS)) {
+        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS) &&
+        isPureExpr(LHS)) {
       return RHS;
     }
     // (x & y) & y -> x & y
     if (LHS->getOpcode() == OP_and &&
-        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS)) {
+        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS) &&
+        isPureExpr(RHS)) {
       return LHS;
     }
     break;
   case OP_or:
-    if (isIntZero(RHS)) {
+    if (isIntZero(RHS) && isPureExpr(RHS)) {
       return LHS;
     }
-    if (isIntZero(LHS)) {
+    if (isIntZero(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
-    if (isIntAllOnes(LHS) || isIntAllOnes(RHS)) {
+    if (isIntAllOnes(LHS) && isPureExpr(RHS)) {
+      return makeIntConst(
+          Ty, llvm::APInt::getAllOnes(Ty->getBitWidth()).getZExtValue());
+    }
+    if (isIntAllOnes(RHS) && isPureExpr(LHS)) {
       return makeIntConst(
           Ty, llvm::APInt::getAllOnes(Ty->getBitWidth()).getZExtValue());
     }
@@ -378,26 +409,29 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     }
     // x | (x & y) -> x
     if (RHS->getOpcode() == OP_and &&
-        (RHS->getOperand<0>() == LHS || RHS->getOperand<1>() == LHS)) {
+        (RHS->getOperand<0>() == LHS || RHS->getOperand<1>() == LHS) &&
+        isPureExpr(RHS)) {
       return LHS;
     }
     if (LHS->getOpcode() == OP_and &&
-        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS)) {
+        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS) &&
+        isPureExpr(LHS)) {
       return RHS;
     }
     if (LHS->getOpcode() == OP_or &&
-        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS)) {
+        (LHS->getOperand<0>() == RHS || LHS->getOperand<1>() == RHS) &&
+        isPureExpr(RHS)) {
       return LHS;
     }
     break;
   case OP_xor:
-    if (isIntZero(RHS)) {
+    if (isIntZero(RHS) && isPureExpr(RHS)) {
       return LHS;
     }
-    if (isIntZero(LHS)) {
+    if (isIntZero(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
-    if (same(LHS, RHS)) {
+    if (same(LHS, RHS) && isPureExpr(LHS)) {
       return makeIntConst(Ty, 0);
     }
     break;
@@ -416,6 +450,37 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
   return nullptr;
 }
 
+void MIRPeephole::removeEdgeAndPhiIncomings(MBasicBlock &From,
+                                            MBasicBlock *To) {
+  if (To == nullptr) {
+    return;
+  }
+  bool IsSucc = false;
+  for (MBasicBlock *Succ : From.successors()) {
+    if (Succ == To) {
+      IsSucc = true;
+      break;
+    }
+  }
+  if (!IsSucc) {
+    return;
+  }
+  From.removeSuccessor(To);
+  // Drop may stay reachable via other preds (shared EVM JUMPDEST).
+  // Strip this edge's phi incomings so pred-count == incoming-count.
+  for (MInstruction *Inst : *To) {
+    auto *Phi = llvm::dyn_cast<PhiInstruction>(Inst);
+    if (!Phi) {
+      break;
+    }
+    for (int J = static_cast<int>(Phi->getNumIncoming()) - 1; J >= 0; --J) {
+      if (Phi->getIncomingBlock(static_cast<size_t>(J)) == &From) {
+        Phi->removeIncoming(static_cast<size_t>(J));
+      }
+    }
+  }
+}
+
 bool MIRPeephole::foldConstBrIf(MBasicBlock &BB, BrIfInstruction &BrIf) {
   llvm::APInt CondVal;
   if (!matchIntConst(BrIf.getOperand<0>(), CondVal)) {
@@ -429,16 +494,16 @@ bool MIRPeephole::foldConstBrIf(MBasicBlock &BB, BrIfInstruction &BrIf) {
   MBasicBlock *Drop = Taken ? FalseBB : TrueBB;
 
   if (Keep == nullptr) {
-    // br_if 0, T  (no false) → fall through
+    // br_if 0, T (no false) → fall through to the next statement.
     if (Drop) {
-      BB.removeSuccessor(Drop);
+      removeEdgeAndPhiIncomings(BB, Drop);
     }
     BB.eraseStatement(&BrIf);
     return true;
   }
 
   if (Drop && Drop != Keep) {
-    BB.removeSuccessor(Drop);
+    removeEdgeAndPhiIncomings(BB, Drop);
   }
 
   BrInstruction *NewBr =
@@ -491,6 +556,28 @@ bool MIRPeephole::isIntOne(const MInstruction *Inst) {
 bool MIRPeephole::isIntAllOnes(const MInstruction *Inst) {
   llvm::APInt V;
   return matchIntConst(Inst, V) && V.isAllOnes();
+}
+
+bool MIRPeephole::isPureExpr(const MInstruction *Inst) {
+  if (Inst == nullptr) {
+    return true;
+  }
+  switch (Inst->getKind()) {
+  case MInstruction::LOAD:
+  case MInstruction::STORE:
+  case MInstruction::CALL:
+  case MInstruction::WASM_CHECK:
+  case MInstruction::PHI:
+    return false;
+  default:
+    break;
+  }
+  for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
+    if (!isPureExpr(Inst->getOperand(I))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool MIRPeephole::evalICmp(CmpInstruction::Predicate Pred,

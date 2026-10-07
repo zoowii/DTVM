@@ -98,8 +98,11 @@ None. No migration.
 - **Trap / gas**: never fold `div`/`rem` (zero divisor). Constant
   `br_if` to a trap block is rewritten only when the condition is a
   real integer constant.
-- **Phi / CFG**: folding a terminator updates successors; dead-block
-  elim keeps phi incoming lists matched to live predecessors so
-  `MVerifier` still holds.
+- **Phi / CFG**: folding a terminator updates successors **and** strips
+  matching phi incomings on a still-live drop target (shared EVM
+  JUMPDEST). `removeIncoming` compact uses a fixed old-N operand-slot
+  base so decrementing `_operand_num` cannot remap remaining values.
+  Dead-block elim also dedupes dead predecessors before
+  `removePredecessor`. `MVerifier` still holds.
 - **Parallel compile**: the pass is function-local and uses the
   per-function `CompileMemPool`; no shared mutable state.

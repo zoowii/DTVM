@@ -9,6 +9,7 @@
 #include "compiler/mir/module.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/Support/Casting.h"
+#include <algorithm>
 #include <queue>
 #include <vector>
 
@@ -51,6 +52,9 @@ public:
           DeadPreds.push_back(Pred);
         }
       }
+      std::sort(DeadPreds.begin(), DeadPreds.end());
+      DeadPreds.erase(std::unique(DeadPreds.begin(), DeadPreds.end()),
+                      DeadPreds.end());
       for (MBasicBlock *Pred : DeadPreds) {
         BB->removePredecessor(Pred);
       }

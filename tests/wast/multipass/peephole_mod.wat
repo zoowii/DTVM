@@ -117,4 +117,10 @@
   (func (export "f13") (param i32) (result i32) (i32.eqz (i32.clz (i32.or (local.get 0) (i32.const 0x80000000)))))
   (func (export "f14") (param i32) (result i32) (i32.eq (i32.ctz (local.get 0)) (i32.const 4)))
   (func (export "f15") (param i32) (result i32) (i32.add (i32.const 2) (i32.const 3)))
+  (func (export "const_br_if_fallthrough") (param i32) (result i32)
+    (local i32)
+    (loop
+      (local.set 1 (i32.const 1))
+      (br_if 0 (i32.const 0)))
+    (local.get 1))
 )

@@ -56,6 +56,13 @@
     (if (result i32) (i32.const 0)
       (then (i32.add (local.get 0) (i32.const 1)))
       (else (i32.add (local.get 0) (i32.const 2)))))
+  ;; W2: const-0 br_if with no taken edge — fall through out of the loop.
+  (func (export "const_br_if_fallthrough") (result i32)
+    (local i32)
+    (loop
+      (local.set 0 (i32.const 1))
+      (br_if 0 (i32.const 0)))
+    (local.get 0))
 )
 
 (assert_return (invoke "ctz_eqz" (i32.const 0)) (i32.const 0))
@@ -111,3 +118,4 @@
 
 (assert_return (invoke "const_if_true" (i32.const 10)) (i32.const 11))
 (assert_return (invoke "const_if_false" (i32.const 10)) (i32.const 12))
+(assert_return (invoke "const_br_if_fallthrough") (i32.const 1))

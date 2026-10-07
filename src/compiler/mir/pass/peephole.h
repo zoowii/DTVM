@@ -40,6 +40,10 @@ private:
   static bool isIntAllOnes(const MInstruction *Inst);
   static bool evalICmp(CmpInstruction::Predicate Pred, const llvm::APInt &LHS,
                        const llvm::APInt &RHS);
+  // Loads / calls / wasm-checks are expressions; discarding them can
+  // drop gas, bounds, or instance accesses. Only discard proven-pure trees.
+  static bool isPureExpr(const MInstruction *Inst);
+  static void removeEdgeAndPhiIncomings(MBasicBlock &From, MBasicBlock *To);
 };
 
 } // namespace COMPILER
