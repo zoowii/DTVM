@@ -106,7 +106,8 @@ None. No migration.
   `removePredecessor`. Pred/succ lists use swap-pop (not `vector::erase`)
   so Release+ASan does not memmove into the LLVM bump red zone.
   `MInstruction::freeMem` uses `_operand_cap` after a live-count shrink.
-  DCE reachability uses a host `std::queue` (not `CompileQueue` on the
-  bump slab). `MVerifier` still holds.
+  DCE reachability uses a host `std::queue`. Pred/succ lists are
+  `SmallVector<*,4>` (not bump `CompileVector`) so Release+ASan does not
+  poison neighboring IR. `MVerifier` still holds.
 - **Parallel compile**: the pass is function-local and uses the
   per-function `CompileMemPool`; no shared mutable state.

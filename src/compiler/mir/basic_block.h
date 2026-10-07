@@ -5,6 +5,7 @@
 
 #include "compiler/context.h"
 #include "compiler/mir/instruction.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace COMPILER {
 class MFunction;
@@ -84,10 +85,11 @@ public:
 
   MFunction &getParent() const { return Parent; }
 
-  using PredIterator = CompileVector<MBasicBlock *>::iterator;
-  using ConstPredIterator = CompileVector<MBasicBlock *>::const_iterator;
-  using SuccIterator = CompileVector<MBasicBlock *>::iterator;
-  using ConstSuccIterator = CompileVector<MBasicBlock *>::const_iterator;
+  using BlockList = llvm::SmallVector<MBasicBlock *, 4>;
+  using PredIterator = BlockList::iterator;
+  using ConstPredIterator = BlockList::const_iterator;
+  using SuccIterator = BlockList::iterator;
+  using ConstSuccIterator = BlockList::const_iterator;
 
   llvm::iterator_range<SuccIterator> predecessors() {
     return llvm::make_range(Predecessors.begin(), Predecessors.end());
@@ -122,12 +124,10 @@ public:
 #endif // ZEN_ENABLE_EVM
 
 private:
-  // CompileVector lives in the LLVM bump slab. `vector::erase` memmove of
-  // the tail can speculatively read the red zone after an 8-byte first
-  // allocation (Release+ASan). Pred/succ order is not a contract — phi
-  // matching is by block identity — so swap-pop is enough.
-  static void eraseUnordered(CompileVector<MBasicBlock *> &Vec,
-                             CompileVector<MBasicBlock *>::iterator It) {
+  // Host SmallVector, not CompileVector: bump-slab std::vector + LLVM
+  // ASan red zones / container annotations poison neighboring IR
+  // (Release+ASan CI). Pred/succ order is not a contract.
+  static void eraseUnordered(BlockList &Vec, BlockList::iterator It) {
     if (It == Vec.end()) {
       return;
     }
@@ -140,8 +140,8 @@ private:
   uint32_t BBIdx = 0;
   MFunction &Parent;
   CompileList<MInstruction *> Statements;
-  CompileVector<MBasicBlock *> Predecessors;
-  CompileVector<MBasicBlock *> Successors;
+  BlockList Predecessors;
+  BlockList Successors;
 #ifdef ZEN_ENABLE_EVM
   bool JumpDestBBFlag = false;
 #ifdef ZEN_ENABLE_LINUX_PERF

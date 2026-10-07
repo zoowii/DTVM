@@ -8,13 +8,7 @@ using namespace COMPILER;
 
 MBasicBlock::MBasicBlock(MFunction &P)
     : ContextObject(P.getContext()), Parent(P),
-      Statements(P.getContext().MemPool), Predecessors(P.getContext().MemPool),
-      Successors(P.getContext().MemPool) {
-  // First push_back is an 8-byte bump alloc; LLVM ASan keeps a red zone
-  // after it. Reserve so pred/succ growth never sits on that edge.
-  Predecessors.reserve(4);
-  Successors.reserve(4);
-}
+      Statements(P.getContext().MemPool) {}
 
 MBasicBlock::MBasicBlock(uint32_t Idx, MFunction &P) : MBasicBlock(P) {
   BBIdx = Idx;
@@ -83,7 +77,7 @@ void MBasicBlock::replaceSuccessor(MBasicBlock *Old, MBasicBlock *New) {
 }
 
 static void printBlockList(const std::string &ListName,
-                           const CompileVector<MBasicBlock *> &Blocks,
+                           const MBasicBlock::BlockList &Blocks,
                            llvm::raw_ostream &OS) {
   if (Blocks.empty()) {
     return;
