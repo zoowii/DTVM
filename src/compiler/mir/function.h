@@ -75,6 +75,20 @@ public:
     clearInstructions();
   }
 
+  // Drop IR pointers without walking bump-allocated objects. The mempool
+  // reclaims them when the CompileContext dies. Release+ASan otherwise
+  // hits LLVM bump red zones in ~MInstruction / ~CompileVector after a
+  // rewrite. Debug must not use this: deallocate() is what clears
+  // AllocSizes.
+  void detachFromPool() {
+    BasicBlocks.clear();
+    Variables.clear();
+    Instructions.clear();
+    ExceptionSetBBs.clear();
+    ExceptionHandlingBB = nullptr;
+    ExceptionReturnBB = nullptr;
+  }
+
   // Only create basic block but not insert it into function
   MBasicBlock *createBasicBlock() { return newObject<MBasicBlock>(*this); }
 
