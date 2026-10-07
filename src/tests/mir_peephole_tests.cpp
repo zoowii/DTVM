@@ -91,8 +91,6 @@ struct MirBuilder {
     DeadMBasicBlockElim DCE;
     DCE.runOnMFunction(F);
   }
-
-  ~MirBuilder() { F.detachFromPool(); }
 };
 
 std::vector<uint8_t> loadPeepholeWasm() {
@@ -313,7 +311,6 @@ TEST(PhiIncomingLayout, RemoveIncomingKeepsRemainingPairs) {
     EXPECT_EQ(Phi->getIncomingBlock(1), B2);
     EXPECT_EQ(Phi->getIncomingValue(1), V2);
   }
-  F.detachFromPool();
 }
 
 TEST(MIRPeepholeLitmus, ConstBrIfStripsPhiOnLiveDropTarget) {
@@ -354,7 +351,6 @@ TEST(MIRPeepholeLitmus, ConstBrIfStripsPhiOnLiveDropTarget) {
   EXPECT_EQ(Phi->getIncomingBlock(0), Left);
   EXPECT_EQ(Phi->getIncomingValue(0), FromLeft);
   EXPECT_EQ(dumpFunc(F).find("br_if"), std::string::npos) << dumpFunc(F);
-  F.detachFromPool();
 }
 
 TEST(MIRPeepholeLitmus, ConstZeroBrIfWithoutFalseFallsThrough) {
@@ -388,7 +384,6 @@ TEST(MIRPeepholeLitmus, ConstZeroBrIfWithoutFalseFallsThrough) {
   EXPECT_EQ(Dump.find("br_if"), std::string::npos) << Dump;
   EXPECT_NE(Dump.find("const.i32 7"), std::string::npos) << Dump;
   EXPECT_TRUE(Trap->empty()) << Dump;
-  F.detachFromPool();
 }
 
 TEST(MIRPeepholeLitmus, ConstBrIfBecomesUncondAndKillsDeadBlock) {
@@ -441,7 +436,6 @@ TEST(MIRPeepholeLitmus, ConstBrIfBecomesUncondAndKillsDeadBlock) {
   EXPECT_EQ(Dump.find("br_if"), std::string::npos) << Dump;
   EXPECT_NE(Dump.find("br @1"), std::string::npos) << Dump;
   EXPECT_TRUE(BB2->empty()) << Dump;
-  F.detachFromPool();
 }
 
 TEST(MIRPeepholeWasm, MultipassMatchesExpected) {

@@ -106,6 +106,9 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
   remaining predecessors so a second `MVerifier` still holds.
   `PhiInstruction::removeIncoming` must compact operand slots against a
   fixed old-N base; decrementing `_operand_num` slides the slot window.
+  `freeMem` must use `_operand_cap` (allocation width), not the live
+  `_operand_num`. Pred/succ removal is swap-pop: `vector::erase` on a
+  bump-allocated `CompileVector` can memmove into the LLVM ASan red zone.
 
 ### EVM JIT Invariants
 

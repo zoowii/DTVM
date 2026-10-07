@@ -103,6 +103,9 @@ None. No migration.
   JUMPDEST). `removeIncoming` compact uses a fixed old-N operand-slot
   base so decrementing `_operand_num` cannot remap remaining values.
   Dead-block elim also dedupes dead predecessors before
-  `removePredecessor`. `MVerifier` still holds.
+  `removePredecessor`. Pred/succ lists use swap-pop (not `vector::erase`)
+  so Release+ASan does not memmove into the LLVM bump red zone.
+  `MInstruction::freeMem` uses `_operand_cap` after a live-count shrink.
+  `MVerifier` still holds.
 - **Parallel compile**: the pass is function-local and uses the
   per-function `CompileMemPool`; no shared mutable state.

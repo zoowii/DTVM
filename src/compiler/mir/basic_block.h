@@ -122,6 +122,21 @@ public:
 #endif // ZEN_ENABLE_EVM
 
 private:
+  // CompileVector lives in the LLVM bump slab. `vector::erase` memmove of
+  // the tail can speculatively read the red zone after an 8-byte first
+  // allocation (Release+ASan). Pred/succ order is not a contract — phi
+  // matching is by block identity — so swap-pop is enough.
+  static void eraseUnordered(CompileVector<MBasicBlock *> &Vec,
+                             CompileVector<MBasicBlock *>::iterator It) {
+    if (It == Vec.end()) {
+      return;
+    }
+    if (It + 1 != Vec.end()) {
+      *It = Vec.back();
+    }
+    Vec.pop_back();
+  }
+
   uint32_t BBIdx = 0;
   MFunction &Parent;
   CompileList<MInstruction *> Statements;

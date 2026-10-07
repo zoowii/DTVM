@@ -9,7 +9,12 @@ using namespace COMPILER;
 MBasicBlock::MBasicBlock(MFunction &P)
     : ContextObject(P.getContext()), Parent(P),
       Statements(P.getContext().MemPool), Predecessors(P.getContext().MemPool),
-      Successors(P.getContext().MemPool) {}
+      Successors(P.getContext().MemPool) {
+  // First push_back is an 8-byte bump alloc; LLVM ASan keeps a red zone
+  // after it. Reserve so pred/succ growth never sits on that edge.
+  Predecessors.reserve(4);
+  Successors.reserve(4);
+}
 
 MBasicBlock::MBasicBlock(uint32_t Idx, MFunction &P) : MBasicBlock(P) {
   BBIdx = Idx;
@@ -28,7 +33,7 @@ void MBasicBlock::removeSuccessor(MBasicBlock *Succ) {
 void MBasicBlock::removeSuccessor(SuccIterator It) {
   ZEN_ASSERT(It != Successors.end());
   (*It)->removePredecessor(this);
-  Successors.erase(It);
+  eraseUnordered(Successors, It);
 }
 
 void MBasicBlock::addPredecessor(MBasicBlock *Pred) {
@@ -38,7 +43,7 @@ void MBasicBlock::addPredecessor(MBasicBlock *Pred) {
 void MBasicBlock::removePredecessor(MBasicBlock *Pred) {
   auto It = std::find(Predecessors.begin(), Predecessors.end(), Pred);
   ZEN_ASSERT(It != Predecessors.end());
-  Predecessors.erase(It);
+  eraseUnordered(Predecessors, It);
 }
 
 void MBasicBlock::replaceSuccessor(MBasicBlock *Old, MBasicBlock *New) {
