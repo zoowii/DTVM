@@ -10,8 +10,8 @@
 #include "compiler/mir/instruction.h"
 #include "compiler/mir/opcode.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
 #include <cstddef>
-#include <vector>
 
 namespace COMPILER {
 
@@ -253,7 +253,10 @@ private:
     }
   }
 
-  std::vector<MBasicBlock *> Blocks;
+  // Host SmallVector, not CompileVector: bump-slab std::vector +
+  // LLVM ASan red zones. Inline capacity covers typical phi arity so
+  // Release litmus detachFromPool does not leak a heap buffer.
+  llvm::SmallVector<MBasicBlock *, 4> Blocks;
 };
 
 class DassignInstruction : public UnaryInstruction {
