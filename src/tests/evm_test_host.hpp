@@ -590,8 +590,8 @@ public:
         ParentResult.gas_left = Msg.gas;
       }
       if (FeesPrepaidInTx && Msg.kind == EVMC_CALL &&
-          toUint256Bytes(Msg.value) != intx::uint256{0} &&
-          ParentResult.status_code == EVMC_SUCCESS &&
+          toUint256Bytes(Msg.value) !=
+              intx::uint256{0} &&ParentResult.status_code == EVMC_SUCCESS &&
           ParentResult.gas_left < Msg.gas) {
         this->CallStipendRefund += CALL_GAS_STIPEND;
       }

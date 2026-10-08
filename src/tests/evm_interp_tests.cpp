@@ -2178,7 +2178,8 @@ TEST(EVMStateSaveLoad, OversizedUint256BalanceDoesNotAbort) {
 }
 
 TEST(EVMStateSaveLoad, OversizedUint256GasPriceDoesNotAbort) {
-  const std::string FilePath = "/tmp/dtvm_test_oversized_uint256_gas_price.json";
+  const std::string FilePath =
+      "/tmp/dtvm_test_oversized_uint256_gas_price.json";
   std::ofstream Out(FilePath);
   Out << R"({
   "accounts": {},
@@ -2359,8 +2360,7 @@ TEST(EVMRegressionTest, Issue606_EmptyAccountInPrestateChargesNewAccountGas) {
       return 0;
     }
     H->setRuntime(RT.get());
-    auto ModRet =
-        RT->loadEVMModule("issue606", Code->data(), Code->size());
+    auto ModRet = RT->loadEVMModule("issue606", Code->data(), Code->size());
     EXPECT_TRUE(ModRet);
     if (!ModRet) {
       return 0;
@@ -2392,10 +2392,10 @@ TEST(EVMRegressionTest, Issue606_EmptyAccountInPrestateChargesNewAccountGas) {
     return storageSlotValue(*H, Contract, makeStorageKey(0x800105));
   };
 
-  const std::string ValueOneHex =
-      "5f5f5f5f600173a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7600ff15a6280010555";
-  const std::string ValueZeroHex =
-      "5f5f5f5f600073a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7600ff15a6280010555";
+  const std::string ValueOneHex = "5f5f5f5f600173a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7"
+                                  "a7a7a7a7a7600ff15a6280010555";
+  const std::string ValueZeroHex = "5f5f5f5f600073a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"
+                                   "7a7a7a7a7a7600ff15a6280010555";
 
   const intx::uint256 PresentValueOne =
       Run(true, ValueOneHex, common::RunMode::InterpMode);
@@ -2405,7 +2405,8 @@ TEST(EVMRegressionTest, Issue606_EmptyAccountInPrestateChargesNewAccountGas) {
       Run(true, ValueZeroHex, common::RunMode::InterpMode);
 
   EXPECT_EQ(PresentValueOne, intx::uint256{944681})
-      << "CALL value>0 to a JSON-present empty account must charge G_newaccount";
+      << "CALL value>0 to a JSON-present empty account must charge "
+         "G_newaccount";
   EXPECT_EQ(PresentValueOne, AbsentValueOne)
       << "present-empty and absent callee must agree when value>0";
   EXPECT_EQ(PresentValueZero, intx::uint256{976381})
@@ -2439,4 +2440,3 @@ TEST(EVMRegressionTest, Issue603_KeccakThenTwoMloadsMatchesInterpreter) {
                                EVMC_SUCCESS);
 }
 #endif
-
