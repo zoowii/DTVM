@@ -2093,3 +2093,350 @@ TEST(EVMStateSaveLoad, BlockTimestampAtInt64Max) {
 
   std::filesystem::remove(FilePath);
 }
+
+namespace {
+
+evmc::address makePrecompileAddress(uint8_t Id) {
+  evmc::address Addr{};
+  Addr.bytes[19] = Id;
+  return Addr;
+}
+
+evmc::bytes32 makeStorageKey(uint32_t Low) {
+  evmc::bytes32 Key{};
+  Key.bytes[29] = static_cast<uint8_t>((Low >> 16) & 0xff);
+  Key.bytes[30] = static_cast<uint8_t>((Low >> 8) & 0xff);
+  Key.bytes[31] = static_cast<uint8_t>(Low & 0xff);
+  return Key;
+}
+
+intx::uint256 storageSlotValue(const zen::evm::ZenMockedEVMHost &Host,
+                               const evmc::address &Addr,
+                               const evmc::bytes32 &Key) {
+  auto AccIt = Host.accounts.find(Addr);
+  if (AccIt == Host.accounts.end()) {
+    return 0;
+  }
+  auto SlotIt = AccIt->second.storage.find(Key);
+  if (SlotIt == AccIt->second.storage.end()) {
+    return 0;
+  }
+  return intx::be::load<intx::uint256>(SlotIt->second.current);
+}
+
+} // namespace
+
+// Regression: https://github.com/DTVMStack/DTVM/issues/601
+TEST(EVMStateSaveLoad, LoadedEmptyAccountIsNotAlive) {
+  const std::string FilePath = "/tmp/dtvm_test_empty_account_eip161.json";
+  std::ofstream Out(FilePath);
+  Out << R"({
+  "accounts": {
+    "a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7": {
+      "balance": "0000000000000000000000000000000000000000000000000000000000000000",
+      "code": "0x",
+      "nonce": 0,
+      "storage": {}
+    }
+  }
+})";
+  Out.close();
+
+  auto Host = std::make_unique<zen::evm::ZenMockedEVMHost>();
+  ASSERT_TRUE(zen::utils::loadState(*Host, FilePath));
+  const evmc::address EmptyAddr = evmc::literals::operator""_address(
+      "a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7");
+  ASSERT_NE(Host->accounts.find(EmptyAddr), Host->accounts.end());
+  EXPECT_FALSE(Host->account_exists(EmptyAddr))
+      << "explicit empty prestate account must be empty under EIP-161";
+
+  std::filesystem::remove(FilePath);
+}
+
+TEST(EVMStateSaveLoad, OversizedUint256BalanceDoesNotAbort) {
+  const std::string FilePath = "/tmp/dtvm_test_oversized_uint256_balance.json";
+  std::ofstream Out(FilePath);
+  Out << R"({
+  "accounts": {
+    "00000000000000000000000000000000000000f1": {
+      "balance": "00000000000000000000000000000000000000000000000000000000000000ffff",
+      "code": "0x5f00",
+      "nonce": 0,
+      "storage": {}
+    }
+  }
+})";
+  Out.close();
+
+  auto Host = std::make_unique<zen::evm::ZenMockedEVMHost>();
+  bool Loaded = true;
+  EXPECT_NO_THROW({ Loaded = zen::utils::loadState(*Host, FilePath); });
+  EXPECT_FALSE(Loaded)
+      << "uint256 hex longer than 32 bytes must fail loadState, not abort";
+
+  std::filesystem::remove(FilePath);
+}
+
+TEST(EVMStateSaveLoad, OversizedUint256GasPriceDoesNotAbort) {
+  const std::string FilePath = "/tmp/dtvm_test_oversized_uint256_gas_price.json";
+  std::ofstream Out(FilePath);
+  Out << R"({
+  "accounts": {},
+  "tx_context": {
+    "gas_price": "000000000000000000000000000000000000000000000000000000000000000001"
+  }
+})";
+  Out.close();
+
+  auto Host = std::make_unique<zen::evm::ZenMockedEVMHost>();
+  bool Loaded = true;
+  EXPECT_NO_THROW({ Loaded = zen::utils::loadState(*Host, FilePath); });
+  EXPECT_FALSE(Loaded);
+
+  std::filesystem::remove(FilePath);
+}
+
+// Regression: https://github.com/DTVMStack/DTVM/issues/602
+TEST(EVMRegressionTest, Issue602_KzgPrecompileIsWarmFromCancun) {
+  const evmc::address Kzg = makePrecompileAddress(0x0a);
+  const evmc::address Ecrecover = makePrecompileAddress(0x01);
+
+  auto CancunHost = std::make_unique<zen::evm::ZenMockedEVMHost>();
+  CancunHost->setRevision(EVMC_CANCUN);
+  EXPECT_EQ(CancunHost->access_account(Kzg), EVMC_ACCESS_WARM);
+  EXPECT_EQ(CancunHost->access_account(Ecrecover), EVMC_ACCESS_WARM);
+
+  auto ShanghaiHost = std::make_unique<zen::evm::ZenMockedEVMHost>();
+  ShanghaiHost->setRevision(EVMC_SHANGHAI);
+  EXPECT_EQ(ShanghaiHost->access_account(Kzg), EVMC_ACCESS_COLD);
+  EXPECT_EQ(ShanghaiHost->access_account(Ecrecover), EVMC_ACCESS_WARM);
+}
+
+TEST(EVMRegressionTest, Issue602_ExtcodesizeKzgMatchesWarmEcrecover) {
+  auto BytecodeKzg = zen::utils::fromHex("600a3b505a60005500");
+  auto BytecodeEcrecover = zen::utils::fromHex("60013b505a60005500");
+  ASSERT_TRUE(BytecodeKzg);
+  ASSERT_TRUE(BytecodeEcrecover);
+
+  const evmc::address Contract = evmc::literals::operator""_address(
+      "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
+  const evmc::address Sender = evmc::literals::operator""_address(
+      "1111111111111111111111111111111111111111");
+  constexpr uint64_t GasLimit = 1000000;
+  const intx::uint256 Balance = intx::uint256{0x1bc16d674ec80000};
+
+  auto Prepare = [&](zen::evm::ZenMockedEVMHost &Host,
+                     const std::vector<uint8_t> &Code) {
+    evmc::MockedAccount ContractAcc;
+    ContractAcc.code = evmc::bytes(Code.data(), Code.size());
+    ContractAcc.balance = intx::be::store<evmc::uint256be>(Balance);
+    Host.accounts[Contract] = ContractAcc;
+    evmc::MockedAccount SenderAcc;
+    SenderAcc.nonce = 1;
+    SenderAcc.balance = intx::be::store<evmc::uint256be>(Balance);
+    Host.accounts[Sender] = SenderAcc;
+    Host.tx_context.tx_gas_price =
+        intx::be::store<evmc::uint256be>(intx::uint256{1});
+    Host.tx_context.block_base_fee =
+        intx::be::store<evmc::uint256be>(intx::uint256{7});
+    Host.tx_context.tx_origin = Sender;
+  };
+
+  auto Run = [&](const std::vector<uint8_t> &Code,
+                 common::RunMode Mode) -> intx::uint256 {
+    auto Host = std::make_unique<zen::evm::ZenMockedEVMHost>();
+    Host->setRevision(EVMC_CANCUN);
+    Prepare(*Host, Code);
+    RuntimeConfig Config;
+    Config.Mode = Mode;
+    Config.EnableEvmGasMetering = true;
+    auto RT = Runtime::newEVMRuntime(Config, Host.get());
+    EXPECT_TRUE(RT);
+    if (!RT) {
+      return 0;
+    }
+    Host->setRuntime(RT.get());
+    auto ModRet = RT->loadEVMModule("issue602", Code.data(), Code.size());
+    EXPECT_TRUE(ModRet);
+    if (!ModRet) {
+      return 0;
+    }
+    Isolation *Iso = RT->createManagedIsolation();
+    EXPECT_TRUE(Iso);
+    if (!Iso) {
+      return 0;
+    }
+    evmc_message Msg{};
+    Msg.kind = EVMC_CALL;
+    Msg.gas = static_cast<int64_t>(GasLimit);
+    Msg.sender = Sender;
+    Msg.recipient = Contract;
+    Msg.code_address = Contract;
+    EXPECT_EQ(zen::utils::applyEvmUpfrontGas(*Host, Msg, GasLimit, EVMC_CANCUN),
+              zen::utils::EvmUpfrontGasResult::Success);
+    auto InstRet =
+        Iso->createEVMInstance(**ModRet, static_cast<uint64_t>(Msg.gas));
+    EXPECT_TRUE(InstRet);
+    if (!InstRet) {
+      return 0;
+    }
+    (*InstRet)->setRevision(EVMC_CANCUN);
+    evmc::Result Exec{};
+    RT->callEVMMain(**InstRet, Msg, Exec);
+    EXPECT_EQ(Exec.status_code, EVMC_SUCCESS);
+    return storageSlotValue(*Host, Contract, evmc::bytes32{});
+  };
+
+  const intx::uint256 GasAfterKzg =
+      Run(*BytecodeKzg, common::RunMode::InterpMode);
+  const intx::uint256 GasAfterEcrecover =
+      Run(*BytecodeEcrecover, common::RunMode::InterpMode);
+  EXPECT_EQ(GasAfterKzg, GasAfterEcrecover)
+      << "Cancun EXTCODESIZE(0x0a) must charge the warm 100, matching 0x01";
+#ifdef ZEN_ENABLE_MULTIPASS_JIT
+  EXPECT_EQ(Run(*BytecodeKzg, common::RunMode::MultipassMode), GasAfterKzg);
+  EXPECT_EQ(Run(*BytecodeEcrecover, common::RunMode::MultipassMode),
+            GasAfterEcrecover);
+#endif
+}
+
+// Regression: https://github.com/DTVMStack/DTVM/issues/606
+TEST(EVMRegressionTest, Issue606_EmptyAccountInPrestateChargesNewAccountGas) {
+  const evmc::address Contract = evmc::literals::operator""_address(
+      "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
+  const evmc::address Sender = evmc::literals::operator""_address(
+      "1111111111111111111111111111111111111111");
+  const evmc::address EmptyCallee = evmc::literals::operator""_address(
+      "a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7");
+  const intx::uint256 TwoEth = intx::uint256{0x1bc16d674ec80000};
+
+  auto Host = std::make_unique<zen::evm::ZenMockedEVMHost>();
+  evmc::MockedAccount EmptyAcc;
+  Host->accounts[EmptyCallee] = EmptyAcc;
+  EXPECT_FALSE(Host->account_exists(EmptyCallee))
+      << "JSON-present empty account must be empty under EIP-161";
+
+  auto Prepare = [&](zen::evm::ZenMockedEVMHost &H, bool PresentEmpty) {
+    H.accounts.clear();
+    evmc::MockedAccount ContractAcc;
+    ContractAcc.balance = intx::be::store<evmc::uint256be>(TwoEth);
+    H.accounts[Contract] = ContractAcc;
+    evmc::MockedAccount SenderAcc;
+    SenderAcc.nonce = 1;
+    SenderAcc.balance = intx::be::store<evmc::uint256be>(TwoEth);
+    H.accounts[Sender] = SenderAcc;
+    if (PresentEmpty) {
+      H.accounts[EmptyCallee] = evmc::MockedAccount{};
+    }
+    H.tx_context.tx_gas_price =
+        intx::be::store<evmc::uint256be>(intx::uint256{1});
+    H.tx_context.block_base_fee =
+        intx::be::store<evmc::uint256be>(intx::uint256{7});
+    H.tx_context.blob_base_fee =
+        intx::be::store<evmc::uint256be>(intx::uint256{1});
+    H.tx_context.block_prev_randao =
+        intx::be::store<evmc::uint256be>(intx::uint256{1});
+    H.tx_context.chain_id = intx::be::store<evmc::uint256be>(intx::uint256{1});
+    H.tx_context.tx_origin = Sender;
+  };
+
+  auto Run = [&](bool PresentEmpty, const std::string &CodeHex,
+                 common::RunMode Mode) -> intx::uint256 {
+    auto Code = zen::utils::fromHex(CodeHex);
+    EXPECT_TRUE(Code);
+    if (!Code) {
+      return 0;
+    }
+    auto H = std::make_unique<zen::evm::ZenMockedEVMHost>();
+    H->setRevision(EVMC_CANCUN);
+    Prepare(*H, PresentEmpty);
+    RuntimeConfig Config;
+    Config.Mode = Mode;
+    Config.EnableEvmGasMetering = true;
+    auto RT = Runtime::newEVMRuntime(Config, H.get());
+    EXPECT_TRUE(RT);
+    if (!RT) {
+      return 0;
+    }
+    H->setRuntime(RT.get());
+    auto ModRet =
+        RT->loadEVMModule("issue606", Code->data(), Code->size());
+    EXPECT_TRUE(ModRet);
+    if (!ModRet) {
+      return 0;
+    }
+    Isolation *Iso = RT->createManagedIsolation();
+    EXPECT_TRUE(Iso);
+    if (!Iso) {
+      return 0;
+    }
+    constexpr uint64_t GasLimit = 1000000;
+    evmc_message Msg{};
+    Msg.kind = EVMC_CALL;
+    Msg.gas = static_cast<int64_t>(GasLimit);
+    Msg.sender = Sender;
+    Msg.recipient = Contract;
+    Msg.code_address = Contract;
+    EXPECT_EQ(zen::utils::applyEvmUpfrontGas(*H, Msg, GasLimit, EVMC_CANCUN),
+              zen::utils::EvmUpfrontGasResult::Success);
+    auto InstRet =
+        Iso->createEVMInstance(**ModRet, static_cast<uint64_t>(Msg.gas));
+    EXPECT_TRUE(InstRet);
+    if (!InstRet) {
+      return 0;
+    }
+    (*InstRet)->setRevision(EVMC_CANCUN);
+    evmc::Result Exec{};
+    RT->callEVMMain(**InstRet, Msg, Exec);
+    EXPECT_EQ(Exec.status_code, EVMC_SUCCESS);
+    return storageSlotValue(*H, Contract, makeStorageKey(0x800105));
+  };
+
+  const std::string ValueOneHex =
+      "5f5f5f5f600173a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7600ff15a6280010555";
+  const std::string ValueZeroHex =
+      "5f5f5f5f600073a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7600ff15a6280010555";
+
+  const intx::uint256 PresentValueOne =
+      Run(true, ValueOneHex, common::RunMode::InterpMode);
+  const intx::uint256 AbsentValueOne =
+      Run(false, ValueOneHex, common::RunMode::InterpMode);
+  const intx::uint256 PresentValueZero =
+      Run(true, ValueZeroHex, common::RunMode::InterpMode);
+
+  EXPECT_EQ(PresentValueOne, intx::uint256{944681})
+      << "CALL value>0 to a JSON-present empty account must charge G_newaccount";
+  EXPECT_EQ(PresentValueOne, AbsentValueOne)
+      << "present-empty and absent callee must agree when value>0";
+  EXPECT_EQ(PresentValueZero, intx::uint256{976381})
+      << "value=0 must not charge G_newaccount";
+#ifdef ZEN_ENABLE_MULTIPASS_JIT
+  EXPECT_EQ(Run(true, ValueOneHex, common::RunMode::MultipassMode),
+            PresentValueOne);
+  EXPECT_EQ(Run(false, ValueOneHex, common::RunMode::MultipassMode),
+            AbsentValueOne);
+  EXPECT_EQ(Run(true, ValueZeroHex, common::RunMode::MultipassMode),
+            PresentValueZero);
+#endif
+}
+
+#ifdef ZEN_ENABLE_MULTIPASS_JIT
+// Regression: https://github.com/DTVMStack/DTVM/issues/603
+TEST(EVMRegressionTest, Issue603_KeccakThenTwoMloadsMatchesInterpreter) {
+  auto Bytecode = zen::utils::fromHex("6020610100205f515f51");
+  ASSERT_TRUE(Bytecode);
+  expectInterpMatchesMultipass("issue603_keccak_two_mloads", *Bytecode, {},
+                               EVMC_SUCCESS);
+
+  auto OffsetZero = zen::utils::fromHex("6000610100205f515f51");
+  ASSERT_TRUE(OffsetZero);
+  expectInterpMatchesMultipass("issue603_keccak_offset0_two_mloads",
+                               *OffsetZero, {}, EVMC_SUCCESS);
+
+  auto OneMload = zen::utils::fromHex("6020610100205f51");
+  ASSERT_TRUE(OneMload);
+  expectInterpMatchesMultipass("issue603_keccak_one_mload", *OneMload, {},
+                               EVMC_SUCCESS);
+}
+#endif
+

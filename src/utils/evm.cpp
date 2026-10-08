@@ -6,7 +6,10 @@
 #include "evm/evm.h"
 #include "host/evm/crypto.h"
 #include "intx/intx.hpp"
+#include "utils/logging.h"
 #include "utils/rlp_encoding.h"
+#include <cstdio>
+#include <exception>
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -331,6 +334,8 @@ bool loadState(evmc::MockedHost &Host, const std::string &FilePath) {
 
   Host.accounts.clear();
 
+  try {
+
   // Parse accounts
   if (Doc.HasMember("accounts") && Doc["accounts"].IsObject()) {
     const rapidjson::Value &Accounts = Doc["accounts"];
@@ -364,11 +369,17 @@ bool loadState(evmc::MockedHost &Host, const std::string &FilePath) {
         Account.code = zen::utils::hexToBytes(AccountData["code"].GetString());
       }
 
-      // Parse codehash
+      // Parse codehash. JSON-present empty accounts often omit it, leaving
+      // the default-zero MockedAccount codehash, which is not EMPTY_CODE_HASH.
+      bool CodehashSpecified = false;
       if (AccountData.HasMember("codehash") &&
           AccountData["codehash"].IsString()) {
         Account.codehash =
             zen::utils::parseBytes32(AccountData["codehash"].GetString());
+        CodehashSpecified = true;
+      }
+      if (!CodehashSpecified && Account.code.empty()) {
+        Account.codehash = zen::evm::EMPTY_CODE_HASH;
       }
 
       // Parse storage
@@ -528,6 +539,24 @@ bool loadState(evmc::MockedHost &Host, const std::string &FilePath) {
     }
   }
   return true;
+  } catch (const zen::common::Error &Err) {
+    Host.accounts.clear();
+    const std::string Detail = Err.getExtraMessage().empty()
+                                   ? Err.getFormattedMessage(false)
+                                   : Err.getExtraMessage();
+    ZEN_LOG_ERROR("failed to load state from file: %s: %s", FilePath.c_str(),
+                  Detail.c_str());
+    std::fprintf(stderr, "failed to load state from file: %s: %s\n",
+                 FilePath.c_str(), Detail.c_str());
+    return false;
+  } catch (const std::exception &Ex) {
+    Host.accounts.clear();
+    ZEN_LOG_ERROR("failed to load state from file: %s: %s", FilePath.c_str(),
+                  Ex.what());
+    std::fprintf(stderr, "failed to load state from file: %s: %s\n",
+                 FilePath.c_str(), Ex.what());
+    return false;
+  }
 }
 
 int64_t computeIntrinsicGas(evmc_revision Revision, evmc_call_kind MsgKind,
@@ -559,8 +588,8 @@ void prewarmTransactionAccounts(evmc::MockedHost &Host, evmc_revision Revision,
                                 const evmc::address &Sender,
                                 const evmc::address &Recipient,
                                 const evmc::address &Coinbase) {
-  // EIP-2929 (Berlin+): sender, recipient, and precompiled contracts
-  // (0x01-0x09) are always warm at the start of a transaction.
+  // EIP-2929 (Berlin+): sender, recipient, and revision-gated precompiled
+  // contracts are always warm at the start of a transaction.
   if (Revision >= EVMC_BERLIN) {
     Host.access_account(Sender);
     // Contract-creation transactions do not have a transaction-level recipient.
@@ -569,7 +598,9 @@ void prewarmTransactionAccounts(evmc::MockedHost &Host, evmc_revision Revision,
     if (Recipient != evmc::address{}) {
       Host.access_account(Recipient);
     }
-    for (int PrecompileIdx = 1; PrecompileIdx <= 9; ++PrecompileIdx) {
+    const int LastPrecompile = lastWarmPrecompileId(Revision);
+    for (int PrecompileIdx = 1; PrecompileIdx <= LastPrecompile;
+         ++PrecompileIdx) {
       evmc::address PrecompileAddr{};
       PrecompileAddr.bytes[19] = static_cast<uint8_t>(PrecompileIdx);
       Host.access_account(PrecompileAddr);

@@ -153,6 +153,8 @@ public:
     }
     RT = NewRT;
   }
+  void setRevision(evmc_revision NewRevision) { Revision = NewRevision; }
+  evmc_revision getRevision() const { return Revision; }
   Runtime *getRuntime() const { return RT; }
   size_t getInternalCallModuleCacheSize() const {
     return InternalCallModuleCache.size();
@@ -473,16 +475,29 @@ public:
       return false;
     }
     const auto &Acc = It->second;
+    // EIP-161: an account is empty (hence non-existent for CALL
+    // G_newaccount) iff nonce == 0, balance == 0, and code is empty.
+    // Default-constructed MockedAccount has a zero codehash, which is not
+    // EMPTY_CODE_HASH; treating that as "has code" skipped the 25000
+    // new-account charge for JSON-present empty accounts (issue #606).
     if (Acc.nonce != 0) {
       return true;
     }
     if (!Acc.code.empty()) {
       return true;
     }
-    if (std::memcmp(Acc.codehash.bytes, EMPTY_CODE_HASH.bytes, 32) != 0) {
-      return true;
-    }
     return toUint256Bytes(Acc.balance) != 0;
+  }
+
+  evmc_access_status
+  access_account(const evmc::address &Addr) noexcept override {
+    const evmc_access_status Status = evmc::MockedHost::access_account(Addr);
+    // MockedHost hardcodes 0x01-0x09 as always warm. Cancun adds KZG at
+    // 0x0a and Prague adds BLS 0x0b-0x13; those must be revision-aware.
+    if (zen::utils::isAlwaysWarmPrecompile(Revision, Addr)) {
+      return EVMC_ACCESS_WARM;
+    }
+    return Status;
   }
 
   bool selfdestruct(const evmc::address &Addr,

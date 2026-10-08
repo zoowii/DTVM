@@ -328,13 +328,22 @@ int main(int argc, char *argv[]) {
     // so loadState() can override it if tx_origin is present in state.json
     MockedEVMHost->tx_context.tx_origin =
         zen::utils::parseAddress(SenderAddress);
-    // Load state if specified
-    if (!LoadStateFile.empty() &&
-        !zen::utils::loadState(*MockedEVMHost, LoadStateFile)) {
-      ZEN_LOG_ERROR("failed to load state from file: %s",
-                    LoadStateFile.c_str());
+    // Load state if specified. parseUint256/parseAddress throw on malformed
+    // hex; loadState catches those and returns false so the CLI exits cleanly
+    // instead of aborting (issue #601).
+    try {
+      if (!LoadStateFile.empty() &&
+          !zen::utils::loadState(*MockedEVMHost, LoadStateFile)) {
+        SIMPLE_LOG_ERROR("failed to load state from file: %s",
+                         LoadStateFile.c_str());
+        return exitMain(EXIT_FAILURE);
+      }
+    } catch (const std::exception &E) {
+      SIMPLE_LOG_ERROR("failed to load state from file: %s: %s",
+                       LoadStateFile.c_str(), E.what());
       return exitMain(EXIT_FAILURE);
     }
+    MockedEVMHost->setRevision(EvmRevision);
 
     // Override chain_id and blob_base_fee from CLI if specified
     // (CLI overrides take precedence over state.json values)

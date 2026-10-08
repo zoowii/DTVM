@@ -4,6 +4,7 @@
 #define ZEN_UTILS_EVM_H
 
 #include "utils/others.h"
+#include <cstddef>
 #include <evmc/evmc.hpp>
 #include <evmc/mocked_host.hpp>
 #include <intx/intx.hpp>
@@ -40,9 +41,38 @@ bool loadState(evmc::MockedHost &Host, const std::string &FilePath);
 /// that need those (e.g. state tests) should add them separately.
 int64_t computeIntrinsicGas(evmc_revision Revision, evmc_call_kind MsgKind,
                             const uint8_t *InputData, size_t InputSize);
+/// Highest consecutive always-warm precompile id at transaction start.
+/// EIP-2929 (Berlin+): 0x01-0x09. EIP-4844 (Cancun+): 0x0a. EIP-2537
+/// (Prague+): 0x0b-0x13. Matches evmone is_precompile(rev, addr) for this
+/// contiguous range.
+inline uint8_t lastWarmPrecompileId(evmc_revision Revision) {
+  if (Revision >= EVMC_PRAGUE) {
+    return 0x13;
+  }
+  if (Revision >= EVMC_CANCUN) {
+    return 0x0a;
+  }
+  return 0x09;
+}
+
+/// True if Addr is an always-warm precompile for Revision (EIP-2929+).
+inline bool isAlwaysWarmPrecompile(evmc_revision Revision,
+                                   const evmc::address &Addr) {
+  if (Revision < EVMC_BERLIN) {
+    return false;
+  }
+  for (size_t I = 0; I + 1 < sizeof(Addr.bytes); ++I) {
+    if (Addr.bytes[I] != 0) {
+      return false;
+    }
+  }
+  const uint8_t Id = Addr.bytes[sizeof(Addr.bytes) - 1];
+  return Id >= 1 && Id <= lastWarmPrecompileId(Revision);
+}
+
 /// Pre-warm transaction-level accounts per EIP-2929 and EIP-3651.
-/// EIP-2929 (Berlin+): warms sender, recipient, and precompiled contracts
-/// (0x01-0x09).
+/// EIP-2929 (Berlin+): warms sender, recipient, and revision-gated
+/// precompiled contracts.
 /// EIP-3651 (Shanghai+): warms the coinbase address.
 /// For contract-creation transactions, pass a zero address as Recipient
 /// to skip recipient warming (CREATE txs have no transaction-level "to").

@@ -6106,10 +6106,11 @@ EVMMirBuilder::handleKeccak256(Operand OffsetComponents,
 #ifdef ZEN_ENABLE_EVM_GAS_REGISTER
   reloadGasFromMemory();
 #endif
-  if (!UsePreparedMemory) {
-    reloadMemorySizeFromInstance();
-  }
-  return Result;
+  // Always refresh the cached memory base. KECCAK may be the first expansion
+  // (allocating a non-null backing store). Later MLOADs in a shared precheck
+  // window reuse PreferCachedBase; a stale null entry value SIGSEGVs.
+  reloadMemorySizeFromInstance();
+  return materializeRuntimeBytes32(Result);
 }
 
 typename EVMMirBuilder::Operand
@@ -6138,10 +6139,8 @@ EVMMirBuilder::handleKeccak256TwoWord(Operand OffsetComponents, Operand Word0,
 #ifdef ZEN_ENABLE_EVM_GAS_REGISTER
   reloadGasFromMemory();
 #endif
-  if (!UsePreparedMemory) {
-    reloadMemorySizeFromInstance();
-  }
-  return Result;
+  reloadMemorySizeFromInstance();
+  return materializeRuntimeBytes32(Result);
 }
 
 typename EVMMirBuilder::Operand EVMMirBuilder::handleKeccak256CallDataConstSlot(
@@ -6171,10 +6170,8 @@ typename EVMMirBuilder::Operand EVMMirBuilder::handleKeccak256CallDataConstSlot(
 #ifdef ZEN_ENABLE_EVM_GAS_REGISTER
   reloadGasFromMemory();
 #endif
-  if (!UsePreparedMemory) {
-    reloadMemorySizeFromInstance();
-  }
-  return Result;
+  reloadMemorySizeFromInstance();
+  return materializeRuntimeBytes32(Result);
 }
 
 typename EVMMirBuilder::Operand
@@ -6203,10 +6200,8 @@ EVMMirBuilder::handleKeccak256CallerConstSlot(Operand OffsetComponents,
 #ifdef ZEN_ENABLE_EVM_GAS_REGISTER
   reloadGasFromMemory();
 #endif
-  if (!UsePreparedMemory) {
-    reloadMemorySizeFromInstance();
-  }
-  return Result;
+  reloadMemorySizeFromInstance();
+  return materializeRuntimeBytes32(Result);
 }
 
 // ==================== Private Helper Methods ====================
@@ -6546,6 +6541,20 @@ EVMMirBuilder::convertU256InstrToU256Operand(MInstruction *U256Instr) {
   }
 
   return Operand(Result, EVMType::UINT256);
+}
+
+typename EVMMirBuilder::Operand
+EVMMirBuilder::materializeRuntimeBytes32(const Operand &Bytes32Op) {
+  if (Bytes32Op.getType() != EVMType::BYTES32) {
+    return Bytes32Op;
+  }
+  Operand Result = convertBytes32ToU256Operand(Bytes32Op);
+  MType *I64Type = EVMFrontendContext::getMIRTypeFromEVMType(EVMType::UINT64);
+  U256Inst Parts = extractU256Operand(Result);
+  for (int I = 0; I < static_cast<int>(EVM_ELEMENTS_COUNT); ++I) {
+    Parts[I] = protectUnsafeValue(Parts[I], I64Type);
+  }
+  return Operand(Parts, EVMType::UINT256);
 }
 
 typename EVMMirBuilder::Operand
@@ -9318,7 +9327,10 @@ MInstruction *EVMMirBuilder::getConstBlockDirectMemoryBasePtr() {
     return loadVariable(CurBlockConstPrecheckPlan.AnchoredBasePtrVar);
   }
 
-  MInstruction *MemBase = getDirectMemoryDataPointer(true);
+  // Load from the instance, not the cached base. A preceding helper (KECCAK)
+  // may have allocated the backing store without the cached pointer having
+  // been visible to later PreferCachedBase users across the call.
+  MInstruction *MemBase = getDirectMemoryDataPointer(false);
   MInstruction *BasePtr = createInstruction<ConversionInstruction>(
       false, OP_inttoptr, createVoidPtrType(), MemBase);
   BasePtr = anchorDirectMemoryPointer(BasePtr);
@@ -9346,7 +9358,7 @@ MInstruction *EVMMirBuilder::getLargeStaticWorkspaceDirectMemoryBasePtr() {
         CurBlockLargeStaticWorkspacePrecheckPlan.AnchoredBasePtrVar);
   }
 
-  MInstruction *MemBase = getDirectMemoryDataPointer(true);
+  MInstruction *MemBase = getDirectMemoryDataPointer(false);
   MInstruction *BasePtr = createInstruction<ConversionInstruction>(
       false, OP_inttoptr, createVoidPtrType(), MemBase);
   BasePtr = anchorDirectMemoryPointer(BasePtr);

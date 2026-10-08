@@ -1349,6 +1349,7 @@ private:
   Operand convertSingleInstrToU256Operand(MInstruction *SingleInstr);
   Operand convertU256InstrToU256Operand(MInstruction *U256Instr);
   Operand convertBytes32ToU256Operand(const Operand &Bytes32Op);
+  Operand materializeRuntimeBytes32(const Operand &Bytes32Op);
   Operand loadU256FromBytes32PointerDisplaced(MInstruction *Bytes32Ptr);
   Operand loadU256FromBytes32BaseDisplaced(MInstruction *BytesBasePtr,
                                            uint64_t BaseOffset);
