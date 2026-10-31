@@ -91,6 +91,17 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - FastRA may CAS-patch only from the trampoline; background GreedyRA may overwrite trampoline or FastRA
 - Tear-free `xchg` of the 4-byte `rel32` does not by itself enforce this ordering
 
+### Wasm linear-memory addressing
+
+Wasm32 effective address is `zext64(wrap32(base)) + memarg_offset`, then
+trap if `ea + access_size` exceeds memory length. `getMemoryLocation`
+may fuse a **constant** wasm address with the memarg offset into a 32-bit
+displacement. It must not fold `i32.add(dynamic, imm)` into that
+displacement: x86-64 `[MemBase + zext(x) + (N+C)]` is not wrap-equivalent
+(extra OOB when `x+C` wraps; a wrapping i32 combine of `C+N` can miss
+OOB). Load/store Scale stays 1. See
+`tests/wast/multipass/address_add_imm_wrap.wast`.
+
 ### dMIR Invariants
 
 - `MBasicBlock`s in `MFunction` are connected by control flow; `MInstruction`s belong to an `MBasicBlock` or are embedded as expressions in another `MInstruction`

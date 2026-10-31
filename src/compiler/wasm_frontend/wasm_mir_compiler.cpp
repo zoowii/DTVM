@@ -760,6 +760,14 @@ FunctionMirBuilder::getMemoryLocation(MInstruction *Base, uint32_t Offset,
                                       MType *Type) {
   ZEN_ASSERT(MemoryBaseIdx != (VariableIdx)-1);
 
+  // Do not fold i32.add(dynamic, imm) into AccessOffset. Wasm computes
+  // wrap32(addr) first, then adds the memarg offset as an unbounded
+  // integer (DTVM: zext64(addr) + offset + size). Replacing Index=add(x,C)
+  // with Index=x and disp=N+C uses zext64(x)+N+C, which disagrees on wrap
+  // (extra OOB traps, or a wrapping combine of C+N that misses OOB).
+  // Const bases are fused below; Scale stays 1 (not {2,4,8}).
+  // See docs/notes/2026-10-31-multipass-lazy-jit-leads.md (G) and
+  // tests/wast/multipass/address_add_imm_wrap.wast.
   bool IsConstBase = Base->getKind() == MInstruction::Kind::CONSTANT;
   MInstruction *CheckBase =
       IsConstBase ? nullptr : makeReusableValue(Base, Base->getType());

@@ -680,7 +680,9 @@ private:
     return makeReusableValue(Value, Type);
   }
 
-  // Return {MemoryBase, Index(Scale = 1), Offset}
+  // Return {MemoryBase, Index(Scale = 1), Offset}.
+  // Do not fold i32.add(dynamic, imm) into Offset; wrap32 then unbounded
+  // memarg offset is not [zext(x) + (N+C)]. Scale stays 1.
   std::tuple<MInstruction *, MInstruction *, int32_t>
   getMemoryLocation(MInstruction *Base, uint32_t Offset, MType *Type);
 

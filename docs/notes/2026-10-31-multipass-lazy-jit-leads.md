@@ -6,9 +6,30 @@ Wasmtime/Cranelift “small wins” (tiered JIT, algebraic peeps, addressing
 modes, call overhead). No performance percentages are claimed without
 measurement.
 
-Related: this branch also lands one high-confidence MIR peep
-([change](../changes/2026-10-31-mir-pow2-divrem-peep/README.md)).
+Related: this branch lands one high-confidence MIR peep
+([change](../changes/2026-10-31-mir-pow2-divrem-peep/README.md))
+and records a rejected addressing fold
+([change](../changes/2026-10-31-wasm-add-imm-disp-fold/README.md)).
 Everything else below is ranked experiment, not a promise to ship.
+
+## Box ranking (Phase 1.5)
+
+Quoted wall medians (CPU0). No percentages beyond these.
+
+| Observation | Quoted numbers | Implication |
+| --- | --- | --- |
+| jacobi exec | multipass-G ~3.53s vs singlepass ~12.58s (~3.6×) | Multipass already wins the hot kernel. Next: dump that kernel for real MIR/spill rules, not addressing peeps. |
+| atax exec vs compile | exec nearly tied (~72ms); eager multipass JIT ~87ms so wall loses | Compile time dominates short kernels. Scaled-index already in atax asm (`movsd (%rax,%rdx,1)`); few redundant LEAs. |
+| figlet eager | almost all compile (JIT ~186ms, exec ~0.45ms) | Hottest lead: TTFI / compile trim on multi-function modules. Eager compiles every internal function. |
+| fib RA | Greedy already 8× unrolled with few spills; FastRA heavy rbp spills | Second lead: FastRA spill quality / lazy tier-up on compute. Not a drive-by heuristic tweak. |
+
+**add-imm → disp is not the hottest lead.** Keep it only if trap-safe and a dump test is cheap. It is **not** trap-safe as a `disp += C` patch (see G). Stop; do not force a fold.
+
+**Priority after this box:**
+
+1. TTFI / compile trim for multi-function modules (figlet-class).
+2. FastRA spill / lazy tier-up on compute (fib-class).
+3. jacobi hot-kernel dump for MIR/spill rules.
 
 ## Current pipeline (file pointers)
 
@@ -69,7 +90,8 @@ does not fire.
 
 ### G — SP / addressing-mode folding
 
-**Status: partial; do not claim a wholesale gap.**
+**Status: residual (1) is real and was tried; fold rejected as unsafe.
+Do not claim a wholesale addressing-mode gap.**
 
 Load/store IR already carries x86 AM fields (`LoadInstruction`: Base,
 Scale, Index, Offset) and lowering emits `[base + index*scale + disp]`
@@ -87,11 +109,23 @@ What is **not** done (real residual, not “no addressing modes”):
 
 1. Fold `add(dynamic, imm)` into `disp`. Today
    `i32.load offset=N (i32.add x, C)` keeps Index = `add(x, C)` because
-   `IsConstBase` is false. Cranelift/Wasmtime fold this. Bounds-check
-   (`WasmCheckMemoryAccess`) must stay consistent with wraparound; this
-   is the experiment, not a drive-by.
+   `IsConstBase` is false. Cranelift/Wasmtime fold this for wasm64-style
+   or proven-no-wrap cases. **Tried 2026-10-31; not taken.** Wasm is
+   `ea = zext64(wrap32(x+C)) + N`. x86-64 `[MemBase + zext(x) + (N+C)]`
+   extra-traps when `x+C` wraps to an in-bounds address (e.g. `x =
+   0xfffffff0`, `C = 0x10` → addr 0 on a 64KiB memory; 64-bit sum is
+   `2^32`). Combining `C+N` as a wrapping i32 address can *miss* OOB
+   (`offset=0x10` after `add 0xfffffff0, 8`). `MemBase` is a 64-bit host
+   pointer, so the 0x67 32-bit address-size prefix cannot recover wrap.
+   A wrapping 32-bit LEA still emits the ADD. Range-proving `x+C` cannot
+   wrap is a larger frontend project. Locked by
+   `tests/wast/multipass/address_add_imm_wrap.wast` and a comment on
+   `getMemoryLocation`. Change:
+   [wasm-add-imm-disp-fold](../changes/2026-10-31-wasm-add-imm-disp-fold/README.md)
+   (Rejected).
 2. Scale ∈ {2,4,8} from `shl` of the index. Scale is hardcoded to 1 in
-   `handleLoad`/`handleStore`.
+   `handleLoad`/`handleStore`. Left untouched: same wrap issue, and wasm
+   loads are byte-addressed so this only fires on `base + i<<k`.
 3. LEA for non-memory integer `add`/`shl`. Switch lowering uses LEA for
    jump tables; general ADD does not.
 
@@ -99,9 +133,10 @@ Locals are MIR variables, not SP-relative wasm slots; spill addressing
 is RA’s job. “SP folding” as in Cranelift frame-index folding is a
 different layer (`prolog_epilog_inserter`).
 
-**Verdict:** verify (1) with a CGIR/asm dump test before claiming a
-memory-op-dense win. Not this PR: trap/bounds interaction is easy to
-get wrong.
+**Verdict:** (1) is not a safe peephole. Next addressing work needs a
+wrap-aware redesign, not a `disp += C` patch. No CGIR `[base+disp]` dump
+test: there is no folded form to show. Box Phase 1.5 demotes this behind
+TTFI/compile trim, FastRA spills, and a jacobi kernel dump.
 
 ### R2 / R3 — EVM compile-time fold / pow2 DIV-MOD / BYTE-EXP specials
 
@@ -171,21 +206,26 @@ qualitative only.
 1. **(landed)** unsigned pow2 `udiv`/`urem` → `ushr`/`and`. Removes DIV
    and the EAX:EDX constraint. Exact effect on a given kernel is
    frequency-dependent — measure `i32.rem_u`/`div_u` with const 2/4/8/16
-   if you want a number.
-2. **Needs measurement:** `select(c, 1, 0)` → icmp; more algebra
+   if you want a number. Box jacobi already favors multipass-G on exec
+   (~3.53s vs ~12.58s singlepass); this peep is not that gap.
+2. **Box #2:** FastRA spill / lazy tier-up. fib Greedy is 8× unrolled
+   with few spills; FastRA is heavy rbp spills. Needs a dump, not a
+   guess at `spillDirty`.
+3. **Box #3:** jacobi hot-kernel dump for the actual MIR/spill rules.
+4. **Needs measurement:** `select(c, 1, 0)` → icmp; more algebra
    (`mul 2^n` is already SHL in `fastEmit_ri_`). The 2026-10-07 pack
    already took the high-confidence algebraic fruit.
-3. **Needs measurement:** GreedyRA vs FastRA quality on hot loops.
-   Lazy already upgrades; eager default is Greedy unless
-   `--disable-multipass-greedyra`.
 
 ### Memory-op dense Wasm
 
-1. **Needs a careful design + CGIR dump test:** fold `add(x, C)` into
-   load/store displacement (`getMemoryLocation`). Highest remaining
-   Cranelift-style addressing win. Bounds-check wrap is the risk.
-2. **Lower:** scaled-index from `shl`. Wasm loads are byte-addressed;
-   this fires when the programmer (or LLVM-wasm) does `base + i<<2`.
+1. **Rejected as a peephole:** fold `add(x, C)` into load/store
+   displacement. Wrap32-then-offset is not 64-bit `[zext(x)+(N+C)]`.
+   WAST: `address_add_imm_wrap.wast`. A wrap-aware redesign is a
+   separate project, not a `disp += C` patch.
+2. **Scale `{2,4,8}`:** not widened. Box atax already shows
+   `[base+index*1]` (`movsd (%rax,%rdx,1)`) and few redundant LEAs.
+   Hardcoded scale 1 in `handleLoad`/`handleStore` is not the wall
+   bottleneck vs figlet compile or FastRA spills.
 3. **Not a gap:** const offset fusion and `[base+index+disp]` lowering
    already exist.
 
@@ -218,12 +258,14 @@ Implemented (tiny, reviewable, unit-tested, no box benches):
 - `udiv x, 2^n` → `ushr x, n` (`n=0` → identity)
 - const-const `udiv`/`urem` when divisor ≠ 0
 - explicit non-folds: zero divisor, non-pow2, `sdiv`/`srem`
+- addressing-fold stop: comment on `getMemoryLocation` + wrap WAST
+  (no `[base+disp]` rewrite)
 
 Not implemented, and why:
 
 | Lead | Why not now |
 | --- | --- |
-| add-imm → addressing disp | Bounds-check wrap; needs CGIR dump tests |
+| add-imm → addressing disp | **Rejected.** wrap32-then-offset ≠ 64-bit `[zext(x)+(N+C)]`. WAST lock in `address_add_imm_wrap.wast`. |
 | Shift-count mask peep | Wasm frontend never emits the mask |
 | `select(c,1,0)` | Small; rank vs noise needs a microbench |
 | Lazy resolver GPR/XMM trim | ABI-sensitive; measure TTFI first |
@@ -232,15 +274,29 @@ Not implemented, and why:
 
 ## Suggested next experiments (in order)
 
-1. Microbench the landed rem/div peep on a loop of `i32.rem_u` by 8
-   (optional; correctness is already gated). Use the existing
-   `peephole_mod.wat` bench harness pattern if you want a number for
-   the 2026-10-07 pack table.
-2. Prototype `getMemoryLocation` add-imm folding behind a dump test that
-   shows `[base+disp]` rather than an ADD+load, with WAST wrapping
-   `offset + base + size` overflow cases.
-3. Instrument lazy TTFI: resolver cycles vs FastRA wall time vs Greedy
-   upgrade. Paper scripts under `benchmarks/paper/scripts/run_lazy_*.sh`
-   are the right harness.
-4. Dump `DivU128OpportunityCount` on a contract corpus before writing
-   another DIV cascade.
+1. **TTFI / compile trim (hottest).** Count functions compiled eager vs
+   lazy on figlet (`--enable-statistics`: eager is one `JIT Compilation`
+   timer over *all* internals; lazy `JIT Lazy Compilation(Fg): N times`
+   is bodies actually compiled). Trim compile of unused functions or
+   shrink per-function FastRA/Greedy. `figlet.wasm` in the paper tree is
+   a Git LFS pointer (oid `cfb54deb…`, 107944 bytes); count at runtime.
+2. **FastRA spill / lazy tier-up.** Dump fib FastRA vs Greedy (rbp
+   spills vs 8× unroll). No heuristic patch without that dump.
+3. **jacobi hot-kernel dump** for real MIR/spill rules (exec already
+   ~3.6× vs singlepass; this is quality, not addressing).
+4. Addressing fold: only a wrap-aware redesign. Do not retry
+   `disp += C`. Scale `{2,4,8}` stays 1 unless a dump shows missing SIB.
+
+## Upstream vs zoowii/DTVM (pow2 udiv/urem PR)
+
+Keep the unsigned pow2 `udiv`/`urem` peep on **zoowii/DTVM** for now
+(PR https://github.com/zoowii/DTVM/pull/14). It is a candidate for
+github.com/DTVMStack/DTVM once that PR’s CI is green and a reviewer has
+looked at the trap litmus (`udiv`/`urem` by 0, `sdiv`/`srem` untouched).
+Do not open an upstream PR from this run: the addressing follow-up is a
+*rejection* (comment + WAST), not an optimization, and box Phase 1.5
+moved the hottest lead to TTFI/compile-count rather than peeps. After CI
+is green, a clean cherry-pick of the peep commit alone
+(`perf(compiler): fold unsigned pow2 udiv/urem in MIR peephole`) is the
+right upstream shape; leave the rejected addressing note and box ranking
+on the fork unless upstream wants the WAST lock too.
