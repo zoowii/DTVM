@@ -460,6 +460,55 @@ if(ZEN_ENABLE_SPEC_TEST)
       )
     endif()
     add_test(NAME mirPeepholeTests COMMAND mirPeepholeTests)
+
+    add_executable(eagerJitTrimTests eager_jit_trim_tests.cpp)
+    target_include_directories(
+      eagerJitTrimTests PRIVATE ${googletest_SOURCE_DIR}/googletest/include
+    )
+    set(EAGER_TRIM_WAT
+        "${CMAKE_SOURCE_DIR}/tests/wast/multipass/eager_trim.wat"
+    )
+    set(EAGER_TRIM_WASM "${CMAKE_CURRENT_BINARY_DIR}/eager_trim.wasm")
+    add_custom_command(
+      OUTPUT ${EAGER_TRIM_WASM}
+      COMMAND wat2wasm ${EAGER_TRIM_WAT} -o ${EAGER_TRIM_WASM}
+      DEPENDS ${EAGER_TRIM_WAT}
+      VERBATIM
+    )
+    add_custom_target(eager_trim_wasm DEPENDS ${EAGER_TRIM_WASM})
+    add_dependencies(eagerJitTrimTests eager_trim_wasm)
+    target_compile_definitions(
+      eagerJitTrimTests PRIVATE EAGER_TRIM_WASM_PATH="${EAGER_TRIM_WASM}"
+    )
+    if(ZEN_ENABLE_ASAN)
+      target_compile_options(eagerJitTrimTests PRIVATE -fsanitize=address)
+      if(ZEN_BUILD_PLATFORM_DARWIN)
+        target_link_libraries(
+          eagerJitTrimTests
+          PRIVATE compiler dtvmcore gtest_main Threads::Threads
+                  -fsanitize=address
+          PUBLIC ${GTEST_BOTH_LIBRARIES}
+        )
+      else()
+        target_link_libraries(
+          eagerJitTrimTests
+          PRIVATE compiler
+                  dtvmcore
+                  gtest_main
+                  Threads::Threads
+                  -fsanitize=address
+                  -static-libasan
+          PUBLIC ${GTEST_BOTH_LIBRARIES}
+        )
+      endif()
+    else()
+      target_link_libraries(
+        eagerJitTrimTests
+        PRIVATE compiler dtvmcore gtest_main Threads::Threads
+        PUBLIC ${GTEST_BOTH_LIBRARIES}
+      )
+    endif()
+    add_test(NAME eagerJitTrimTests COMMAND eagerJitTrimTests)
   endif()
 
   if(ZEN_ENABLE_EVM)

@@ -359,6 +359,7 @@ struct WasmMemoryData {
 | `EnableStatistics` | Whether to enable statistics |
 | `DisableWASI` | Whether to disable WASI (ZEN_ENABLE_BUILTIN_WASI) |
 | `EnableMultipassLazy` | Multipass lazy compilation (ZEN_ENABLE_MULTIPASS_JIT) |
+| `EnableMultipassEagerTrim` | Eager multipass compile-trim: reachable funcs only (ZEN_ENABLE_MULTIPASS_JIT); default false |
 
 ### RuntimeObjectDestroyer and UniquePtr Types
 

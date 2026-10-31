@@ -39,6 +39,11 @@ struct RuntimeConfig {
   uint32_t NumMultipassThreads = 8;
   // Enable WASM multipass lazy compilation (segment-based lazy compile)
   bool EnableMultipassLazy = false;
+  // Eager multipass: compile only functions reachable from exports, start,
+  // and table/elem call_indirect targets. Default false keeps full-module
+  // eager compile (long-run quality). Ignored when EnableMultipassLazy is
+  // true. Opt-in because eager has no lazy stubs for missed callees.
+  bool EnableMultipassEagerTrim = false;
   // Enable profile-guided JIT:
   // contracts start in interpreter mode; runtime profiling (sliding window
   // of recent calls) determines which contracts are hot enough to trigger
@@ -79,6 +84,9 @@ struct RuntimeConfig {
         ZEN_LOG_FATAL(
             "multipass JIT multithread enabled but thread number is 0");
         return false;
+      }
+      if (EnableMultipassEagerTrim && EnableMultipassLazy) {
+        ZEN_LOG_WARN("eager compile-trim ignored when multipass lazy is on");
       }
       if (EnableProfileGuidedJIT && NumJITCompileThreads == 0) {
         // A zero-sized JITCompilePool would silently accept tasks that

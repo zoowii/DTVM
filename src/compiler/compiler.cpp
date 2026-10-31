@@ -405,6 +405,86 @@ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
   Ctx.getMCLowering().runOnCgFunction(CgFunc);
 }
 
+namespace {
+
+/// Internal function indices (0-based, excluding imports) that eager JIT
+/// should compile. When Trim is false this is every internal function (the
+/// historical full-module eager path). When Trim is true, DFS CallSeqMap from
+/// exports, start, and table/elem refs. Import callees are skipped. An empty
+/// reachable set falls back to the full module so index-only embeddings still
+/// compile.
+CompileVector<uint32_t>
+collectEagerCompileInternalIdxs(runtime::Module *WasmMod,
+                                uint32_t NumInternalFunctions,
+                                CompileMemPool &MemPool, bool Trim) {
+  CompileVector<uint32_t> Result(MemPool);
+  Result.reserve(NumInternalFunctions);
+  if (!Trim) {
+    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+      Result.push_back(I);
+    }
+    return Result;
+  }
+
+  const uint32_t NumImportFunctions = WasmMod->getNumImportFunctions();
+  CompileVector<uint8_t> Visited(NumInternalFunctions, 0, MemPool);
+  CompileDeque<uint32_t> Stack(MemPool);
+
+  auto TryPush = [&](uint32_t RealFuncIdx) {
+    if (RealFuncIdx < NumImportFunctions) {
+      return;
+    }
+    uint32_t InternalIdx = RealFuncIdx - NumImportFunctions;
+    if (InternalIdx >= NumInternalFunctions || Visited[InternalIdx]) {
+      return;
+    }
+    Visited[InternalIdx] = 1;
+    Stack.push_back(InternalIdx);
+  };
+
+  for (uint32_t FuncIdx : WasmMod->getExportedFuncIdxs()) {
+    TryPush(FuncIdx);
+  }
+  if (uint32_t StartFuncIdx = WasmMod->getStartFuncIdx(); StartFuncIdx != -1u) {
+    TryPush(StartFuncIdx);
+  }
+  for (const auto &TypedRefs : WasmMod->getTypedFuncRefs()) {
+    for (uint32_t FuncIdx : TypedRefs.second) {
+      TryPush(FuncIdx);
+    }
+  }
+
+  const auto &CallSeqMap = WasmMod->getCallSeqMap();
+  while (!Stack.empty()) {
+    uint32_t InternalIdx = Stack.back();
+    Stack.pop_back();
+    auto It = CallSeqMap.find(InternalIdx + NumImportFunctions);
+    if (It == CallSeqMap.end()) {
+      continue;
+    }
+    for (uint32_t CalleeIdx : It->second) {
+      TryPush(CalleeIdx);
+    }
+  }
+
+  for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+    if (Visited[I]) {
+      Result.push_back(I);
+    }
+  }
+  if (Result.empty()) {
+    ZEN_LOG_DEBUG("eager trim found no reachable roots; compiling all %u "
+                  "internal functions",
+                  NumInternalFunctions);
+    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+      Result.push_back(I);
+    }
+  }
+  return Result;
+}
+
+} // namespace
+
 void EagerJITCompiler::compile() {
   auto Timer = Stats.startRecord(zen::utils::StatisticPhase::JITCompilation);
 
@@ -417,6 +497,17 @@ void EagerJITCompiler::compile() {
 
   const uint32_t NumImportFunctions = WasmMod->getNumImportFunctions();
   ZEN_ASSERT(NumInternalFunctions > 0);
+
+  const CompileVector<uint32_t> CompileFuncIdxs =
+      collectEagerCompileInternalIdxs(WasmMod, NumInternalFunctions,
+                                      MainMemPool,
+                                      Config.EnableMultipassEagerTrim);
+  const uint32_t NumToCompile = static_cast<uint32_t>(CompileFuncIdxs.size());
+  ZEN_ASSERT(NumToCompile > 0);
+  if (Config.EnableMultipassEagerTrim) {
+    ZEN_LOG_DEBUG("eager trim compiling %u/%u internal functions", NumToCompile,
+                  NumInternalFunctions);
+  }
 
 #ifdef ZEN_ENABLE_LINUX_PERF
   utils::JitDumpWriter JitDumpWriter;
@@ -443,7 +534,7 @@ void EagerJITCompiler::compile() {
   auto &CodeMPool = WasmMod->getJITCodeMemPool();
   uint8_t *JITCode = const_cast<uint8_t *>(CodeMPool.getMemStart());
   if (Config.DisableMultipassMultithread) {
-    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+    for (uint32_t I : CompileFuncIdxs) {
       compileWasmToMC(MainContext, Mod, I, Config.DisableMultipassGreedyRA);
     }
     emitObjectBuffer(&MainContext);
@@ -459,7 +550,7 @@ void EagerJITCompiler::compile() {
     }
   } else {
     common::ThreadPool<WasmFrontendContext> ThreadPool(
-        std::min(Config.NumMultipassThreads, NumInternalFunctions));
+        std::min(Config.NumMultipassThreads, NumToCompile));
     uint32_t NumThreads = ThreadPool.getThreadCount();
     ZEN_LOG_DEBUG("using %u threads for multipass JIT compilation", NumThreads);
 
@@ -485,8 +576,8 @@ void EagerJITCompiler::compile() {
     // Sort functions by code size in descending order in order to compile
     // larger functions first
     CompileVector<std::pair<uint32_t, uint32_t>> FuncIdxAndSizes(MainMemPool);
-    FuncIdxAndSizes.reserve(NumInternalFunctions);
-    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+    FuncIdxAndSizes.reserve(NumToCompile);
+    for (uint32_t I : CompileFuncIdxs) {
       CodeEntry *CE = WasmMod->getCodeEntry(NumImportFunctions + I);
       ZEN_ASSERT(CE);
       FuncIdxAndSizes.emplace_back(I, CE->CodeSize);
@@ -548,6 +639,17 @@ void EagerJITCompiler::compile() {
 
   SORT_JITED_FUNC_PTRS;
 
+  // Count bodies that received JIT code, not NumInternalFunctions. Under
+  // eager trim those differ; paper host modules may still compile all
+  // via CallSeqMap closure.
+  uint32_t NumCompiled = 0;
+  for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+    CodeEntry *CE = WasmMod->getCodeEntry(NumImportFunctions + I);
+    if (CE && CE->JITCodePtr) {
+      ++NumCompiled;
+    }
+  }
+  Stats.noteEagerFunctionsCompiled(NumCompiled);
   Stats.stopRecord(Timer);
 }
 
@@ -682,6 +784,7 @@ void LazyJITCompiler::precompile() {
     //                     MainContext.FuncSizeMap[FuncIdx]);
     // INSERT_JITED_FUNC_PTR((void *)(CE->JITCodePtr), RealFuncIdx);
   }
+  Stats.noteLazyStubsPrecompiled(NumInternalFunctions);
   Stats.stopRecord(Timer);
 }
 
