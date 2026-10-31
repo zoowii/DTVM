@@ -548,6 +548,7 @@ void EagerJITCompiler::compile() {
 
   SORT_JITED_FUNC_PTRS;
 
+  Stats.noteEagerFunctionsCompiled(NumInternalFunctions);
   Stats.stopRecord(Timer);
 }
 
@@ -682,6 +683,7 @@ void LazyJITCompiler::precompile() {
     //                     MainContext.FuncSizeMap[FuncIdx]);
     // INSERT_JITED_FUNC_PTR((void *)(CE->JITCodePtr), RealFuncIdx);
   }
+  Stats.noteLazyStubsPrecompiled(NumInternalFunctions);
   Stats.stopRecord(Timer);
 }
 
