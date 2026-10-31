@@ -49,6 +49,7 @@ std::unique_ptr<Runtime> makeRuntime(bool Trim, bool DisableMT) {
   Cfg.DisableMultipassMultithread = DisableMT;
   Cfg.NumMultipassThreads = 4;
   Cfg.EnableMultipassEagerTrim = Trim;
+  Cfg.EnableStatistics = true;
   return Runtime::newRuntime(Cfg);
 }
 
@@ -102,6 +103,7 @@ TEST(EagerJitTrim, UnusedFunctionNotCompiled) {
   EXPECT_NE(jitPtr(*L.Mod, kTableTargetIdx), nullptr);
   EXPECT_NE(jitPtr(*L.Mod, kIndirectIdx), nullptr);
   EXPECT_NE(jitPtr(*L.Mod, kBootIdx), nullptr);
+  EXPECT_EQ(L.RT->getStatistics().getEagerFunctionsCompiled(), 5u);
 }
 
 TEST(EagerJitTrim, ExportedAndIndirectStillWork) {
@@ -116,6 +118,8 @@ TEST(EagerJitTrim, DefaultEagerCompilesUnused) {
   ASSERT_NE(L.Mod, nullptr);
   EXPECT_NE(jitPtr(*L.Mod, kDeadIdx), nullptr);
   EXPECT_NE(jitPtr(*L.Mod, kUsedIdx), nullptr);
+  EXPECT_EQ(L.RT->getStatistics().getEagerFunctionsCompiled(),
+            kNumInternalFuncs);
   EXPECT_EQ(callI32(*L.RT, *L.Inst, "used", 3), 4);
 }
 
@@ -125,6 +129,7 @@ TEST(EagerJitTrim, TrimMultithreadMatchesSinglethread) {
   EXPECT_EQ(jitPtr(*L.Mod, kDeadIdx), nullptr);
   EXPECT_NE(jitPtr(*L.Mod, kHelperIdx), nullptr);
   EXPECT_NE(jitPtr(*L.Mod, kTableTargetIdx), nullptr);
+  EXPECT_EQ(L.RT->getStatistics().getEagerFunctionsCompiled(), 5u);
   EXPECT_EQ(callI32(*L.RT, *L.Inst, "used", 20), 21);
   EXPECT_EQ(callI32(*L.RT, *L.Inst, "indirect", 1), 8);
 }

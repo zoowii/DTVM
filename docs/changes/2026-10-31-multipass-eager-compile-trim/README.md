@@ -20,14 +20,20 @@ are never called. Lazy-F already avoids that by compiling on demand; this
 change gives eager a conservative middle ground without changing long-run
 quality.
 
-Motivation numbers (CPU0 medians; **not claimed as this PR's speedup**):
+Box validation of this PR (CPU0 medians, N=5; **not claimed as a
+speedup from trim**):
 
-- figlet: eager wall ~193ms compiling all 193 funcs; lazy-F ~67ms compiling 113
-  (~41% never compiled)
-- atax: eager exec already better than singlepass, but full-module JIT ~71ms
-  dominates wall
-- jacobi long-run multipass remains valuable (~3.6× exec vs singlepass) and
-  **must stay available unchanged**
+- figlet: multipass-G-ST wall 0.183s compiling 193/193; `+eager-trim`
+  also 0.183s and **193/193** (`CallSeqMap` closure = whole module).
+  lazy-F 0.050s Fg=113. singlepass 0.0068s.
+- atax: no-trim 0.117s (52); trim 0.112s still **52/52**. lazy-F 0.080s
+  Fg=35.
+- jacobi: no-trim 3.836s vs trim 3.827s, both 52/52 — no regression.
+- Fixture `eager_trim.wat`: trim 5/6 skips `$dead` — functional pass.
+
+Static reachability from exports/tables closes almost everything in
+these paper host modules. Dynamic lazy-F still wins TTFI. Do not claim
+figlet/atax TTFI wins from this flag.
 
 ## Design
 
@@ -70,6 +76,14 @@ dtvm -m multipass --enable-multipass-eager-trim
 ```
 
 `--enable-multipass-lazy` takes precedence; trim is ignored when lazy is on.
+
+`--enable-statistics` prints `JIT functions compiled (eager): N` where
+`N` is bodies that received JIT code (not `NumInternalFunctions`).
+Paper hosts may still show N = full module under trim.
+
+A deeper trim (export-only without `CallSeqMap` closure, or
+profile-guided) is a separate design: dropping direct callees without
+stubs is unsafe. Not in this PR.
 
 ## Impact
 

@@ -639,6 +639,17 @@ void EagerJITCompiler::compile() {
 
   SORT_JITED_FUNC_PTRS;
 
+  // Count bodies that received JIT code, not NumInternalFunctions. Under
+  // eager trim those differ; paper host modules may still compile all
+  // via CallSeqMap closure.
+  uint32_t NumCompiled = 0;
+  for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+    CodeEntry *CE = WasmMod->getCodeEntry(NumImportFunctions + I);
+    if (CE && CE->JITCodePtr) {
+      ++NumCompiled;
+    }
+  }
+  Stats.noteEagerFunctionsCompiled(NumCompiled);
   Stats.stopRecord(Timer);
 }
 
@@ -773,6 +784,7 @@ void LazyJITCompiler::precompile() {
     //                     MainContext.FuncSizeMap[FuncIdx]);
     // INSERT_JITED_FUNC_PTR((void *)(CE->JITCodePtr), RealFuncIdx);
   }
+  Stats.noteLazyStubsPrecompiled(NumInternalFunctions);
   Stats.stopRecord(Timer);
 }
 
