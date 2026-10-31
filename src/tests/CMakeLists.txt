@@ -412,7 +412,9 @@ if(ZEN_ENABLE_SPEC_TEST)
   endif()
 
   if(ZEN_ENABLE_MULTIPASS_JIT AND ZEN_BUILD_TARGET_X86_64)
-    add_executable(mirPeepholeTests mir_peephole_tests.cpp)
+    add_executable(
+      mirPeepholeTests mir_peephole_tests.cpp x86_cg_lowering_tests.cpp
+    )
     target_include_directories(
       mirPeepholeTests PRIVATE ${googletest_SOURCE_DIR}/googletest/include
     )
