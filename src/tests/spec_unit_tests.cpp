@@ -168,6 +168,9 @@ GTEST_API_ int main(int argc, char *argv[]) {
       ->excludes(DMMOption);
   CLIParser.add_flag("--enable-multipass-lazy", Config.EnableMultipassLazy,
                      "Enable multipass lazy mode(on request compile)");
+  CLIParser.add_flag("--enable-multipass-eager-trim",
+                     Config.EnableMultipassEagerTrim,
+                     "Eager multipass: compile only reachable functions");
   CLIParser.add_flag("--enable-profile-guided-jit",
                      Config.EnableProfileGuidedJIT,
                      "Enable profile-guided JIT mode");

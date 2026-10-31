@@ -44,7 +44,7 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 
 ### Compilation Entry Points
 
-- **EagerJITCompiler**: WASM full compilation
+- **EagerJITCompiler**: WASM compilation of all internal functions by default. When `RuntimeConfig::EnableMultipassEagerTrim` is set, compile only functions reachable (via `CallSeqMap`) from exports, the start function, and table/elem `call_indirect` targets (`TypedFuncRefs`). Import callees are skipped. If that set is empty, fall back to compiling every internal function. Uncompiled functions keep `JITCodePtr == nullptr` (no lazy stubs). Default remains full-module eager so long-run quality is unchanged.
 - **LazyJITCompiler**: WASM on-demand compilation (multi-threaded)
 - **EagerEVMJITCompiler**: EVM full compilation (Multipass only)
 - **MIRTextJITCompiler**: Compile from MIR text (testing/debugging)

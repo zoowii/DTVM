@@ -111,7 +111,8 @@ Parsing or initialization failures return `EXIT_FAILURE` uniformly; `evmc_status
 - **Compile macros**: Behavior controlled by `ZEN_ENABLE_EVM`, `ZEN_ENABLE_BUILTIN_WASI`, `ZEN_ENABLE_BUILTIN_ENV`, `ZEN_ENABLE_EVMABI_TEST`, `ZEN_ENABLE_MULTIPASS_JIT`, `ZEN_ENABLE_PROFILER`, etc.
 - **EVM options**: Only under `ZEN_ENABLE_EVM`: `--format evm`, `--calldata`, `--evm-revision`, `--deploy`, `--contract-address`, `--sender`, `--save-state`, `--load-state`, etc.
 - **singlepass option**: Under `ZEN_ENABLE_EVM` build, `--mode` does not offer `singlepass`
-- **Multipass options**: Only under `ZEN_ENABLE_MULTIPASS_JIT`: `--disable-multipass-greedyra`, `--disable-multipass-multithread`, `--num-multipass-threads`, `--enable-multipass-lazy`, `--enable-evm-gas`, `--entry-hint`
+- **Multipass options**: Only under `ZEN_ENABLE_MULTIPASS_JIT`: `--disable-multipass-greedyra`, `--disable-multipass-multithread`, `--num-multipass-threads`, `--enable-multipass-lazy`, `--enable-multipass-eager-trim`, `--enable-evm-gas`, `--entry-hint`
+- **Host-tool TTFI**: `--enable-multipass-lazy` is the recommended path for CLI host tools that invoke one export. `--enable-multipass-eager-trim` is opt-in eager compile of reachable functions only. `-m multipass` with neither flag is full-module eager compile (long-run / jacobi-style quality).
 - **EVM version**: Supports `evmc_revision` from `frontier` to `osaka`; default `EVMC_OSAKA`
 
 ## Cross-References

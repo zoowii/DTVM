@@ -129,7 +129,7 @@ classDiagram
 |------|----------|----------|
 | **JITCompilerBase** | - | `compileMIRToCgIR()`, `emitObjectBuffer()` |
 | **WasmJITCompiler** | `WasmMod`, `NumInternalFunctions`, `Config`, `Stats` | `compileWasmToMC()` |
-| **EagerJITCompiler** | - | `compile()` |
+| **EagerJITCompiler** | - | `compile()` (full module, or reachable-set when `EnableMultipassEagerTrim`) |
 | **LazyJITCompiler** | `StubBuilder`, `MainContext`, `Mod`, `CompileStatuses`, `GreedyRACodePtrs`, `ThreadPool` | `compile()`, `dispatchCompileTask()`, `compileFunction()`, `compileFunctionOnRequest()` |
 | **EVMJITCompiler** | `EVMMod`, `Config`, `Stats` | `compileEVMToMC()` |
 | **EagerEVMJITCompiler** | - | `compile()` |

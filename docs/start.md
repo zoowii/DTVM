@@ -113,6 +113,22 @@ Supported additional CMake parameters:
 > `ZEN_ENABLE_JIT_LOGGING`: When enabled, multipass JIT outputs IR and assembly during compilation, enabled by default in Debug mode, disabled in other modes
 > `ZEN_ENABLE_SPEC_TEST`: Enable support for spec test suite, disabled by default
 
+### Multipass compile modes (TTFI vs long-run)
+
+Default `-m multipass` is **full-module eager** compile (greedy RA, optional multithread). Keep this for long-run kernels (for example jacobi) where every function should be compiled up front.
+
+For host tools / short runs where many functions are never called:
+
+```
+# Recommended TTFI path: compile on first call (lazy-F)
+dtvm -m multipass --enable-multipass-lazy case.wasm
+
+# Eager middle ground: compile reachable-from-exports/start/table only
+dtvm -m multipass --enable-multipass-eager-trim case.wasm
+```
+
+`--enable-multipass-eager-trim` does not change the default. Lazy takes precedence if both flags are set.
+
 ## Testing Spec Cases
 
 **You must enable the CMake parameter `ZEN_ENABLE_SPEC_TEST` during compilation to run tests**

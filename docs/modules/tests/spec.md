@@ -66,6 +66,7 @@ This module does not include: EVM interpreter (evm), Host implementation (host),
 
 - **cAPITests**: Use `ZenRuntimeRef`, `ZenCreateRuntime`, `ZenLoadHostModule`, `ZenCreateInstance`, etc.
 - **Cases**: Load embedded WASM, register Host functions, call exported functions
+- **eagerJitTrimTests** (multipass x86-64): `tests/wast/multipass/eager_trim.wat`. With `--enable-multipass-eager-trim`, unused `$dead` is not compiled; exported `used`/`indirect`, start, and table/elem targets still run. Default eager still compiles `$dead`.
 
 ### 8. Evmone Fallback Tests
 

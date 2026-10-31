@@ -511,6 +511,8 @@ public:
 
   const auto &getExportedFuncIdxs() const { return ExportedFuncIdxs; }
 
+  const auto &getTypedFuncRefs() const { return TypedFuncRefs; }
+
   const auto &getCallSeqMap() const { return CallSeqMap; }
 #endif // ZEN_ENABLE_MULTIPASS_JIT
 

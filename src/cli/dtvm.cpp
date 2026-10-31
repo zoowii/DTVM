@@ -286,7 +286,13 @@ int main(int argc, char *argv[]) {
                      "determination)")
         ->excludes(DMMOption);
     CLIParser->add_flag("--enable-multipass-lazy", Config.EnableMultipassLazy,
-                        "Enable multipass lazy mode (on request compile)");
+                        "Enable multipass lazy mode (on request compile). "
+                        "Recommended TTFI path for host tools that invoke one "
+                        "export");
+    CLIParser->add_flag(
+        "--enable-multipass-eager-trim", Config.EnableMultipassEagerTrim,
+        "Eager multipass: compile only functions reachable from exports, "
+        "start, and table elems. Default remains full-module eager compile");
     CLIParser->add_flag("--enable-profile-guided-jit",
                         Config.EnableProfileGuidedJIT,
                         "Enable profile-guided JIT mode");
