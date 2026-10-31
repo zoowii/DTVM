@@ -791,6 +791,8 @@ FunctionMirBuilder::getMemoryLocation(MInstruction *Base, uint32_t Offset,
     addUniqueSuccessor(OutOfBoundsMemoryBB);
   }
 
+  // Cached host pointer from entry or the last call/grow barrier.
+  // Do not replace this dread with load($0, MemoryBaseOffset).
   MInstruction *MemoryBaseAddr =
       createInstruction<DreadInstruction>(false, &Ctx.I64Type, MemoryBaseIdx);
 
@@ -835,6 +837,9 @@ MInstruction *FunctionMirBuilder::getMemorySize() {
 }
 
 void FunctionMirBuilder::updateMemoryBaseAndSize() {
+  // Barrier: MemBase can move on grow (realloc) even when mmap growth is
+  // in-place. Callers of this function have already crossed a call or
+  // grow; CSE of the previous load across that point is incorrect.
   if (MemoryBaseIdx != VariableIdx(-1)) {
     MInstruction *MemoryBase = getMemoryBase();
     createInstruction<DassignInstruction>(true, &Ctx.VoidType, MemoryBase,

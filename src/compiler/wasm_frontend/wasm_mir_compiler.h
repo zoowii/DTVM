@@ -658,6 +658,10 @@ private:
     }
 
     checkCallException(IsImportOrIndirect);
+    // MemBase/MemSize may change: callee memory.grow, a nested call, or
+    // host re-entry into wasm that grows. The cache is a caller-local
+    // vreg (not a pinned heap register), so reload it. Do not CSE the
+    // instance load across this call.
     updateMemoryBaseAndSize();
 
     if (IsStmt) {
@@ -680,14 +684,16 @@ private:
     return makeReusableValue(Value, Type);
   }
 
-  // Return {MemoryBase, Index(Scale = 1), Offset}
+  // Return {MemoryBase, Index(Scale = 1), Offset}.
+  // MemoryBase is dread(MemoryBaseIdx), not a fresh instance-field load.
   std::tuple<MInstruction *, MInstruction *, int32_t>
   getMemoryLocation(MInstruction *Base, uint32_t Offset, MType *Type);
 
   MInstruction *getMemoryBase();
   MInstruction *getMemorySize();
 
-  // Update memory base and size after growing memory or calling a function
+  // Reload MemoryBaseIdx / MemorySizeIdx from the instance. Required after
+  // memory.grow and after every call; see handleCallBase. Not a CSE target.
   void updateMemoryBaseAndSize();
 
   template <WASMType Type, CompareOperator Opeator>
