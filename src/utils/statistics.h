@@ -45,6 +45,12 @@ public:
 
   void clearAllTimers();
 
+  // Module function counts (not times). Eager compiles every internal
+  // function in one JITCompilation timer; lazy Fg/Bg times already count
+  // bodies actually compiled.
+  void noteEagerFunctionsCompiled(uint32_t N);
+  void noteLazyStubsPrecompiled(uint32_t N);
+
   void report() const;
 
 private:
@@ -54,6 +60,8 @@ private:
   typedef std::pair<StatisticPhase, TimePoint> TimerPair;
   std::unordered_map<StatisticTimer, TimerPair> Timers;
   std::vector<StatisticRecord> Records;
+  uint32_t EagerFunctionsCompiled = 0;
+  uint32_t LazyStubsPrecompiled = 0;
 };
 
 } // namespace zen::utils
