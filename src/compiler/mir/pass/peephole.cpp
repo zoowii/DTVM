@@ -7,6 +7,9 @@
 #include "compiler/mir/constants.h"
 #include "compiler/mir/instruction.h"
 #include "compiler/mir/instructions.h"
+#include "compiler/mir/opcode.h"
+#include "compiler/mir/variable.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Casting.h"
@@ -18,6 +21,7 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
   for (MBasicBlock *BB : Func) {
     rewriteBlock(*BB);
   }
+  hoistLoopInvariantFPConsts(Func);
 
 #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
   llvm::dbgs() << "\n########## MIR Dump After MIR Peephole ##########\n\n";
@@ -716,5 +720,111 @@ bool MIRPeephole::evalICmp(CmpInstruction::Predicate Pred,
   default:
     ZEN_ASSERT(false && "evalICmp: non-integer predicate");
     return false;
+  }
+}
+
+static MConstantFloat *matchNonZeroFPConst(MInstruction *Inst) {
+  auto *C = llvm::dyn_cast<ConstantInstruction>(Inst);
+  if (!C || !C->getType()->isFloat()) {
+    return nullptr;
+  }
+  auto *CF = llvm::dyn_cast<MConstantFloat>(&C->getConstant());
+  if (!CF || CF->getValue().isExactlyValue(+0.0)) {
+    return nullptr;
+  }
+  return CF;
+}
+
+void MIRPeephole::hoistLoopInvariantFPConsts(MFunction &Func) {
+  if (Func.getNumBasicBlocks() < 2) {
+    return;
+  }
+  MBasicBlock *Entry = Func.getEntryBasicBlock();
+  if (!Entry->predecessors().empty()) {
+    // Backedge into the entry would re-execute a hoisted dassign.
+    return;
+  }
+
+  llvm::DenseMap<MConstantFloat *, MType *> ToHoist;
+  llvm::SmallVector<std::pair<MConstantFloat *, MType *>, 4> Ordered;
+  auto Collect = [&](auto &&Self, MInstruction *Inst) -> void {
+    if (Inst == nullptr) {
+      return;
+    }
+    if (MConstantFloat *CF = matchNonZeroFPConst(Inst)) {
+      if (ToHoist.try_emplace(CF, Inst->getType()).second) {
+        Ordered.emplace_back(CF, Inst->getType());
+      }
+      return;
+    }
+    for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
+      Self(Self, Inst->getOperand(I));
+    }
+  };
+
+  for (MBasicBlock *BB : Func) {
+    if (BB == Entry) {
+      continue;
+    }
+    for (MInstruction *Stmt : *BB) {
+      Collect(Collect, Stmt);
+    }
+  }
+  if (Ordered.empty()) {
+    return;
+  }
+
+  llvm::DenseMap<MConstantFloat *, uint32_t> VarOf;
+  llvm::SmallPtrSet<MInstruction *, 8> InitAssigns;
+  size_t InsertIdx = 0;
+  for (MInstruction *Stmt : *Entry) {
+    if (Stmt->getOpcode() != OP_phi) {
+      break;
+    }
+    ++InsertIdx;
+  }
+
+  CompileContext &Ctx = Func.getContext();
+  for (auto [CF, Ty] : Ordered) {
+    Variable *Var = Func.createVariable(Ty);
+    const uint32_t VarIdx = Var->getVarIdx();
+    VarOf[CF] = VarIdx;
+    MInstruction *Init =
+        Func.createInstruction<ConstantInstruction>(false, *Entry, Ty, *CF);
+    MInstruction *Assign = Func.createInstruction<DassignInstruction>(
+        false, *Entry, &Ctx.VoidType, Init, VarIdx);
+    Entry->addStatement(InsertIdx++, Assign);
+    InitAssigns.insert(Assign);
+  }
+
+  auto Replace = [&](auto &&Self, MInstruction *Inst) -> void {
+    if (Inst == nullptr) {
+      return;
+    }
+    if (InitAssigns.contains(Inst)) {
+      return;
+    }
+    for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
+      MInstruction *Op = Inst->getOperand(I);
+      if (Op == nullptr) {
+        continue;
+      }
+      if (MConstantFloat *CF = matchNonZeroFPConst(Op)) {
+        auto It = VarOf.find(CF);
+        if (It != VarOf.end()) {
+          MInstruction *Dr = Func.createInstruction<DreadInstruction>(
+              false, *Entry, Op->getType(), It->second);
+          Inst->setOperand(I, Dr);
+          continue;
+        }
+      }
+      Self(Self, Op);
+    }
+  };
+
+  for (MBasicBlock *BB : Func) {
+    for (MInstruction *Stmt : *BB) {
+      Replace(Replace, Stmt);
+    }
   }
 }

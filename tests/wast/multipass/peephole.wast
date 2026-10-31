@@ -107,6 +107,33 @@
       (local.set 0 (i32.const 1))
       (br_if 0 (i32.const 0)))
     (local.get 0))
+
+  (func (export "count_lt") (param $n i32) (result i32)
+    (local $i i32)
+    (block $out
+      (loop $L
+        (local.get $i)
+        (local.get $n)
+        (i32.ge_s)
+        (br_if $out)
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $L)))
+    (local.get $i))
+  (func (export "scale02") (param $n i32) (result f64)
+    (local $i i32)
+    (local $s f64)
+    (block $out
+      (loop $L
+        (local.get $i)
+        (local.get $n)
+        (i32.ge_s)
+        (br_if $out)
+        (local.set $s
+          (f64.add (local.get $s)
+            (f64.mul (f64.const 0.2) (f64.convert_i32_s (local.get $i)))))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $L)))
+    (local.get $s))
 )
 
 (assert_return (invoke "ctz_eqz" (i32.const 0)) (i32.const 0))
@@ -194,3 +221,8 @@
 (assert_return (invoke "const_if_true" (i32.const 10)) (i32.const 11))
 (assert_return (invoke "const_if_false" (i32.const 10)) (i32.const 12))
 (assert_return (invoke "const_br_if_fallthrough") (i32.const 1))
+(assert_return (invoke "count_lt" (i32.const 0)) (i32.const 0))
+(assert_return (invoke "count_lt" (i32.const 1)) (i32.const 1))
+(assert_return (invoke "count_lt" (i32.const 5)) (i32.const 5))
+(assert_return (invoke "scale02" (i32.const 0)) (f64.const 0.0))
+(assert_return (invoke "scale02" (i32.const 5)) (f64.const 2.0))

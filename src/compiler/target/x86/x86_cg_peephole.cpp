@@ -85,8 +85,16 @@ void X86CgPeephole::optimizeCmp(CgBasicBlock &MBB,
   auto &Inst3 = *LocalMII;
   if (Inst3.getOpcode() != X86::JCC_1)
     return;
-  if (Inst3.getOperand(1).getImm() != X86::CondCode::COND_NE)
-    return; // TODO, other optimization, use opposite condition code
+  const unsigned JccCC = static_cast<unsigned>(Inst3.getOperand(1).getImm());
+  unsigned NewCC;
+  if (JccCC == X86::CondCode::COND_NE) {
+    NewCC = static_cast<unsigned>(CC);
+  } else if (JccCC == X86::CondCode::COND_E && CC <= X86::LAST_VALID_COND) {
+    // Diamond lowering jumps on the false (zero) path: invert SETCC's CC.
+    NewCC = static_cast<unsigned>(CC) ^ 1u;
+  } else {
+    return;
+  }
 
   // Ensure the SETCC/MOVZX registers have no uses beyond this chain.
   // The lowering cache (_expr_reg_map) may share these virtual registers
@@ -102,7 +110,7 @@ void X86CgPeephole::optimizeCmp(CgBasicBlock &MBB,
     MovzxInst->eraseFromParent();
   }
   TestInst.eraseFromParent();
-  Inst3.getOperand(1).setImm(CC);
+  Inst3.getOperand(1).setImm(NewCC);
 }
 } // namespace COMPILER
 
