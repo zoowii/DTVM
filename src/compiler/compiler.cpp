@@ -560,7 +560,15 @@ LazyJITCompiler::LazyJITCompiler(Module *WasmMod)
 
   const runtime::RuntimeConfig &Config = WasmMod->getRuntime()->getConfig();
 
-  if (!Config.DisableMultipassMultithread) {
+  // Single-internal-function modules skip the FastRA FG + Greedy BG split.
+  // FastRA on that path is the measured fib regression (heavy rbp spills);
+  // Greedy on-demand is cheap and matches eager-G / lazy-G-ST. No ThreadPool
+  // means compileFunctionOnRequest uses Greedy and unconditional stub
+  // publish; there is no concurrent FastRA, so trampoline → Greedy stays
+  // monotonic without the Done/CAS protocol.
+  const bool UseBackgroundGreedy =
+      !Config.DisableMultipassMultithread && NumInternalFunctions > 1;
+  if (UseBackgroundGreedy) {
     ThreadPool = std::make_unique<common::ThreadPool<WasmFrontendContext>>(
         std::min(Config.NumMultipassThreads, NumInternalFunctions));
     uint32_t NumThreads = ThreadPool->getThreadCount();
@@ -731,7 +739,9 @@ void LazyJITCompiler::compileFunctionInBackgroud(WasmFrontendContext &Ctx,
 
 uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
   uint32_t FuncIdx = StubBuilder.getFuncIdxByStubCodePtr(FuncStubCodePtr);
-  if (!ThreadPool) { // Single thread lazy mode
+  if (!ThreadPool) {
+    // Single-thread lazy, or single-internal-function modules (no FastRA
+    // FG / Greedy BG split). Greedy on-demand; unconditional stub publish.
     auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyFgCompilation);
     uint8_t *JITFuncCodePtr =
         compileFunction(*MainContext, FuncIdx, Config.DisableMultipassGreedyRA);

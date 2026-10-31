@@ -90,7 +90,9 @@ private:
   WasmFrontendContext *MainContext;
   MModule *Mod;
 
-  // These four fields are only used in multithread lazy compilation mode
+  // These four fields are only used in multithread lazy compilation when
+  // NumInternalFunctions > 1 (single-function modules skip the FastRA FG
+  // / Greedy BG split).
   std::vector<WasmFrontendContext> AuxContexts;
   // must be declared before ThreadPool
   std::unique_ptr<std::atomic<CompileStatus>[]> CompileStatuses;
