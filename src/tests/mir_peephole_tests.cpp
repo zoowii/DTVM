@@ -219,6 +219,87 @@ TEST(MIRPeepholeLitmus, SelectNonConstArmDoesNotFold) {
   EXPECT_NE(Dump.find("select"), std::string::npos) << Dump;
 }
 
+TEST(MIRPeepholeLitmus, URemPow2FoldsToAnd) {
+  MirBuilder B;
+  B.ret(B.bin(OP_urem, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("urem"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("and"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 7"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, UDivPow2FoldsToUShr) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("udiv"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("ushr"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 3"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, UDivByOneReturnsOperand) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(1)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("udiv"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("ushr"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, URemByOneIsZero) {
+  MirBuilder B;
+  B.ret(B.bin(OP_urem, B.param(), B.iconst(1)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("urem"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 0"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, ConstURemFolds) {
+  MirBuilder B;
+  B.ret(B.bin(OP_urem, B.iconst(10), B.iconst(8)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("const.i32 2"), std::string::npos)
+      << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, URemZeroDoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_urem, B.param(), B.iconst(0)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("urem"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, UDivZeroDoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(0)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("udiv"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, URemNonPow2DoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_urem, B.param(), B.iconst(6)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("urem"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, SRemPow2DoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_srem, B.param(), B.iconst(8)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("srem"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, SDivPow2DoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sdiv, B.param(), B.iconst(8)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("sdiv"), std::string::npos) << dumpFunc(B.F);
+}
+
 TEST(MIRPeepholeLitmus, AlgebraIdentities) {
   {
     MirBuilder B;
@@ -479,6 +560,19 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "select_eq_true", 0), 0);
   EXPECT_EQ(callI32(*RT, *Inst, "select_eq_true", 1), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "add0", 42), 42);
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_u8", 0), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_u8", 7), 7);
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_u8", 8), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_u8", 9), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_u8", -1), 7);
+  EXPECT_EQ(callI32(*RT, *Inst, "div_u8", 0), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "div_u8", 7), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "div_u8", 8), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "div_u8", 9), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "div_u8", -1),
+            static_cast<int32_t>(0x1fffffffu));
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_u6", 10), 4);
+  EXPECT_EQ(callI32(*RT, *Inst, "rem_s8", -5), -5);
   EXPECT_EQ(callI32(*RT, *Inst, "const_if_true", 10), 11);
   EXPECT_EQ(callI32(*RT, *Inst, "const_if_false", 10), 12);
   EXPECT_EQ(callI32(*RT, *Inst, "f8", 9), 9);
@@ -513,7 +607,8 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   const int32_t Inputs[] = {0,  1,  2,  4,
                             16, -1, 42, static_cast<int32_t>(0x80000000u)};
   const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
-                       "add0",    "f3",      "f4",      "f8",
+                       "add0",    "rem_u8",  "div_u8",  "rem_u6",
+                       "rem_s8",  "f3",      "f4",      "f8",
                        "f9",      "f12",     "f13",     "f14"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {

@@ -33,6 +33,7 @@ private:
   MInstruction *makeICmp(CmpInstruction::Predicate Pred, MType *Ty,
                          MInstruction *LHS, MInstruction *RHS);
   MInstruction *makeAnd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
+  MInstruction *makeUShr(MType *Ty, MInstruction *LHS, MInstruction *RHS);
 
   static bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val);
   static bool isIntZero(const MInstruction *Inst);

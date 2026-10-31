@@ -315,6 +315,18 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     case OP_sshr:
       return makeIntConst(
           Ty, LV.ashr(RV.getZExtValue() & ShiftMask).getZExtValue());
+    // Unsigned div/rem by a *nonzero* constant cannot trap. Zero-divisor
+    // stays as udiv/urem so wasm IntegerDivisionByZero is preserved.
+    case OP_udiv:
+      if (!RV.isZero()) {
+        return makeIntConst(Ty, LV.udiv(RV).getZExtValue());
+      }
+      break;
+    case OP_urem:
+      if (!RV.isZero()) {
+        return makeIntConst(Ty, LV.urem(RV).getZExtValue());
+      }
+      break;
     default:
       break;
     }
@@ -449,6 +461,27 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
   default:
     break;
   }
+
+  // Strength-reduce unsigned pow2 div/rem. lowerDivRemExpr always emits
+  // DIV/IDIV (EAX:EDX constrained); the ISD::UDIV→SRL rewrite in
+  // fastEmit_ri_ is unreachable for these opcodes. Signed div/rem are
+  // left alone: wasm srem rounds toward zero, so it is not an AND, and
+  // sdiv-by-2 is not an arithmetic shift.
+  if (RConst && RV.isPowerOf2()) {
+    if (Opc == OP_udiv) {
+      const unsigned ShAmt = RV.logBase2();
+      if (ShAmt == 0) {
+        return LHS;
+      }
+      return makeUShr(Ty, LHS, makeIntConst(Ty, ShAmt));
+    }
+    if (Opc == OP_urem) {
+      if (RV.isOne()) {
+        return makeIntConst(Ty, 0);
+      }
+      return makeAnd(Ty, LHS, makeIntConst(Ty, (RV - 1).getZExtValue()));
+    }
+  }
   return nullptr;
 }
 
@@ -530,6 +563,12 @@ MInstruction *MIRPeephole::makeAnd(MType *Ty, MInstruction *LHS,
                                    MInstruction *RHS) {
   return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_and, Ty, LHS,
                                                  RHS);
+}
+
+MInstruction *MIRPeephole::makeUShr(MType *Ty, MInstruction *LHS,
+                                    MInstruction *RHS) {
+  return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_ushr, Ty,
+                                                 LHS, RHS);
 }
 
 bool MIRPeephole::matchIntConst(const MInstruction *Inst, llvm::APInt &Val) {
