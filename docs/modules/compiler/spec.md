@@ -110,6 +110,23 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
   `_operand_num`. Pred/succ removal is swap-pop: `vector::erase` on a
   bump-allocated `CompileVector` can memmove into the LLVM ASan red zone.
 
+### WASM linear-memory base cache
+
+WASM multipass caches `Instance::Memories[0].MemBase` in a function-local
+variable (`MemoryBaseIdx`) at entry when `CodeEntry::Stats` includes
+`SF_memory`. Load/store lowering `dread`s that variable; it must not emit
+a fresh `load ($0, MemoryBaseOffset)` per wasm memory op.
+
+The cache is invalid after `memory.grow` and after any `call` /
+`call_indirect` / import `icall` (the callee, a nested call, or host
+re-entry may grow memory and realloc `MemBase`). `handleCallBase` and
+`handleMemoryGrow` must reload via `updateMemoryBaseAndSize`. Do not CSE
+or hoist the instance-field load across those points. Multipass does not
+pin a heap register the way singlepass pins R13/X26, so the callee cannot
+update the caller's cached vreg.
+
+Details: [WASM MemoryBase CSE barriers](../../notes/2026-10-31-wasm-memory-base-cse-barriers.md).
+
 ### EVM JIT Invariants
 
 - Only Multipass mode is supported; Singlepass does not provide EVM JIT
