@@ -503,6 +503,61 @@ if(ZEN_ENABLE_SPEC_TEST)
       )
     endif()
     add_test(NAME statisticsTests COMMAND statisticsTests)
+
+    add_executable(
+      lazyJitGreedyOndemandTests lazy_jit_greedy_ondemand_tests.cpp
+    )
+    target_include_directories(
+      lazyJitGreedyOndemandTests
+      PRIVATE ${googletest_SOURCE_DIR}/googletest/include
+    )
+    set(FIB_ITER_ONEFN_WAT
+        "${CMAKE_SOURCE_DIR}/tests/wast/multipass/fib_iter_onefn.wat"
+    )
+    set(FIB_ITER_ONEFN_WASM "${CMAKE_CURRENT_BINARY_DIR}/fib_iter_onefn.wasm")
+    add_custom_command(
+      OUTPUT ${FIB_ITER_ONEFN_WASM}
+      COMMAND wat2wasm ${FIB_ITER_ONEFN_WAT} -o ${FIB_ITER_ONEFN_WASM}
+      DEPENDS ${FIB_ITER_ONEFN_WAT}
+      VERBATIM
+    )
+    add_custom_target(fib_iter_onefn_wasm DEPENDS ${FIB_ITER_ONEFN_WASM})
+    add_dependencies(lazyJitGreedyOndemandTests fib_iter_onefn_wasm)
+    target_compile_definitions(
+      lazyJitGreedyOndemandTests
+      PRIVATE FIB_ITER_ONEFN_WASM_PATH="${FIB_ITER_ONEFN_WASM}"
+    )
+    if(ZEN_TEST_ENABLE_ASAN)
+      target_compile_options(
+        lazyJitGreedyOndemandTests PRIVATE -fsanitize=address
+      )
+      if(ZEN_BUILD_PLATFORM_DARWIN)
+        target_link_libraries(
+          lazyJitGreedyOndemandTests
+          PRIVATE compiler dtvmcore gtest_main Threads::Threads
+                  -fsanitize=address
+          PUBLIC ${GTEST_BOTH_LIBRARIES}
+        )
+      else()
+        target_link_libraries(
+          lazyJitGreedyOndemandTests
+          PRIVATE compiler
+                  dtvmcore
+                  gtest_main
+                  Threads::Threads
+                  -fsanitize=address
+                  -static-libasan
+          PUBLIC ${GTEST_BOTH_LIBRARIES}
+        )
+      endif()
+    else()
+      target_link_libraries(
+        lazyJitGreedyOndemandTests
+        PRIVATE compiler dtvmcore gtest_main Threads::Threads
+        PUBLIC ${GTEST_BOTH_LIBRARIES}
+      )
+    endif()
+    add_test(NAME lazyJitGreedyOndemandTests COMMAND lazyJitGreedyOndemandTests)
   endif()
 
   if(ZEN_ENABLE_EVM)
