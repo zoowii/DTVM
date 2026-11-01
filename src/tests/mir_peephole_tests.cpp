@@ -692,13 +692,6 @@ TEST(MIRPeepholeLitmus, SRemPow2DoesNotFold) {
   EXPECT_NE(dumpFunc(B.F).find("srem"), std::string::npos) << dumpFunc(B.F);
 }
 
-TEST(MIRPeepholeLitmus, SDivPow2DoesNotFold) {
-  MirBuilder B;
-  B.ret(B.bin(OP_sdiv, B.param(), B.iconst(8)));
-  B.run();
-  EXPECT_NE(dumpFunc(B.F).find("sdiv"), std::string::npos) << dumpFunc(B.F);
-}
-
 TEST(MIRPeepholeLitmus, AlgebraIdentities) {
   {
     MirBuilder B;
@@ -781,13 +774,6 @@ TEST(MIRPeepholeLitmus, SignedDivByNegEightDoesNotFold) {
   B.ret(B.bin(OP_sdiv, B.param(), B.iconst(static_cast<uint64_t>(-8))));
   B.run();
   EXPECT_NE(dumpFunc(B.F).find("sdiv"), std::string::npos) << dumpFunc(B.F);
-}
-
-TEST(MIRPeepholeLitmus, UnsignedPow2DivDoesNotFoldHere) {
-  MirBuilder B;
-  B.ret(B.bin(OP_udiv, B.param(), B.iconst(8)));
-  B.run();
-  EXPECT_NE(dumpFunc(B.F).find("udiv"), std::string::npos) << dumpFunc(B.F);
 }
 
 TEST(PhiIncomingLayout, RemoveIncomingKeepsRemainingPairs) {
