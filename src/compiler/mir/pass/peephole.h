@@ -27,14 +27,19 @@ private:
   MInstruction *foldAlgebra(MInstruction *Inst);
   MInstruction *foldConstCmp(MInstruction *Inst);
   MInstruction *foldSelectConstCond(MInstruction *Inst);
+  MInstruction *foldSignedPositivePow2Div(MInstruction *Inst);
   bool foldConstBrIf(MBasicBlock &BB, BrIfInstruction &BrIf);
 
   MInstruction *makeIntConst(MType *Ty, uint64_t Val);
   MInstruction *makeICmp(CmpInstruction::Predicate Pred, MType *Ty,
                          MInstruction *LHS, MInstruction *RHS);
   MInstruction *makeAnd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
+  MInstruction *makeBin(Opcode Opc, MType *Ty, MInstruction *LHS,
+                        MInstruction *RHS);
 
   static bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val);
+  static bool matchPositivePow2Const(const MInstruction *Inst,
+                                     unsigned &ShiftAmt);
   static bool isIntZero(const MInstruction *Inst);
   static bool isIntOne(const MInstruction *Inst);
   static bool isIntAllOnes(const MInstruction *Inst);

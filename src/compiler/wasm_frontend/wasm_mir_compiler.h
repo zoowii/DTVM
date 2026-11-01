@@ -329,8 +329,21 @@ public:
   Operand handleIDiv(Operand LHSOp, Operand RHSOp) {
     MType *Mtype = Ctx.getMIRTypeFromWASMType(Type);
 
-    MInstruction *LHS = makeReusableValue(extractOperand(LHSOp), Mtype);
-    MInstruction *RHS = makeReusableValue(extractOperand(RHSOp), Mtype);
+    MInstruction *LHS = extractOperand(LHSOp);
+    MInstruction *RHS = extractOperand(RHSOp);
+
+    // Positive power-of-two signed division cannot overflow (divisor != -1)
+    // and cannot trap on zero. Replace sdiv with toward-zero bias+shift and
+    // skip the INT_MIN / -1 overflow diamond. Unsigned pow2 is DTVMStack #626.
+    if constexpr (Opeator == BinaryOperator::BO_DIV_S) {
+      if (MInstruction *Folded =
+              tryFoldSignedPositivePow2Div(LHS, RHS, Mtype)) {
+        return Operand(Folded, Type);
+      }
+    }
+
+    LHS = makeReusableValue(LHS, Mtype);
+    RHS = makeReusableValue(RHS, Mtype);
 
 #if !defined(ZEN_BUILD_TARGET_X86_64) or !defined(ZEN_ENABLE_CPU_EXCEPTION)
     MInstruction *DivByZero = createInstruction<CmpInstruction>(
@@ -726,6 +739,11 @@ private:
     return createInstruction<ConstantInstruction>(
         false, Type, *MConstantInt::get(Ctx, *Type, V));
   }
+
+  // q = (x + ((x >>s (w-1)) & (2^k-1))) >>s k  for divisor 2^k > 0.
+  // Returns null when RHS is not a strictly-positive power of two.
+  MInstruction *tryFoldSignedPositivePow2Div(MInstruction *LHS,
+                                             MInstruction *RHS, MType *Mtype);
 
   MInstruction *makeReusableValue(MInstruction *Value, MType *Type) {
     Variable *ReusableVar = CurFunc->createVariable(Type);
