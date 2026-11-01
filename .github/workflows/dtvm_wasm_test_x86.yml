@@ -1,4 +1,7 @@
 name: DTVM-WASM test CI in x86-64
+# Pin host runner to ubuntu-24.04. ubuntu-latest rolled to 26.04 and
+# ASan ctest/CLI jobs SIGSEGV in dtvmdev1/dtvm-dev-x64:main (same image
+# digest as green main@32e5baa, which ran on ubuntu-24.04).
 
 on:
   push:
@@ -32,7 +35,7 @@ env:
 jobs:
   build_test_interp_on_x86:
     name: Build and test DTVM interpreter on x86-64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: dtvmdev1/dtvm-dev-x64:main
     steps:
@@ -81,7 +84,7 @@ jobs:
 
   build_test_singlepass_on_x86:
     name: Build and test DTVM singlepass on x86-64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: dtvmdev1/dtvm-dev-x64:main
     steps:
@@ -130,7 +133,7 @@ jobs:
 
   build_test_multipass_on_x86:
     name: Build and test DTVM multipass on x86-64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: dtvmdev1/dtvm-dev-x64:main
     steps:
@@ -179,7 +182,7 @@ jobs:
 
   build_test_evmabi_mock_cli_on_x86:
     name: Build and test DTVM cli with evm abi hostapis on x86-64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: dtvmdev1/dtvm-dev-x64:main
     steps:

@@ -108,10 +108,10 @@ if(ZEN_ENABLE_SPEC_TEST)
     endif()
   endif()
 
-  # Top-level CMakeLists skips -fsanitize=address when VIRTUAL_STACK is
-  # on (ASan cannot instrument the alternate stack). Per-test ASan flags
-  # must match, or instrumented tests mix with uninstrumented
-  # compiler/runtime objects and segfault (same class as DTVMStack#629).
+  # Top-level CMakeLists skips -fsanitize=address when VIRTUAL_STACK is on (ASan
+  # cannot instrument the alternate stack). Per-test ASan flags must match, or
+  # instrumented tests mix with uninstrumented compiler/runtime objects and
+  # segfault (same class as DTVMStack#629).
   set(ZEN_TEST_ENABLE_ASAN OFF)
   if(ZEN_ENABLE_ASAN AND NOT ZEN_ENABLE_VIRTUAL_STACK)
     set(ZEN_TEST_ENABLE_ASAN ON)
