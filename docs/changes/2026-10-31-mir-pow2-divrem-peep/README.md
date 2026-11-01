@@ -33,13 +33,13 @@ nonzero constant power of two cannot trap.
 - LazyJIT stub publish is untouched.
 
 Review follow-up: `isPureExpr` is insufficient for remainder-by-one
-(nested `udiv(_,0)`, `wasm_fptosi`/`fptoui`, and i128 overflow ops are
-"pure" but trap). `exprMayTrap` covers those families; otherwise
-`and(x, 0)` so `x` still evaluates. `foldAlgebra` recovers a same-block
-`dassign` of a constant through `dread` for every integer BINARY.
-Proven by nested-expression litmus (div/load/call/fptosi/fptoui/i128),
-wasm trap/effect tests, and JIT bytes for `rem_u8`/`div_u8`
-(AND/SHR, no DIV).
+(nested `udiv(_,0)`, `wasm_fptosi`/`fptoui`, i128 overflow ops, and
+`EVM_UDIV128_BY64` are "pure" but trap). `exprMayTrap` covers those
+families; otherwise `and(x, 0)` so `x` still evaluates. `foldAlgebra`
+recovers a same-block `dassign` of a constant through `dread` for every
+integer BINARY. Proven by nested-expression litmus
+(div/load/call/fptosi/fptoui/i128/evm_udiv128_by64), wasm trap/effect
+tests, and JIT bytes for `rem_u8`/`div_u8` (AND/SHR, no DIV).
 
 ## Checklist
 

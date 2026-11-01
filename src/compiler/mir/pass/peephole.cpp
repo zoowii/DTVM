@@ -481,8 +481,8 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
         // x % 1 == 0, but only fold to a constant when x cannot trap or
         // have effects. Otherwise keep evaluating x (and(x, 0) still
         // avoids DIV). isPureExpr alone is not enough: it does not
-        // reject nested udiv/urem/sdiv/srem, wasm_fptosi/fptoui, or
-        // i128 overflow ops.
+        // reject nested udiv/urem/sdiv/srem, wasm_fptosi/fptoui, i128
+        // overflow ops, or EVM_UDIV128_BY64 (unguarded DIV64r).
         if (isNontrappingPureExpr(LHS)) {
           return makeIntConst(Ty, 0);
         }
@@ -670,6 +670,12 @@ bool MIRPeephole::exprMayTrap(const MInstruction *Inst) {
     return true;
   }
   if (Inst->getKind() == MInstruction::OVERFLOW_I128_BINARY) {
+    return true;
+  }
+  // Unguarded x86 DIV64r: traps on divisor 0 or a quotient that does
+  // not fit in 64 bits. EVM_UREM128_BY64 is an extractor; recursion
+  // on its operand covers it once the division is classified.
+  if (Inst->getKind() == MInstruction::EVM_UDIV128_BY64) {
     return true;
   }
   for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {

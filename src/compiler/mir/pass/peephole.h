@@ -51,8 +51,9 @@ private:
   // Loads / calls / wasm-checks are expressions; discarding them can
   // drop gas, bounds, or instance accesses. Only discard proven-pure trees.
   static bool isPureExpr(const MInstruction *Inst);
-  // isPureExpr does not reject integer div/rem, wasm_fptosi/fptoui, or
-  // i128 overflow ops (they trap on 0 / NaN / overflow).
+  // isPureExpr does not reject integer div/rem, wasm_fptosi/fptoui,
+  // i128 overflow ops, or EVM_UDIV128_BY64 (they trap on 0 / NaN /
+  // overflow / unguarded DIV64r).
   static bool exprMayTrap(const MInstruction *Inst);
   static bool isNontrappingPureExpr(const MInstruction *Inst);
   static void removeEdgeAndPhiIncomings(MBasicBlock &From, MBasicBlock *To);

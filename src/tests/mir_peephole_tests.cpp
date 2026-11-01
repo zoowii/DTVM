@@ -435,6 +435,87 @@ TEST(MIRPeepholeLitmus, URemByOneKeepsNestedFPToUI) {
   finishLitmus(F);
 }
 
+TEST(MIRPeepholeLitmus, URemByOneKeepsNestedEvmUdivZeroDivisor) {
+  CompileContext Ctx;
+  MType *I64 = &CompileContext::I64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I64, {I64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  F.appendBlock(Entry);
+  auto *X = F.createInstruction<DreadInstruction>(false, *Entry, I64, 0);
+  auto *Zero = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 0));
+  auto *Div = F.createInstruction<EvmUdiv128By64Instruction>(
+      false, *Entry, OP_evm_udiv128_by64, I64, Zero, X, Zero);
+  auto *One = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 1));
+  auto *URem = F.createInstruction<BinaryInstruction>(false, *Entry, OP_urem,
+                                                      I64, Div, One);
+  F.createInstruction<ReturnInstruction>(true, *Entry, I64, URem);
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("evm_udiv128_by64"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("return const.i64 0"), std::string::npos)
+      << "must keep trapping evm_udiv128_by64 (zero divisor): " << Dump;
+  finishLitmus(F);
+}
+
+TEST(MIRPeepholeLitmus, URemByOneKeepsNestedEvmUdivQuotientOverflow) {
+  CompileContext Ctx;
+  MType *I64 = &CompileContext::I64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I64, {}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  F.appendBlock(Entry);
+  auto *Zero = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 0));
+  auto *One = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 1));
+  // (1:0)/1 does not fit in 64 bits; unguarded DIV64r traps.
+  auto *Div = F.createInstruction<EvmUdiv128By64Instruction>(
+      false, *Entry, OP_evm_udiv128_by64, I64, One, Zero, One);
+  auto *URem = F.createInstruction<BinaryInstruction>(false, *Entry, OP_urem,
+                                                      I64, Div, One);
+  F.createInstruction<ReturnInstruction>(true, *Entry, I64, URem);
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("evm_udiv128_by64"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("return const.i64 0"), std::string::npos)
+      << "must keep trapping evm_udiv128_by64 (quotient overflow): " << Dump;
+  finishLitmus(F);
+}
+
+TEST(MIRPeepholeLitmus, URemByOneKeepsNestedEvmUremExtractor) {
+  CompileContext Ctx;
+  MType *I64 = &CompileContext::I64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I64, {I64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  F.appendBlock(Entry);
+  auto *X = F.createInstruction<DreadInstruction>(false, *Entry, I64, 0);
+  auto *Zero = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 0));
+  auto *Div = F.createInstruction<EvmUdiv128By64Instruction>(
+      false, *Entry, OP_evm_udiv128_by64, I64, Zero, X, Zero);
+  auto *Rem =
+      F.createInstruction<EvmUrem128By64Instruction>(false, *Entry, I64, Div);
+  auto *One = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 1));
+  auto *URem = F.createInstruction<BinaryInstruction>(false, *Entry, OP_urem,
+                                                      I64, Rem, One);
+  F.createInstruction<ReturnInstruction>(true, *Entry, I64, URem);
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("evm_udiv128_by64"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("evm_urem128_by64"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("return const.i64 0"), std::string::npos)
+      << "must keep trapping extractor of evm_udiv128_by64: " << Dump;
+  finishLitmus(F);
+}
+
 TEST(MIRPeepholeLitmus, URemByOneKeepsNestedI128Overflow) {
   CompileContext Ctx;
   MType *I64 = &CompileContext::I64Type;

@@ -114,8 +114,8 @@ OOB). Load/store Scale stays 1. See
   `udiv`/`urem` with any nonzero divisor may fold to a constant (this
   does not require a power of two). Discarding a subtree requires a
   proven-pure **and nontrapping** tree (`isPureExpr` rejects load / call /
-  wasm-check but not integer div/rem, `wasm_fptosi`/`wasm_fptoui`, or i128
-  overflow ops; those must stay). Wasm `handleIDiv`
+  wasm-check but not integer div/rem, `wasm_fptosi`/`wasm_fptoui`, i128
+  overflow ops, or `EVM_UDIV128_BY64`; those must stay). Wasm `handleIDiv`
   assigns integer literals to temps; `foldAlgebra` recovers a same-block
   `dassign` of a constant through `dread` for **every integer BINARY**
   (not only `udiv`/`urem`) so `rem_u`/`div_u` by a
