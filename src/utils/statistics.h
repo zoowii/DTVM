@@ -45,6 +45,21 @@ public:
 
   void clearAllTimers();
 
+  // Successful-work counts over this Statistics/Runtime lifetime, not
+  // per-module snapshots. Each call adds N; they match cumulative timer
+  // records (including --num-extra-compilations). Eager N is compiled
+  // internal bodies; lazy N is precompiled stubs (not Fg/Bg bodies).
+  void noteEagerFunctionsCompiled(uint32_t N);
+  void noteLazyStubsPrecompiled(uint32_t N);
+
+  // Unlocked readers, same contract as report(): call only after
+  // compilation has quiesced (no concurrent note*/startRecord/stopRecord).
+  uint32_t getEagerFunctionsCompiled() const { return EagerFunctionsCompiled; }
+  uint32_t getLazyStubsPrecompiled() const { return LazyStubsPrecompiled; }
+  uint32_t getRecordCount(StatisticPhase Phase) const;
+
+  // Unlocked. Safe after teardown/quiescence; not safe concurrent with
+  // compilation writers.
   void report() const;
 
 private:
@@ -54,6 +69,8 @@ private:
   typedef std::pair<StatisticPhase, TimePoint> TimerPair;
   std::unordered_map<StatisticTimer, TimerPair> Timers;
   std::vector<StatisticRecord> Records;
+  uint32_t EagerFunctionsCompiled = 0;
+  uint32_t LazyStubsPrecompiled = 0;
 };
 
 } // namespace zen::utils

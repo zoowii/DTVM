@@ -80,7 +80,11 @@ The utils module is DTVM's **utility and shared facilities layer**, providing cr
 | `stopRecord` | `void stopRecord(StatisticTimer Timer)` | Stop and write to Records |
 | `revertRecord` | `void revertRecord(StatisticTimer Timer)` | Cancel; do not write |
 | `clearAllTimers` | `void clearAllTimers()` | Clear active timers |
-| `report` | `void report() const` | Summarize Records and output to log |
+| `noteEagerFunctionsCompiled` | `void noteEagerFunctionsCompiled(uint32_t N)` | Add N successful eager bodies to the Runtime-lifetime total (no-op if disabled) |
+| `noteLazyStubsPrecompiled` | `void noteLazyStubsPrecompiled(uint32_t N)` | Add N successful lazy stubs to the Runtime-lifetime total (no-op if disabled) |
+| `getEagerFunctionsCompiled` / `getLazyStubsPrecompiled` | `uint32_t` | Lifetime totals; comparable to cumulative Fg/Bg `times`, not last-module snapshots. Unlocked: read only after compilation has quiesced (no concurrent `note*` / `stopRecord`) |
+| `getRecordCount` | `uint32_t getRecordCount(StatisticPhase)` | Number of `stopRecord` entries for that phase. Unlocked; same quiescence rule as `report` |
+| `report` | `void report() const` | Summarize Records and output to log. Unlocked; CLI teardown reports after unload/join |
 
 ### 5. Perf Integration (`perf.h`)
 

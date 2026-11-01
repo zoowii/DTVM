@@ -54,6 +54,33 @@ void Statistics::clearAllTimers() {
   Timers.clear();
 }
 
+void Statistics::noteEagerFunctionsCompiled(uint32_t N) {
+  if (!Enabled) {
+    return;
+  }
+  common::LockGuard<common::Mutex> Lock(Mtx);
+  EagerFunctionsCompiled += N;
+}
+
+void Statistics::noteLazyStubsPrecompiled(uint32_t N) {
+  if (!Enabled) {
+    return;
+  }
+  common::LockGuard<common::Mutex> Lock(Mtx);
+  LazyStubsPrecompiled += N;
+}
+
+uint32_t Statistics::getRecordCount(StatisticPhase Phase) const {
+  uint32_t N = 0;
+  for (const auto &[P, TimeCost] : Records) {
+    (void)TimeCost;
+    if (P == Phase) {
+      ++N;
+    }
+  }
+  return N;
+}
+
 void Statistics::report() const {
   if (!Enabled) {
     return;
@@ -130,6 +157,13 @@ void Statistics::report() const {
   }
 
   ZEN_LOG_INFO("Total:\t\t%.3fms", TotalTimeCost);
+
+  if (EagerFunctionsCompiled > 0) {
+    ZEN_LOG_INFO("JIT functions compiled (eager):\t%u", EagerFunctionsCompiled);
+  }
+  if (LazyStubsPrecompiled > 0) {
+    ZEN_LOG_INFO("JIT lazy stubs precompiled:\t%u", LazyStubsPrecompiled);
+  }
 
   ZEN_LOG_INFO(
       "=================  [End] ZetaEngine Statistics =================");
