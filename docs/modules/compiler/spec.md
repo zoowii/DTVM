@@ -110,9 +110,14 @@ OOB). Load/store Scale stays 1. See
   integer expression trees and constant `br_if` terminators only. It must
   not fold `sdiv`/`srem`, `udiv`/`urem` by zero (wasm traps), or `ctz`/`clz`
   compares against a non-zero constant. Unsigned `udiv`/`urem` by a
-  nonzero constant power of two may become `ushr`/`and` (or a constant
-  when both operands are constant). Discarding a subtree requires a proven-pure tree
-  (no load / call / wasm-check). Folding a constant `br_if` must drop the
+  nonzero constant power of two may become `ushr`/`and`. Const-const
+  `udiv`/`urem` with any nonzero divisor may fold to a constant (this
+  does not require a power of two). Discarding a subtree requires a
+  proven-pure **and nontrapping** tree (`isPureExpr` rejects load / call /
+  wasm-check but not integer div/rem; those must stay). Wasm `handleIDiv`
+  assigns integer literals to temps; the matcher recovers a same-block
+  `dassign` of a constant through `dread` so `rem_u`/`div_u` by a
+  power of two still become `and`/`ushr`. Folding a constant `br_if` must drop the
   untaken CFG edge **and** any phi incoming on the still-live target that
   came from this block. After the pass, `DeadMBasicBlockElim` may drop
   unreachable blocks and must keep live phi incoming lists aligned with

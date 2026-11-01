@@ -75,7 +75,7 @@ Gaps found in source:
 
 | Pattern | Before this branch | Why it is/isn't a gap |
 | --- | --- | --- |
-| `urem x, 2^n` → `and x, 2^n-1` | Missing | Trap-safe (nonzero const). `lowerDivRemExpr` always emits DIV. `fastEmit_ri_` has `ISD::UDIV`→`SRL` but `OP_udiv` never calls it. **Landed here.** |
+| `urem x, 2^n` → `and x, 2^n-1` | Missing | Trap-safe (nonzero const). `lowerDivRemExpr` always emits DIV. `fastEmit_ri_` has `ISD::UDIV`→`SRL` but `OP_udiv` never calls it. **Landed here.** Same-block dread-of-const recovery (div/rem only) so wasm `handleIDiv` temps still peep; JIT bytes for `rem_u8` are AND, not DIV. |
 | `udiv x, 2^n` → `ushr x, n` | Missing | Same. **Landed here.** |
 | `sdiv`/`srem` by pow2 | Correctly not folded | Wasm `srem` is toward-zero, not AND; `sdiv` by 2 is not `sshr`. |
 | `udiv`/`urem` by 0 | Must not fold | Wasm IntegerDivisionByZero. Litmus + WAST trap kept. |
@@ -258,6 +258,10 @@ Implemented (tiny, reviewable, unit-tested, no box benches):
 - `udiv x, 2^n` → `ushr x, n` (`n=0` → identity)
 - const-const `udiv`/`urem` when divisor ≠ 0
 - explicit non-folds: zero divisor, non-pow2, `sdiv`/`srem`
+- `urem(x,1)` keeps trapping/effectful `x` (`and(x,0)` if not
+  nontrapping-pure)
+- Same-block dread-of-const recovery so wasm pow2 `rem_u`/`div_u` peeps
+  (JIT AND/SHR, no DIV)
 - addressing-fold stop: comment on `getMemoryLocation` + wrap WAST
   (no `[base+disp]` rewrite)
 

@@ -21,18 +21,30 @@ nonzero constant power of two cannot trap.
 
 ## Impact
 
-- Module: [compiler](../../modules/compiler/spec.md) — `MIRPeephole` only.
+- Module: [compiler](../../modules/compiler/spec.md) — `MIRPeephole`
+  (same-block dread-of-const recovery). `handleIDiv` still materializes
+  operands so signed overflow checks can reuse them without sharing
+  expression nodes.
 - Wasm trap semantics unchanged (`rem_u`/`div_u` by 0 still trap).
+  `urem(x, 1)` does not discard a trapping or effectful `x`.
 - EVM gas unchanged: EVM already strength-reduces const pow2 DIV/MOD in
   `handleDiv`/`handleMod`; the u64 runtime-divisor path uses a non-constant
   `select` guard, so this peep does not fire there.
 - LazyJIT stub publish is untouched.
+
+Review follow-up: `isPureExpr` is insufficient for remainder-by-one
+(nested `udiv(_,0)` is "pure" but traps). The fold uses
+`isNontrappingPureExpr`, otherwise `and(x, 0)` so `x` still evaluates.
+The matcher recovers a same-block `dassign` of a constant through
+`dread` (the wasm `handleIDiv` shape). Proven by nested-expression
+litmus, wasm trap/effect tests, and JIT bytes for `rem_u8`/`div_u8`
+(AND/SHR, no DIV).
 
 ## Checklist
 
 - [x] Implementation complete
 - [x] Tests added/updated (litmus, WAST, MIR lit, wasm e2e)
 - [x] Module specs in `docs/modules/` updated
-- [x] Build and tests pass — Debug multipass+singlepass: `mirPeepholeTests`
-  28/28, `lazyJitStubTests` 2/2, `specUnitTests peephole -c multipass -m
+- [x] Build and tests pass — Debug multipass+singlepass: `mirPeepholeTests`,
+  `lazyJitStubTests`, `specUnitTests peephole -c multipass -m
   multipass`, `ircompiler` on `tests/mir/peep-pow2-divrem.ir`

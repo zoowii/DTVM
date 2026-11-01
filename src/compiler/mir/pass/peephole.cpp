@@ -39,6 +39,7 @@ void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
     if (!InBlock.contains(Inst)) {
       continue;
     }
+    CurStmt = Inst;
     for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
       MInstruction *Op = Inst->getOperand(I);
       if (Op == nullptr) {
@@ -287,8 +288,8 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
   MType *Ty = Inst->getType();
 
   llvm::APInt LV, RV;
-  const bool LConst = matchIntConst(LHS, LV);
-  const bool RConst = matchIntConst(RHS, RV);
+  const bool LConst = matchIntConst(LHS, LV) || matchAssignedIntConst(LHS, LV);
+  const bool RConst = matchIntConst(RHS, RV) || matchAssignedIntConst(RHS, RV);
 
   if (LConst && RConst && LV.getBitWidth() == RV.getBitWidth()) {
     const unsigned Width = LV.getBitWidth();
@@ -477,7 +478,14 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     }
     if (Opc == OP_urem) {
       if (RV.isOne()) {
-        return makeIntConst(Ty, 0);
+        // x % 1 == 0, but only fold to a constant when x cannot trap or
+        // have effects. Otherwise keep evaluating x (and(x, 0) still
+        // avoids DIV). isPureExpr alone is not enough: it does not
+        // reject nested udiv/urem/sdiv/srem.
+        if (isNontrappingPureExpr(LHS)) {
+          return makeIntConst(Ty, 0);
+        }
+        return makeAnd(Ty, LHS, makeIntConst(Ty, 0));
       }
       return makeAnd(Ty, LHS, makeIntConst(Ty, (RV - 1).getZExtValue()));
     }
@@ -571,7 +579,11 @@ MInstruction *MIRPeephole::makeUShr(MType *Ty, MInstruction *LHS,
                                                  LHS, RHS);
 }
 
-bool MIRPeephole::matchIntConst(const MInstruction *Inst, llvm::APInt &Val) {
+bool MIRPeephole::matchIntConst(const MInstruction *Inst,
+                                llvm::APInt &Val) const {
+  if (Inst == nullptr) {
+    return false;
+  }
   const auto *C = llvm::dyn_cast<ConstantInstruction>(Inst);
   if (!C) {
     return false;
@@ -584,17 +596,38 @@ bool MIRPeephole::matchIntConst(const MInstruction *Inst, llvm::APInt &Val) {
   return true;
 }
 
-bool MIRPeephole::isIntZero(const MInstruction *Inst) {
+bool MIRPeephole::matchAssignedIntConst(const MInstruction *Inst,
+                                        llvm::APInt &Val) const {
+  const auto *Dr = llvm::dyn_cast_or_null<DreadInstruction>(Inst);
+  if (!Dr || CurBB == nullptr || CurStmt == nullptr) {
+    return false;
+  }
+  const uint32_t VarIdx = Dr->getVarIdx();
+  const MInstruction *LastAssign = nullptr;
+  for (MInstruction *Stmt : *CurBB) {
+    if (Stmt == CurStmt) {
+      break;
+    }
+    if (const auto *DA = llvm::dyn_cast<DassignInstruction>(Stmt)) {
+      if (DA->getVarIdx() == VarIdx) {
+        LastAssign = DA->getOperand<0>();
+      }
+    }
+  }
+  return matchIntConst(LastAssign, Val);
+}
+
+bool MIRPeephole::isIntZero(const MInstruction *Inst) const {
   llvm::APInt V;
   return matchIntConst(Inst, V) && V.isZero();
 }
 
-bool MIRPeephole::isIntOne(const MInstruction *Inst) {
+bool MIRPeephole::isIntOne(const MInstruction *Inst) const {
   llvm::APInt V;
   return matchIntConst(Inst, V) && V.isOne();
 }
 
-bool MIRPeephole::isIntAllOnes(const MInstruction *Inst) {
+bool MIRPeephole::isIntAllOnes(const MInstruction *Inst) const {
   llvm::APInt V;
   return matchIntConst(Inst, V) && V.isAllOnes();
 }
@@ -619,6 +652,29 @@ bool MIRPeephole::isPureExpr(const MInstruction *Inst) {
     }
   }
   return true;
+}
+
+bool MIRPeephole::exprMayTrap(const MInstruction *Inst) {
+  if (Inst == nullptr) {
+    return false;
+  }
+  const Opcode Opc = Inst->getOpcode();
+  if (Opc == OP_udiv || Opc == OP_urem || Opc == OP_sdiv || Opc == OP_srem) {
+    return true;
+  }
+  if (Opc >= OP_OVERFLOW_BIN_EXPR_START && Opc <= OP_OVERFLOW_BIN_EXPR_END) {
+    return true;
+  }
+  for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
+    if (exprMayTrap(Inst->getOperand(I))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MIRPeephole::isNontrappingPureExpr(const MInstruction *Inst) {
+  return isPureExpr(Inst) && !exprMayTrap(Inst);
 }
 
 bool MIRPeephole::evalICmp(CmpInstruction::Predicate Pred,
