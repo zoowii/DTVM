@@ -85,11 +85,31 @@ public:
     return static_cast<bool>(ThreadPool);
   }
 
+  /// Attempt/start counts: incremented when a compile path is entered, before
+  /// the body is produced, `Done` is stored, or the stub is patched. An acquire
+  /// load is not a completion barrier. Use `getBackgroundPublishCount()` for
+  /// completed background Greedy publication.
   uint32_t getForegroundCompileCount() const {
     return ForegroundCompileCount.load(std::memory_order_acquire);
   }
   uint32_t getBackgroundCompileCount() const {
     return BackgroundCompileCount.load(std::memory_order_acquire);
+  }
+
+  /// Completed background Greedy publications. Incremented with release after
+  /// the canonical pointer store, `Done`, and stub `xchg`. An acquire load that
+  /// observes N happens-after those N publishes.
+  uint32_t getBackgroundPublishCount() const {
+    return BackgroundPublishCount.load(std::memory_order_acquire);
+  }
+
+  /// Canonical background GreedyRA body, or nullptr if there is no pool or
+  /// this function has not been published yet.
+  const uint8_t *getGreedyRACodePtr(uint32_t FuncIdx) const {
+    if (!GreedyRACodePtrs || FuncIdx >= NumInternalFunctions) {
+      return nullptr;
+    }
+    return GreedyRACodePtrs[FuncIdx].load(std::memory_order_acquire);
   }
 
 private:
@@ -119,6 +139,7 @@ private:
   std::unique_ptr<common::ThreadPool<WasmFrontendContext>> ThreadPool;
   std::atomic<uint32_t> ForegroundCompileCount{0};
   std::atomic<uint32_t> BackgroundCompileCount{0};
+  std::atomic<uint32_t> BackgroundPublishCount{0};
 };
 
 class MIRTextJITCompiler final : public JITCompilerBase {
