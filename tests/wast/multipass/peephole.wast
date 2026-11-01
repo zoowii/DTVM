@@ -47,6 +47,12 @@
     (i32.shl (local.get 0) (i32.const 0)))
   (func (export "const_add") (result i32)
     (i32.add (i32.const 2) (i32.const 3)))
+  (func (export "mul8") (param i32) (result i32)
+    (i32.mul (local.get 0) (i32.const 8)))
+  (func (export "add_reassoc") (param i32) (result i32)
+    (i32.add (i32.add (local.get 0) (i32.const 10408)) (i32.const 8)))
+  (func (export "sub8") (param i32) (result i32)
+    (i32.sub (local.get 0) (i32.const 8)))
 
   (func (export "const_if_true") (param i32) (result i32)
     (if (result i32) (i32.const 1)
@@ -115,6 +121,10 @@
 (assert_return (invoke "and0" (i32.const 42)) (i32.const 0))
 (assert_return (invoke "shl0" (i32.const 42)) (i32.const 42))
 (assert_return (invoke "const_add") (i32.const 5))
+(assert_return (invoke "mul8" (i32.const 3)) (i32.const 24))
+(assert_return (invoke "add_reassoc" (i32.const 1)) (i32.const 10417))
+(assert_return (invoke "sub8" (i32.const 20)) (i32.const 12))
+(assert_return (invoke "sub8" (i32.const 0)) (i32.const -8))
 
 (assert_return (invoke "const_if_true" (i32.const 10)) (i32.const 11))
 (assert_return (invoke "const_if_false" (i32.const 10)) (i32.const 12))

@@ -31,7 +31,7 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 
 1. **Frontend→dMIR**: `WasmMirBuilder` / `EVMMirBuilder` translate source/bytecode to `MModule` + `MFunction` (dMIR)
 2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
-3. **dMIR→CgIR**: `X86CgLowering`, `X86CgPeephole`
+3. **dMIR→CgIR**: `X86CgLowering` (integer add/sub-imm → 3-address `LEA64_32r`/`LEA64r`; does **not** fold `add(dyn,imm)` into load/store disp — wasm wrap32), `X86CgPeephole`
 4. **Register allocation**: `FastRA` or `CgRAGreedy` + `CgRegisterCoalescer`, `CgVirtRegMap`, `CgLiveIntervals`, etc.
 5. **Post-RA processing**: `PrologEpilogInserter`, `ExpandPostRAPseudos`
 6. **Machine code emission**: `X86MCLowering` → ELF `.text` section
@@ -98,7 +98,8 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - `MIRPeephole` is function-local and deterministic: it rewrites nested
   integer expression trees and constant `br_if` terminators only. It must
   not fold `div`/`rem` (zero-divisor traps) or `ctz`/`clz` compares against
-  a non-zero constant. Discarding a subtree requires a proven-pure tree
+  a non-zero constant. It may reassociate `add(add(x,C1),C2)`, canonicalize
+  `sub(x,C)` to `add(x,-C)`, and rewrite `mul` by a power of two to `shl`. Discarding a subtree requires a proven-pure tree
   (no load / call / wasm-check). Folding a constant `br_if` must drop the
   untaken CFG edge **and** any phi incoming on the still-live target that
   came from this block. After the pass, `DeadMBasicBlockElim` may drop
@@ -109,6 +110,12 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
   `freeMem` must use `_operand_cap` (allocation width), not the live
   `_operand_num`. Pred/succ removal is swap-pop: `vector::erase` on a
   bump-allocated `CompileVector` can memmove into the LLVM ASan red zone.
+
+- x86 integer `add`/`sub` with a signed-disp32 immediate lowers to
+  three-address `LEA64r` / `LEA64_32r` (`trunc32(zext32(x)+disp)` for
+  i32, which equals wasm wrap32). The addend must **not** be folded
+  into load/store `Displacement`: x86-64 `[base+index+disp]` is a
+  64-bit EA and is not `zext64(wrap32(x+C))+N`.
 
 ### EVM JIT Invariants
 

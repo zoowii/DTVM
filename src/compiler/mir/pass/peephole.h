@@ -33,8 +33,12 @@ private:
   MInstruction *makeICmp(CmpInstruction::Predicate Pred, MType *Ty,
                          MInstruction *LHS, MInstruction *RHS);
   MInstruction *makeAnd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
+  MInstruction *makeAdd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
+  MInstruction *makeShl(MType *Ty, MInstruction *LHS, MInstruction *RHS);
 
   static bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val);
+  static bool matchAddImm(MInstruction *Inst, MInstruction *&Dyn,
+                          llvm::APInt &Imm);
   static bool isIntZero(const MInstruction *Inst);
   static bool isIntOne(const MInstruction *Inst);
   static bool isIntAllOnes(const MInstruction *Inst);

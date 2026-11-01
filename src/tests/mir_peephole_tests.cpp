@@ -270,6 +270,50 @@ TEST(MIRPeepholeLitmus, AlgebraIdentities) {
   }
 }
 
+TEST(MIRPeepholeLitmus, MulPow2FoldsToShl) {
+  MirBuilder B;
+  B.ret(B.bin(OP_mul, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("mul"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("shl"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 3"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, MulThreeDoesNotFoldToShl) {
+  MirBuilder B;
+  B.ret(B.bin(OP_mul, B.param(), B.iconst(3)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("mul"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, AddImmReassoc) {
+  MirBuilder B;
+  auto *Inner = B.bin(OP_add, B.param(), B.iconst(10408));
+  B.ret(B.bin(OP_add, Inner, B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_NE(Dump.find("const.i32 10416"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, SubImmCanonicalizesToAdd) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sub, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("sub"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("add"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, AddThenSubImmReassoc) {
+  MirBuilder B;
+  auto *Inner = B.bin(OP_add, B.param(), B.iconst(10408));
+  B.ret(B.bin(OP_sub, Inner, B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_NE(Dump.find("const.i32 10400"), std::string::npos) << Dump;
+}
+
 TEST(PhiIncomingLayout, RemoveIncomingKeepsRemainingPairs) {
   CompileContext Ctx;
   MType *I32 = &CompileContext::I32Type;
@@ -489,6 +533,8 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "f13", 1), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "f15", 0), 5);
   EXPECT_EQ(callI32(*RT, *Inst, "const_br_if_fallthrough", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "mul8", 3), 24);
+  EXPECT_EQ(callI32(*RT, *Inst, "add_reassoc", 1), 10417);
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
