@@ -277,9 +277,13 @@ dispatch, fallback, gas, and runtime ABI behavior are unchanged.
 ### JIT Statistics and perf
 
 - Compilation start/end times are recorded in `utils::StatisticPhase::JITCompilation`
-- Eager multipass records `JIT functions compiled (eager): N` (`N` =
-  internal functions). Lazy records `JIT lazy stubs precompiled: N`;
-  bodies actually compiled are `JIT Lazy Compilation(Fg|Bg): M times`.
+- Eager multipass records `JIT functions compiled (eager): N` where `N`
+  is the Runtime-lifetime sum of successfully compiled internal
+  function bodies (accumulates across modules / extra compilations).
+  Lazy records `JIT lazy stubs precompiled: N` the same way (stubs, not
+  the resolver). Bodies actually compiled remain
+  `JIT Lazy Compilation(Fg|Bg): M times`. Compare N vs Fg only with
+  `--disable-multipass-multithread` so Bg does not also compile.
 - When `ZEN_ENABLE_LINUX_PERF` is enabled, perf JIT dump symbols (e.g., `EVMBB*`) are emitted for generated blocks
 
 ---

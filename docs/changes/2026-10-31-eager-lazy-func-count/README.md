@@ -16,8 +16,9 @@ no paper-total change):
 - `JIT lazy stubs precompiled: N`
 
 Lazy bodies actually compiled remain `JIT Lazy Compilation(Fg): M times`
-(and Bg). Compare `N` vs `M` on figlet to see unused-function compile
-cost.
+(and Bg). Counts accumulate over the Runtime reporting lifetime (same
+scope as timer records), including `--num-extra-compilations`. Compare
+`N` vs `M` on figlet to see unused-function compile cost.
 
 ## Motivation
 
@@ -26,10 +27,13 @@ modules. Counting is the first measurement, not a compile-time cut.
 
 ## Impact
 
-- `src/utils/statistics.{h,cpp}` — note + report lines
+- `src/utils/statistics.{h,cpp}` — note + report lines; notes add to
+  the Runtime-lifetime totals (they do not overwrite)
 - `src/compiler/compiler.cpp` — `EagerJITCompiler::compile`,
   `LazyJITCompiler::precompile`
-- Spec: `docs/modules/compiler/spec.md` (JIT Statistics)
+- `src/tests/statistics_tests.cpp` — two-compilation regression
+- Spec: `docs/modules/compiler/spec.md` (JIT Statistics),
+  `docs/modules/utils/spec.md` (counter lifetime)
 
 Does not change stub publish, RA, or wasm traps. FastRA spill reduction
 is **not** in this PR (needs a fib dump; not high-confidence).
@@ -41,8 +45,9 @@ is **not** in this PR (needs a fib dump; not high-confidence).
 dtvm -m multipass --enable-statistics --log-level info figlet.wasm ...
 # grep "JIT functions compiled (eager)" and "JIT Compilation:"
 
-# lazy (stubs all; bodies on request)
-dtvm -m multipass --enable-multipass-lazy --enable-statistics --log-level info figlet.wasm ...
+# lazy: stubs all; bodies on request. Disable BG so Fg is the used-body count.
+dtvm -m multipass --enable-multipass-lazy --disable-multipass-multithread \
+  --enable-statistics --log-level info figlet.wasm ...
 # grep "JIT lazy stubs precompiled" and "JIT Lazy Compilation(Fg)"
 ```
 
@@ -52,10 +57,9 @@ dtvm -m multipass --enable-multipass-lazy --enable-statistics --log-level info f
 ## Checklist
 
 - [x] Implementation complete
-- [x] Tests added/updated — stats report lines; no new litmus (counts are
-      logging-only). Wrap WAST lives on the addressing-stop PR.
-- [x] Module specs in `docs/modules/` updated
-- [x] Build and tests pass — `specUnitTests peephole -c multipass -m
-      multipass`; `dtvm --enable-statistics` on `peephole.0.wasm` prints
-      `JIT functions compiled (eager): 25` vs lazy stubs 25 and Fg 1
-      (single export `add0`)
+- [x] Tests added/updated — `statisticsTests`: two-compilation accumulate,
+  unused-body lazy Fg=1, disabled-stats stay zero, repeat `report()` does
+  not double-count.
+- [x] Module specs in `docs/modules/` updated (compiler + utils)
+- [x] Build and tests pass — `statisticsTests`; `specUnitTests peephole
+      -c multipass -m multipass` (smoke)

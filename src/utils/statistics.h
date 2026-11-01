@@ -45,11 +45,16 @@ public:
 
   void clearAllTimers();
 
-  // Module function counts (not times). Eager compiles every internal
-  // function in one JITCompilation timer; lazy Fg/Bg times already count
-  // bodies actually compiled.
+  // Successful-work counts over this Statistics/Runtime lifetime, not
+  // per-module snapshots. Each call adds N; they match cumulative timer
+  // records (including --num-extra-compilations). Eager N is compiled
+  // internal bodies; lazy N is precompiled stubs (not Fg/Bg bodies).
   void noteEagerFunctionsCompiled(uint32_t N);
   void noteLazyStubsPrecompiled(uint32_t N);
+
+  uint32_t getEagerFunctionsCompiled() const { return EagerFunctionsCompiled; }
+  uint32_t getLazyStubsPrecompiled() const { return LazyStubsPrecompiled; }
+  uint32_t getRecordCount(StatisticPhase Phase) const;
 
   void report() const;
 
