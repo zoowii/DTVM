@@ -21,7 +21,7 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
   for (MBasicBlock *BB : Func) {
     rewriteBlock(*BB);
   }
-  hoistLoopInvariantFPConsts(Func);
+  hoistNonEntryFPConsts(Func);
 
 #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
   llvm::dbgs() << "\n########## MIR Dump After MIR Peephole ##########\n\n";
@@ -627,7 +627,11 @@ static MConstantFloat *matchNonZeroFPConst(MInstruction *Inst) {
   return CF;
 }
 
-void MIRPeephole::hoistLoopInvariantFPConsts(MFunction &Func) {
+// Materialize each distinct non-+0.0 FP constant used outside the entry
+// block once in entry. This is not loop/preheader analysis and has no
+// use-frequency or cold-path filter: every eligible constant is initialized
+// on every invocation, which can grow the frame and live ranges.
+void MIRPeephole::hoistNonEntryFPConsts(MFunction &Func) {
   if (Func.getNumBasicBlocks() < 2) {
     return;
   }

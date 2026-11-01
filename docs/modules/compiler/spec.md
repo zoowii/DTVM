@@ -30,8 +30,8 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 ### Multi-pass Compilation Pipeline
 
 1. **Frontend→dMIR**: `WasmMirBuilder` / `EVMMirBuilder` translate source/bytecode to `MModule` + `MFunction` (dMIR)
-2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, constant `br_if`, FP-const hoist), `DeadMBasicBlockElim`, re-`MVerifier`
-3. **dMIR→CgIR**: `X86CgLowering` (cmp+`br_if` → cmp+jcc when flags are not a live value), `X86CgPeephole`
+2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, constant `br_if`, entry-wide FP-const hoist), `DeadMBasicBlockElim`, re-`MVerifier`
+3. **dMIR→CgIR**: `X86CgLowering` (cmp+`br_if` → cmp+jcc when the compare result has not already been materialized), `X86CgPeephole`
 4. **Register allocation**: `FastRA` or `CgRAGreedy` + `CgRegisterCoalescer`, `CgVirtRegMap`, `CgLiveIntervals`, etc.
 5. **Post-RA processing**: `PrologEpilogInserter`, `ExpandPostRAPseudos`
 6. **Machine code emission**: `X86MCLowering` → ELF `.text` section
@@ -98,9 +98,11 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - `MIRPeephole` is function-local and deterministic: it rewrites nested
   integer expression trees and constant `br_if` terminators, and hoists
   non-zero FP constants used outside the entry block into an entry
-  `dassign` (skipping `+0.0`, which x86 materializes cheaply, and
-  skipping an entry with predecessors so a backedge cannot re-execute
-  the init). It must
+  `dassign`. The hoist is entry-wide: it does not run loop/preheader or
+  use-frequency analysis, skips `+0.0` (x86 `FLD0`), and skips an entry
+  with predecessors so a backedge cannot re-execute the init. Growing
+  the frame and live ranges is an unmeasured tradeoff (jacobi assembly
+  has been seen to grow `0x28` → `0x58`). It must
   not fold `div`/`rem` (zero-divisor traps) or `ctz`/`clz` compares against
   a non-zero constant. Discarding a subtree requires a proven-pure tree
   (no load / call / wasm-check). Folding a constant `br_if` must drop the

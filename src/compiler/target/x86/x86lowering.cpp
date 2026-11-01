@@ -1680,9 +1680,9 @@ void X86CgLowering::lowerBrIfStmt(const BrIfInstruction &Inst) {
   X86::CondCode TakenCC = X86::COND_NE;
   bool UsedCmpFlags = false;
 
-  // Fold cmp + br_if to cmp + jcc when the compare is not already a live
-  // value (which would have been lowered to setcc). Skip FCMP_OEQ/UNE:
-  // those need two flag tests and stay on the setcc path.
+  // Fold cmp + br_if to cmp + jcc when the compare result has not already
+  // been materialized (expression-cache miss). Skip FCMP_OEQ/UNE: those
+  // need two flag tests and stay on the setcc path.
   if (const auto *CI = dyn_cast<CmpInstruction>(Operand);
       CI && _expr_reg_map.find(CI) == _expr_reg_map.end()) {
     const auto [CC, NeedSwap] = getX86ConditionCode(CI->getPredicate());
