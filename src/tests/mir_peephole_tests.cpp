@@ -15,6 +15,7 @@
 #include "runtime/runtime.h"
 #include "zetaengine.h"
 
+#include "llvm/ADT/APFloat.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <gtest/gtest.h>
@@ -22,6 +23,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -245,12 +247,24 @@ const uint8_t *jitFuncBytes(const zen::runtime::Module &Mod, const char *Name,
   return P;
 }
 
-double callF64(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
+bool tryCallF64(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg,
+                double &Out) {
   std::vector<TypedValue> Results;
-  EXPECT_TRUE(RT.callWasmFunction(Inst, Name, {std::to_string(Arg)}, Results))
+  if (!RT.callWasmFunction(Inst, Name, {std::to_string(Arg)}, Results)) {
+    return false;
+  }
+  if (Inst.hasError() || Results.size() != 1) {
+    return false;
+  }
+  Out = Results[0].Value.F64;
+  return true;
+}
+
+double callF64(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
+  double Out = 0.0;
+  EXPECT_TRUE(tryCallF64(RT, Inst, Name, Arg, Out))
       << (Inst.hasError() ? Inst.getError().getFormattedMessage() : Name);
-  EXPECT_EQ(Results.size(), 1u);
-  return Results.empty() ? 0.0 : Results[0].Value.F64;
+  return Out;
 }
 
 } // namespace
@@ -1009,6 +1023,100 @@ TEST(MIRPeepholeLitmus, DoesNotHoistPlusZeroFPConst) {
   finishLitmus(F);
 }
 
+TEST(MIRPeepholeLitmus, HoistsMinusZeroFPConst) {
+  CompileContext Ctx;
+  MType *F64 = &CompileContext::F64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *F64, {F64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *Body = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(Body);
+
+  F.createInstruction<BrInstruction>(true, *Entry, Ctx, Body);
+  Entry->addSuccessor(Body);
+
+  auto *Param = F.createInstruction<DreadInstruction>(false, *Body, F64, 0);
+  auto *C = F.createInstruction<ConstantInstruction>(
+      false, *Body, F64,
+      *MConstantFloat::get(
+          Ctx, *F64,
+          llvm::APFloat::getZero(llvm::APFloat::IEEEdouble(), true)));
+  auto *Add = F.createInstruction<BinaryInstruction>(false, *Body, OP_add, F64,
+                                                     Param, C);
+  F.createInstruction<ReturnInstruction>(true, *Body, F64, Add);
+
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("var $1"), std::string::npos) << Dump;
+  finishLitmus(F);
+}
+
+TEST(MIRPeepholeLitmus, HoistsF32AndDedupsRepeatedConst) {
+  CompileContext Ctx;
+  MType *F32 = &CompileContext::F32Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *F32, {F32}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *Body = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(Body);
+
+  F.createInstruction<BrInstruction>(true, *Entry, Ctx, Body);
+  Entry->addSuccessor(Body);
+
+  auto *Param = F.createInstruction<DreadInstruction>(false, *Body, F32, 0);
+  auto *C0 = F.createInstruction<ConstantInstruction>(
+      false, *Body, F32, *MConstantFloat::get(Ctx, *F32, 0.2f));
+  auto *C1 = F.createInstruction<ConstantInstruction>(
+      false, *Body, F32, *MConstantFloat::get(Ctx, *F32, 0.2f));
+  auto *Mul = F.createInstruction<BinaryInstruction>(false, *Body, OP_mul, F32,
+                                                     Param, C0);
+  auto *Add = F.createInstruction<BinaryInstruction>(false, *Body, OP_add, F32,
+                                                     Mul, C1);
+  F.createInstruction<ReturnInstruction>(true, *Body, F32, Add);
+
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("var $1"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("var $2"), std::string::npos) << Dump;
+  finishLitmus(F);
+}
+
+TEST(MIRPeepholeLitmus, DoesNotHoistWhenEntryHasPredecessor) {
+  CompileContext Ctx;
+  MType *F64 = &CompileContext::F64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *F64, {F64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *Body = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(Body);
+
+  F.createInstruction<BrInstruction>(true, *Entry, Ctx, Body);
+  Entry->addSuccessor(Body);
+  F.createInstruction<BrInstruction>(true, *Body, Ctx, Entry);
+  Body->addSuccessor(Entry);
+
+  auto *Param = F.createInstruction<DreadInstruction>(false, *Body, F64, 0);
+  auto *C = F.createInstruction<ConstantInstruction>(
+      false, *Body, F64, *MConstantFloat::get(Ctx, *F64, 0.2));
+  auto *Mul = F.createInstruction<BinaryInstruction>(false, *Body, OP_mul, F64,
+                                                     Param, C);
+  F.createInstruction<ReturnInstruction>(true, *Body, F64, Mul);
+
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+
+  const std::string Dump = dumpFunc(F);
+  EXPECT_EQ(Dump.find("var $1"), std::string::npos) << Dump;
+  finishLitmus(F);
+}
+
 TEST(MIRPeepholeLitmus, DoesNotHoistFPConstUsedOnlyInEntry) {
   CompileContext Ctx;
   MType *F64 = &CompileContext::F64Type;
@@ -1125,6 +1233,23 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "count_lt", 1), 1);
   EXPECT_DOUBLE_EQ(callF64(*RT, *Inst, "scale02", 0), 0.0);
   EXPECT_DOUBLE_EQ(callF64(*RT, *Inst, "scale02", 5), 2.0);
+  EXPECT_EQ(callI32(*RT, *Inst, "i32_slt0", -1), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "i32_ult0", -1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "i32_slt_min", 0), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "i32_ult_min", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "i32_ult_min", -1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "i64_slt0", -1), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "i64_ult0", -1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_nan", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_lt_nan", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_eq_nan", 0), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_ne_nan", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_eq_signed_zero", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_inf", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_ninf", 0), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_slt", -1), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_slt", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_nan", 1), 0);
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
@@ -1148,18 +1273,44 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
 
   const int32_t Inputs[] = {0,  1,  2,  4,
                             16, -1, 42, static_cast<int32_t>(0x80000000u)};
-  const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
-                       "add0",    "rem_u8",  "div_u8",  "rem_u6",
-                       "rem_s8",  "f3",      "f4",      "f8",
-                       "f9",      "f12",     "f13",     "f14"};
+  const char *Fns[] = {"ctz_eqz",
+                       "clz_eqz",
+                       "ctz_eq4",
+                       "select_eq_true",
+                       "add0",
+                       "rem_u8",
+                       "div_u8",
+                       "rem_u6",
+                       "rem_s8",
+                       "f3",
+                       "f4",
+                       "f8",
+                       "f9",
+                       "f12",
+                       "f13",
+                       "f14",
+                       "i32_slt0",
+                       "i32_ult0",
+                       "i32_slt_min",
+                       "i32_ult_min",
+                       "i64_slt0",
+                       "i64_ult0",
+                       "if_slt",
+                       "f64_gt_nan",
+                       "f64_eq_nan",
+                       "f64_ne_nan",
+                       "f64_eq_signed_zero",
+                       "if_f64_gt_nan"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
       EXPECT_EQ(callI32(*RTM, **InstM, Fn, X), callI32(*RTS, **InstS, Fn, X))
           << Fn << " x=" << X;
     }
   }
-  // Bound loop counts: INT_MIN on count_lt/scale02 would not terminate.
-  const int32_t LoopInputs[] = {0, 1, 2, 4, 5};
+  // Negative bounds, including INT_MIN, take the signed ge_s exit
+  // immediately. Very large positive bounds are the expensive ones.
+  const int32_t LoopInputs[] = {
+      0, 1, 2, 4, 5, -1, static_cast<int32_t>(0x80000000u)};
   for (int32_t X : LoopInputs) {
     EXPECT_EQ(callI32(*RTM, **InstM, "count_lt", X),
               callI32(*RTS, **InstS, "count_lt", X))
@@ -1219,6 +1370,12 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
           Failures++;
           return;
         }
+        double D = 0.0;
+        if (!tryCallF64(*RT, *Inst, "scale02", 5, D) ||
+            std::abs(D - 2.0) > 1e-6) {
+          Failures++;
+          return;
+        }
       }
     });
   }
@@ -1273,7 +1430,14 @@ TEST(MIRPeepholeConcurrent, ParallelLazyCompileAndExecute) {
         }
         if (!tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5 ||
             !tryCallI32(*RT, *Inst, "f8", 11, V) || V != 11 ||
-            !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1) {
+            !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "count_lt", 5, V) || V != 5) {
+          Failures++;
+          return;
+        }
+        double D = 0.0;
+        if (!tryCallF64(*RT, *Inst, "scale02", 5, D) ||
+            std::abs(D - 2.0) > 1e-6) {
           Failures++;
           return;
         }
@@ -1304,6 +1468,8 @@ TEST(MIRPeepholeConcurrent, LazyJitWarmupThenReplay) {
   for (const char *Fn : Fns) {
     (void)callI32(*RT, *Inst, Fn, 1);
   }
+  EXPECT_EQ(callI32(*RT, *Inst, "count_lt", 5), 5);
+  EXPECT_DOUBLE_EQ(callF64(*RT, *Inst, "scale02", 5), 2.0);
   ASSERT_FALSE(Inst->hasError()) << Inst->getError().getFormattedMessage();
 
   constexpr int kIters = 200;
@@ -1319,6 +1485,10 @@ TEST(MIRPeepholeConcurrent, LazyJitWarmupThenReplay) {
     }
     if (std::string(Fn) == "f12" || std::string(Fn) == "f13") {
       EXPECT_EQ(Got, 1);
+    }
+    if ((I % 20) == 0) {
+      EXPECT_EQ(callI32(*RT, *Inst, "count_lt", 5), 5);
+      EXPECT_DOUBLE_EQ(callF64(*RT, *Inst, "scale02", 5), 2.0);
     }
   }
   EXPECT_FALSE(Inst->hasError()) << Inst->getError().getFormattedMessage();
