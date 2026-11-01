@@ -110,6 +110,46 @@ void expectOneJcc(const CgFunction &MF, unsigned CC, unsigned Target,
   EXPECT_EQ(Jccs[0].Target, Target) << Dump;
 }
 
+bool findUcomi(const CgFunction &MF, unsigned &Opc, CgRegister &Op0,
+               CgRegister &Op1, const std::string &Dump) {
+  for (CgBasicBlock *BB : MF) {
+    for (auto &MI : *BB) {
+      if (MI.getOpcode() == X86::UCOMISDrr ||
+          MI.getOpcode() == X86::UCOMISSrr) {
+        Opc = MI.getOpcode();
+        Op0 = MI.getOperand(0).getReg();
+        Op1 = MI.getOperand(1).getReg();
+        return true;
+      }
+    }
+  }
+  ADD_FAILURE() << "no UCOMI\n" << Dump;
+  return false;
+}
+
+CgRegister copyDestFromPhys(const CgFunction &MF, unsigned Phys) {
+  for (CgBasicBlock *BB : MF) {
+    for (auto &MI : *BB) {
+      if (!MI.isCopy() || MI.getNumOperands() < 2) {
+        continue;
+      }
+      const CgOperand &Dst = MI.getOperand(0);
+      const CgOperand &Src = MI.getOperand(1);
+      if (Dst.isReg() && Src.isReg() && Src.getReg() == Phys) {
+        return Dst.getReg();
+      }
+    }
+  }
+  return CgRegister();
+}
+
+void addCopyUse(CgFunction &MF, CgBasicBlock &BB, CgRegister Src,
+                const TargetRegisterClass *RC) {
+  CgRegister Dst = MF.getRegInfo().createVirtualRegister(RC);
+  MF.createCgInstruction(BB, MF.getTargetInstrInfo().get(TargetOpcode::COPY),
+                         Src, Dst);
+}
+
 } // namespace
 
 TEST(X86CgLowering, BrIfCmpEmitsDirectJccWithoutSetcc) {
@@ -302,6 +342,8 @@ TEST(X86CgLowering, FpDirectJccNanInfSignedZero) {
   const Case Cases[] = {
       {CmpInstruction::FCMP_OGT, APFloat::getNaN(Dbl), X86::COND_A},
       {CmpInstruction::FCMP_OLT, APFloat::getNaN(Dbl), X86::COND_A},
+      {CmpInstruction::FCMP_OGE, APFloat::getNaN(Dbl), X86::COND_AE},
+      {CmpInstruction::FCMP_OLE, APFloat::getNaN(Dbl), X86::COND_AE},
       {CmpInstruction::FCMP_OGT, APFloat::getInf(Dbl), X86::COND_A},
       {CmpInstruction::FCMP_OGT, APFloat::getInf(Dbl, true), X86::COND_A},
       {CmpInstruction::FCMP_OGT, APFloat::getZero(Dbl, true), X86::COND_A},
@@ -337,8 +379,131 @@ TEST(X86CgLowering, FpDirectJccNanInfSignedZero) {
       const std::string Dump = dumpCg(MF);
       EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
       expectOneJcc(MF, C.CC, 2, Dump);
+      unsigned UcomiOpc = 0;
+      CgRegister U0, U1, ParamV = copyDestFromPhys(MF, X86::XMM0);
+      ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
+      EXPECT_EQ(UcomiOpc, Width ? X86::UCOMISSrr : X86::UCOMISDrr) << Dump;
+      ASSERT_TRUE(ParamV.isVirtual()) << Dump;
+      // OLT/OLE swap UCOMI operands so COND_A/AE still means "param ? const".
+      const bool Swapped = C.Pred == CmpInstruction::FCMP_OLT ||
+                           C.Pred == CmpInstruction::FCMP_OLE;
+      if (Swapped) {
+        EXPECT_EQ(U1, ParamV) << Dump;
+        EXPECT_NE(U0, ParamV) << Dump;
+      } else {
+        EXPECT_EQ(U0, ParamV) << Dump;
+        EXPECT_NE(U1, ParamV) << Dump;
+      }
       finishLitmus(F);
     }
+  }
+}
+
+TEST(X86CgLowering, FpDirectJccSwapsOltOleOperands) {
+  struct Case {
+    CmpInstruction::Predicate Pred;
+    unsigned CC;
+    bool Swap;
+  };
+  const Case Cases[] = {
+      {CmpInstruction::FCMP_OLT, X86::COND_A, true},
+      {CmpInstruction::FCMP_OLE, X86::COND_AE, true},
+      {CmpInstruction::FCMP_OGT, X86::COND_A, false},
+      {CmpInstruction::FCMP_OGE, X86::COND_AE, false},
+  };
+  for (int Width = 0; Width < 2; ++Width) {
+    MType *FPTy = Width ? &CompileContext::F32Type : &CompileContext::F64Type;
+    for (const Case &C : Cases) {
+      CompileContext Ctx;
+      Ctx.initialize();
+      MType *I32 = &CompileContext::I32Type;
+      MFunction F(Ctx, 0);
+      F.setFunctionType(MFunctionType::create(Ctx, *I32, {FPTy, FPTy}));
+      MBasicBlock *Entry = F.createBasicBlock();
+      MBasicBlock *Taken = F.createBasicBlock();
+      F.appendBlock(Entry);
+      F.appendBlock(Taken);
+
+      auto *P0 = F.createInstruction<COMPILER::DreadInstruction>(false, *Entry,
+                                                                 FPTy, 0);
+      auto *P1 = F.createInstruction<COMPILER::DreadInstruction>(false, *Entry,
+                                                                 FPTy, 1);
+      lowerDirectBrIf(F, I32, C.Pred, P0, P1, Entry, Taken);
+
+      CgFunction MF(Ctx, F);
+      X86CgLowering Lowering(MF);
+      const std::string Dump = dumpCg(MF);
+      EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
+      expectOneJcc(MF, C.CC, 2, Dump);
+      unsigned UcomiOpc = 0;
+      CgRegister U0, U1;
+      ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
+      EXPECT_EQ(UcomiOpc, Width ? X86::UCOMISSrr : X86::UCOMISDrr) << Dump;
+      CgRegister V0 = copyDestFromPhys(MF, X86::XMM0);
+      CgRegister V1 = copyDestFromPhys(MF, X86::XMM1);
+      ASSERT_TRUE(V0.isVirtual() && V1.isVirtual()) << Dump;
+      if (C.Swap) {
+        EXPECT_EQ(U0, V1) << Dump;
+        EXPECT_EQ(U1, V0) << Dump;
+      } else {
+        EXPECT_EQ(U0, V0) << Dump;
+        EXPECT_EQ(U1, V1) << Dump;
+      }
+      finishLitmus(F);
+    }
+  }
+}
+
+TEST(X86CgLowering, FpDirectJccNanOnEitherOperand) {
+  struct Case {
+    bool NanLHS;
+    CmpInstruction::Predicate Pred;
+    bool ExpectParamAsOp0;
+  };
+  const Case Cases[] = {
+      {false, CmpInstruction::FCMP_OGT, true},  // param, nan
+      {true, CmpInstruction::FCMP_OGT, false},  // nan, param
+      {false, CmpInstruction::FCMP_OLT, false}, // swap: nan, param
+      {true, CmpInstruction::FCMP_OLT, true},   // swap: param, nan
+  };
+  for (const Case &C : Cases) {
+    CompileContext Ctx;
+    Ctx.initialize();
+    MType *I32 = &CompileContext::I32Type;
+    MType *F64 = &CompileContext::F64Type;
+    MFunction F(Ctx, 0);
+    F.setFunctionType(MFunctionType::create(Ctx, *I32, {F64}));
+    MBasicBlock *Entry = F.createBasicBlock();
+    MBasicBlock *Taken = F.createBasicBlock();
+    F.appendBlock(Entry);
+    F.appendBlock(Taken);
+
+    auto *Param =
+        F.createInstruction<COMPILER::DreadInstruction>(false, *Entry, F64, 0);
+    auto *Nan = makeFP(F, *Entry, F64, APFloat::getNaN(APFloat::IEEEdouble()));
+    if (C.NanLHS) {
+      lowerDirectBrIf(F, I32, C.Pred, Nan, Param, Entry, Taken);
+    } else {
+      lowerDirectBrIf(F, I32, C.Pred, Param, Nan, Entry, Taken);
+    }
+
+    CgFunction MF(Ctx, F);
+    X86CgLowering Lowering(MF);
+    const std::string Dump = dumpCg(MF);
+    EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
+    expectOneJcc(MF, X86::COND_A, 2, Dump);
+    unsigned UcomiOpc = 0;
+    CgRegister U0, U1, ParamV = copyDestFromPhys(MF, X86::XMM0);
+    ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
+    ASSERT_TRUE(ParamV.isVirtual()) << Dump;
+    if (C.ExpectParamAsOp0) {
+      EXPECT_EQ(U0, ParamV) << Dump;
+      EXPECT_NE(U1, ParamV) << Dump;
+    } else {
+      EXPECT_NE(U0, ParamV) << Dump;
+      EXPECT_EQ(U1, ParamV) << Dump;
+    }
+    finishLitmus(F);
   }
 }
 
@@ -374,6 +539,54 @@ TEST(X86CgLowering, FpShortDiamondInvertsFalseEdge) {
   const std::string Dump = dumpCg(MF);
   EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
   expectOneJcc(MF, X86::COND_BE, 2, Dump);
+  unsigned UcomiOpc = 0;
+  CgRegister U0, U1, ParamV = copyDestFromPhys(MF, X86::XMM0);
+  ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
+  ASSERT_TRUE(ParamV.isVirtual()) << Dump;
+  EXPECT_EQ(U0, ParamV) << Dump;
+  EXPECT_NE(U1, ParamV) << Dump;
+  finishLitmus(F);
+}
+
+TEST(X86CgLowering, FpShortDiamondOltSwapsAndInverts) {
+  CompileContext Ctx;
+  Ctx.initialize();
+  MType *I32 = &CompileContext::I32Type;
+  MType *F64 = &CompileContext::F64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I32, {F64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  MBasicBlock *TrueBB = F.createBasicBlock();
+  MBasicBlock *FalseBB = F.createBasicBlock();
+  F.appendBlock(Entry);
+  F.appendBlock(TrueBB);
+  F.appendBlock(FalseBB);
+
+  auto *Param =
+      F.createInstruction<COMPILER::DreadInstruction>(false, *Entry, F64, 0);
+  auto *Two = makeFP(F, *Entry, F64, APFloat(2.0));
+  auto *Cmp = F.createInstruction<COMPILER::CmpInstruction>(
+      false, *Entry, CmpInstruction::FCMP_OLT, I32, Param, Two);
+  F.createInstruction<COMPILER::BrIfInstruction>(true, *Entry, Ctx, Cmp, TrueBB,
+                                                 FalseBB);
+  Entry->addSuccessor(TrueBB);
+  Entry->addSuccessor(FalseBB);
+  F.createInstruction<COMPILER::BrInstruction>(true, *TrueBB, Ctx, FalseBB);
+  TrueBB->addSuccessor(FalseBB);
+  retImm(F, *FalseBB, I32, 0);
+
+  CgFunction MF(Ctx, F);
+  X86CgLowering Lowering(MF);
+  const std::string Dump = dumpCg(MF);
+  EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
+  // OLT uses COND_A after the operand swap; the diamond inverts to COND_BE.
+  expectOneJcc(MF, X86::COND_BE, 2, Dump);
+  unsigned UcomiOpc = 0;
+  CgRegister U0, U1, ParamV = copyDestFromPhys(MF, X86::XMM0);
+  ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
+  ASSERT_TRUE(ParamV.isVirtual()) << Dump;
+  EXPECT_EQ(U1, ParamV) << Dump;
+  EXPECT_NE(U0, ParamV) << Dump;
   finishLitmus(F);
 }
 
@@ -412,15 +625,22 @@ TEST(X86CgLowering, FcmpOeqUneStayOnTwoTestFallback) {
 
 namespace {
 
-void buildSetccTestJe(CgFunction &MF, CgBasicBlock &BB, CgBasicBlock &Dest,
-                      bool WithMovzx, bool ExtraSetccUse) {
+struct SetccChainRegs {
+  CgRegister Setcc;
+  CgRegister Wide;
+};
+
+// CMP; SETCC; [MOVZX]; TEST rr; JE — keep this chain contiguous so
+// optimizeCmp reaches the one-use guards. Extra live consumers belong
+// in a successor, not between these instructions.
+SetccChainRegs buildSetccTestJe(CgFunction &MF, CgBasicBlock &BB,
+                                CgBasicBlock &Dest, bool WithMovzx) {
   auto &MRI = MF.getRegInfo();
   const auto &TII = MF.getTargetInstrInfo();
   CgRegister LHS = MRI.createVirtualRegister(&X86::GR32RegClass);
   CgRegister RHS = MRI.createVirtualRegister(&X86::GR32RegClass);
   CgRegister Setcc = MRI.createVirtualRegister(&X86::GR8RegClass);
   CgRegister Wide = MRI.createVirtualRegister(&X86::GR32RegClass);
-  CgRegister Extra = MRI.createVirtualRegister(&X86::GR8RegClass);
 
   SmallVector<CgOperand, 2> CmpOps{
       CgOperand::createRegOperand(LHS, false),
@@ -441,9 +661,6 @@ void buildSetccTestJe(CgFunction &MF, CgBasicBlock &BB, CgBasicBlock &Dest,
     TestReg = Wide;
     TestOpc = X86::TEST32rr;
   }
-  if (ExtraSetccUse) {
-    MF.createCgInstruction(BB, TII.get(TargetOpcode::COPY), Setcc, Extra);
-  }
 
   SmallVector<CgOperand, 2> TestOps{
       CgOperand::createRegOperand(TestReg, false),
@@ -456,6 +673,7 @@ void buildSetccTestJe(CgFunction &MF, CgBasicBlock &BB, CgBasicBlock &Dest,
       CgOperand::createImmOperand(X86::COND_E),
   };
   MF.createCgInstruction(BB, TII.get(X86::JCC_1), JccOps);
+  return {Setcc, WithMovzx ? Wide : CgRegister()};
 }
 
 } // namespace
@@ -475,7 +693,7 @@ TEST(X86CgPeephole, OptimizeCmpSetccMovzxTestJe) {
   CgBasicBlock *BB1 = MF.createCgBasicBlock();
   MF.appendCgBasicBlock(BB0);
   MF.appendCgBasicBlock(BB1);
-  buildSetccTestJe(MF, *BB0, *BB1, /*WithMovzx=*/true, /*ExtraSetccUse=*/false);
+  buildSetccTestJe(MF, *BB0, *BB1, /*WithMovzx=*/true);
 
   X86CgPeephole Peep(MF);
   (void)Peep;
@@ -502,8 +720,7 @@ TEST(X86CgPeephole, OptimizeCmpSetccTestJe) {
   CgBasicBlock *BB1 = MF.createCgBasicBlock();
   MF.appendCgBasicBlock(BB0);
   MF.appendCgBasicBlock(BB1);
-  buildSetccTestJe(MF, *BB0, *BB1, /*WithMovzx=*/false,
-                   /*ExtraSetccUse=*/false);
+  buildSetccTestJe(MF, *BB0, *BB1, /*WithMovzx=*/false);
 
   X86CgPeephole Peep(MF);
   (void)Peep;
@@ -515,28 +732,54 @@ TEST(X86CgPeephole, OptimizeCmpSetccTestJe) {
 }
 
 TEST(X86CgPeephole, OptimizeCmpKeepsLiveBooleanConsumer) {
-  CompileContext Ctx;
-  Ctx.initialize();
-  MType *I32 = &CompileContext::I32Type;
-  MFunction F(Ctx, 0);
-  F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32}));
-  MBasicBlock *Entry = F.createBasicBlock();
-  F.appendBlock(Entry);
-  retImm(F, *Entry, I32, 0);
+  struct Case {
+    bool WithMovzx;
+    bool ExtraSetcc;
+    bool ExtraWide;
+    const char *Name;
+  };
+  // Extra COPY lives in the JE successor so SETCC[+MOVZX]+TEST+JE stay
+  // adjacent and the one-use guards are the only reason the peep bails.
+  const Case Cases[] = {
+      {true, true, false, "extra SETCC use with MOVZX"},
+      {true, false, true, "extra MOVZX dest use"},
+      {false, true, false, "extra SETCC use without MOVZX"},
+  };
+  for (const Case &C : Cases) {
+    CompileContext Ctx;
+    Ctx.initialize();
+    MType *I32 = &CompileContext::I32Type;
+    MFunction F(Ctx, 0);
+    F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32}));
+    MBasicBlock *Entry = F.createBasicBlock();
+    F.appendBlock(Entry);
+    retImm(F, *Entry, I32, 0);
 
-  CgFunction MF(Ctx, F);
-  CgBasicBlock *BB0 = MF.createCgBasicBlock();
-  CgBasicBlock *BB1 = MF.createCgBasicBlock();
-  MF.appendCgBasicBlock(BB0);
-  MF.appendCgBasicBlock(BB1);
-  buildSetccTestJe(MF, *BB0, *BB1, /*WithMovzx=*/true, /*ExtraSetccUse=*/true);
+    CgFunction MF(Ctx, F);
+    CgBasicBlock *BB0 = MF.createCgBasicBlock();
+    CgBasicBlock *BB1 = MF.createCgBasicBlock();
+    MF.appendCgBasicBlock(BB0);
+    MF.appendCgBasicBlock(BB1);
+    SetccChainRegs R = buildSetccTestJe(MF, *BB0, *BB1, C.WithMovzx);
+    if (C.ExtraSetcc) {
+      addCopyUse(MF, *BB1, R.Setcc, &X86::GR8RegClass);
+    }
+    if (C.ExtraWide) {
+      addCopyUse(MF, *BB1, R.Wide, &X86::GR32RegClass);
+    }
 
-  X86CgPeephole Peep(MF);
-  (void)Peep;
-  const std::string Dump = dumpCg(MF);
-  EXPECT_EQ(countOpcode(MF, X86::SETCCr), 1u) << Dump;
-  EXPECT_EQ(countOpcode(MF, X86::MOVZX32rr8), 1u) << Dump;
-  EXPECT_EQ(countOpcode(MF, X86::TEST32rr), 1u) << Dump;
-  expectOneJcc(MF, X86::COND_E, 1, Dump);
-  finishLitmus(F);
+    X86CgPeephole Peep(MF);
+    (void)Peep;
+    const std::string Dump = std::string(C.Name) + "\n" + dumpCg(MF);
+    EXPECT_EQ(countOpcode(MF, X86::SETCCr), 1u) << Dump;
+    EXPECT_GE(countOpcode(MF, TargetOpcode::COPY), 1u) << Dump;
+    if (C.WithMovzx) {
+      EXPECT_EQ(countOpcode(MF, X86::MOVZX32rr8), 1u) << Dump;
+      EXPECT_EQ(countOpcode(MF, X86::TEST32rr), 1u) << Dump;
+    } else {
+      EXPECT_EQ(countOpcode(MF, X86::TEST8rr), 1u) << Dump;
+    }
+    expectOneJcc(MF, X86::COND_E, 1, Dump);
+    finishLitmus(F);
+  }
 }
