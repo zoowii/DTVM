@@ -91,7 +91,17 @@ MInstruction *MIRPeephole::foldExpr(MInstruction *Inst) {
     return New;
   }
   if (MInstruction *New = foldAlgebra(Inst)) {
-    return New == Inst ? New : foldExpr(New);
+    if (New == Inst) {
+      return New;
+    }
+    // Re-fold add/sub/shl so add-imm reassoc and mul→shl compose. Do not
+    // re-fold and/mul-by-zero: urem(x,1) becomes and(x,0) when x may trap,
+    // and a second algebra pass would drop the nested udiv/fptosi/DIV.
+    const Opcode NewOpc = New->getOpcode();
+    if (NewOpc == OP_add || NewOpc == OP_sub || NewOpc == OP_shl) {
+      return foldExpr(New);
+    }
+    return New;
   }
   return Inst;
 }
