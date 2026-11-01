@@ -47,6 +47,7 @@ Typical triggers:
 
 | Date | Name | Status | Tier | Description |
 |------|------|--------|------|-------------|
+| 2026-10-31 | [cmp-jcc-fp-const-hoist](2026-10-31-cmp-jcc-fp-const-hoist/README.md) | Implemented | Light | Entry-wide non-zero FP const hoist; cmp+br_if → jcc when cmp is not already materialized |
 | 2026-10-31 | [lazy-greedy-ondemand-onefn](2026-10-31-lazy-greedy-ondemand-onefn/README.md) | Implemented | Light | Single-fn lazy modules compile Greedy on-demand (skip FastRA FG) |
 | 2026-10-31 | [eager-lazy-func-count](2026-10-31-eager-lazy-func-count/README.md) | Implemented | Light | Print eager function-body count vs lazy stub count in statistics |
 | 2026-10-31 | [mir-pow2-divrem-peep](2026-10-31-mir-pow2-divrem-peep/README.md) | Implemented | Light | Unsigned pow2 `udiv`/`urem` → `ushr`/`and`; keep zero-divisor traps |

@@ -1670,42 +1670,71 @@ static bool isShortDiamondTrueFallthrough(const BrIfInstruction &Inst) {
   return BrInst != nullptr && BrInst->getTargetBlock() == FalseBB;
 }
 
+static unsigned invertX86CC(unsigned CC) {
+  ZEN_ASSERT(CC <= X86::LAST_VALID_COND);
+  return CC ^ 1u;
+}
+
 void X86CgLowering::lowerBrIfStmt(const BrIfInstruction &Inst) {
   const MInstruction *Operand = Inst.getOperand<0>();
-  CgRegister OperandReg = lowerExpr(*Operand);
+  X86::CondCode TakenCC = X86::COND_NE;
+  bool UsedCmpFlags = false;
 
-  // Perform test instruction to determine whether the operand is zero.
-  unsigned TESTOpc;
-  if (Operand->getType()->isI8()) {
-    TESTOpc = X86::TEST8rr;
-  } else if (Operand->getType()->isI16()) {
-    TESTOpc = X86::TEST16rr;
-  } else if (Operand->getType()->isI64() || Operand->getType()->isPointer()) {
-    TESTOpc = X86::TEST64rr;
-  } else {
-    TESTOpc = X86::TEST32rr;
+  // Fold cmp + br_if to cmp + jcc when the compare result has not already
+  // been materialized (expression-cache miss). Skip FCMP_OEQ/UNE: those
+  // need two flag tests and stay on the setcc path.
+  if (const auto *CI = dyn_cast<CmpInstruction>(Operand);
+      CI && _expr_reg_map.find(CI) == _expr_reg_map.end()) {
+    const auto [CC, NeedSwap] = getX86ConditionCode(CI->getPredicate());
+    if (CC <= X86::LAST_VALID_COND) {
+      const MInstruction *CmpLHS = CI->getOperand<0>();
+      const MInstruction *CmpRHS = CI->getOperand<1>();
+      if (NeedSwap) {
+        std::swap(CmpLHS, CmpRHS);
+      }
+      lowerFastCompareExpr(CmpLHS, CmpRHS, getMVT(*CmpLHS->getType()));
+      TakenCC = CC;
+      UsedCmpFlags = true;
+    }
   }
-  fastEmitNoDefInst_rr(TESTOpc, OperandReg, OperandReg);
+
+  if (!UsedCmpFlags) {
+    CgRegister OperandReg = lowerExpr(*Operand);
+
+    // Perform test instruction to determine whether the operand is zero.
+    unsigned TESTOpc;
+    if (Operand->getType()->isI8()) {
+      TESTOpc = X86::TEST8rr;
+    } else if (Operand->getType()->isI16()) {
+      TESTOpc = X86::TEST16rr;
+    } else if (Operand->getType()->isI64() || Operand->getType()->isPointer()) {
+      TESTOpc = X86::TEST64rr;
+    } else {
+      TESTOpc = X86::TEST32rr;
+    }
+    fastEmitNoDefInst_rr(TESTOpc, OperandReg, OperandReg);
+    TakenCC = X86::COND_NE;
+  }
 
   CgBasicBlock *TrueMBB = getOrCreateCgBB(Inst.getTrueBlock());
   if (Inst.hasFalseBlock()) {
     CgBasicBlock *FalseMBB = getOrCreateCgBB(Inst.getFalseBlock());
     if (isShortDiamondTrueFallthrough(Inst)) {
       // Prefer falling through to the next laid-out block and branch away on
-      // the zero case when the MIR already forms a short diamond that rejoins
+      // the false case when the MIR already forms a short diamond that rejoins
       // immediately after the true block.
-      fastEmitCondBranch(FalseMBB, X86::CondCode::COND_E);
+      fastEmitCondBranch(FalseMBB, invertX86CC(TakenCC));
       CurBB->addSuccessorWithoutProb(TrueMBB);
       return;
     }
 
-    // Jump to the true basic block if the operand is not zero.
-    fastEmitCondBranch(TrueMBB, X86::CondCode::COND_NE);
-    // Jump to the false basic block if the operand is zero.
+    // Jump to the true basic block if the predicate holds.
+    fastEmitCondBranch(TrueMBB, TakenCC);
+    // Jump to the false basic block otherwise.
     fastEmitBranch(FalseMBB);
   } else {
-    // Jump to the true basic block if the operand is not zero.
-    fastEmitCondBranch(TrueMBB, X86::CondCode::COND_NE);
+    // Jump to the true basic block if the predicate holds.
+    fastEmitCondBranch(TrueMBB, TakenCC);
     startNewBlockAfterBranch();
   }
 }
