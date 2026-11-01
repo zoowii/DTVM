@@ -474,7 +474,7 @@ if(ZEN_ENABLE_SPEC_TEST)
     target_include_directories(
       statisticsTests PRIVATE ${googletest_SOURCE_DIR}/googletest/include
     )
-    if(ZEN_ENABLE_ASAN)
+    if(ZEN_TEST_ENABLE_ASAN)
       target_compile_options(statisticsTests PRIVATE -fsanitize=address)
       if(ZEN_BUILD_PLATFORM_DARWIN)
         target_link_libraries(
