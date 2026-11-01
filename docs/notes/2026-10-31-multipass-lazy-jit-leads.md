@@ -75,7 +75,7 @@ Gaps found in source:
 
 | Pattern | Before this branch | Why it is/isn't a gap |
 | --- | --- | --- |
-| `urem x, 2^n` → `and x, 2^n-1` | Missing | Trap-safe (nonzero const). `lowerDivRemExpr` always emits DIV. `fastEmit_ri_` has `ISD::UDIV`→`SRL` but `OP_udiv` never calls it. **Landed here.** Same-block dread-of-const recovery (div/rem only) so wasm `handleIDiv` temps still peep; JIT bytes for `rem_u8` are AND, not DIV. |
+| `urem x, 2^n` → `and x, 2^n-1` | Missing | Trap-safe (nonzero const). `lowerDivRemExpr` always emits DIV. `fastEmit_ri_` has `ISD::UDIV`→`SRL` but `OP_udiv` never calls it. **Landed here.** Same-block dread-of-const recovery in `foldAlgebra` (all integer BINARY) so wasm `handleIDiv` temps still peep; JIT bytes for `rem_u8` are AND, not DIV. Remainder-by-one keeps trapping `fptosi`/`fptoui`/i128 overflow. |
 | `udiv x, 2^n` → `ushr x, n` | Missing | Same. **Landed here.** |
 | `sdiv`/`srem` by pow2 | Correctly not folded | Wasm `srem` is toward-zero, not AND; `sdiv` by 2 is not `sshr`. |
 | `udiv`/`urem` by 0 | Must not fold | Wasm IntegerDivisionByZero. Litmus + WAST trap kept. |

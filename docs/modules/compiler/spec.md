@@ -114,9 +114,11 @@ OOB). Load/store Scale stays 1. See
   `udiv`/`urem` with any nonzero divisor may fold to a constant (this
   does not require a power of two). Discarding a subtree requires a
   proven-pure **and nontrapping** tree (`isPureExpr` rejects load / call /
-  wasm-check but not integer div/rem; those must stay). Wasm `handleIDiv`
-  assigns integer literals to temps; the matcher recovers a same-block
-  `dassign` of a constant through `dread` so `rem_u`/`div_u` by a
+  wasm-check but not integer div/rem, `wasm_fptosi`/`wasm_fptoui`, or i128
+  overflow ops; those must stay). Wasm `handleIDiv`
+  assigns integer literals to temps; `foldAlgebra` recovers a same-block
+  `dassign` of a constant through `dread` for **every integer BINARY**
+  (not only `udiv`/`urem`) so `rem_u`/`div_u` by a
   power of two still become `and`/`ushr`. Folding a constant `br_if` must drop the
   untaken CFG edge **and** any phi incoming on the still-live target that
   came from this block. After the pass, `DeadMBasicBlockElim` may drop

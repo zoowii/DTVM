@@ -37,10 +37,11 @@ private:
   MInstruction *makeUShr(MType *Ty, MInstruction *LHS, MInstruction *RHS);
 
   bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
-  // Same-block dassign of a ConstantInstruction through dread. Used only
-  // for udiv/urem strength reduction so wasm handleIDiv temps peep.
-  // Not wired into isIntZero/foldConstBrIf: those must not rewrite
-  // signed-overflow or stack-check CFG from a recovered temp.
+  // Same-block dassign of a ConstantInstruction through dread.
+  // foldAlgebra applies this to both operands of every integer BINARY
+  // (const-const add/sub/mul/bitwise/shift as well as udiv/urem), so
+  // wasm handleIDiv temps peep. Not wired into isIntZero/foldConstBrIf:
+  // those must not rewrite signed-overflow or stack-check CFG.
   bool matchAssignedIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
   bool isIntZero(const MInstruction *Inst) const;
   bool isIntOne(const MInstruction *Inst) const;
@@ -50,7 +51,8 @@ private:
   // Loads / calls / wasm-checks are expressions; discarding them can
   // drop gas, bounds, or instance accesses. Only discard proven-pure trees.
   static bool isPureExpr(const MInstruction *Inst);
-  // isPureExpr does not reject integer div/rem (they trap on 0 / overflow).
+  // isPureExpr does not reject integer div/rem, wasm_fptosi/fptoui, or
+  // i128 overflow ops (they trap on 0 / NaN / overflow).
   static bool exprMayTrap(const MInstruction *Inst);
   static bool isNontrappingPureExpr(const MInstruction *Inst);
   static void removeEdgeAndPhiIncomings(MBasicBlock &From, MBasicBlock *To);

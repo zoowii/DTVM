@@ -143,6 +143,18 @@ bool tryCallI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg,
   return true;
 }
 
+bool tryCallNoArg(Runtime &RT, Instance &Inst, const char *Name, int32_t &Out) {
+  std::vector<TypedValue> Results;
+  if (!RT.callWasmFunction(Inst, Name, {}, Results)) {
+    return false;
+  }
+  if (Inst.hasError() || Results.size() != 1) {
+    return false;
+  }
+  Out = Results[0].Value.I32;
+  return true;
+}
+
 int32_t callI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
   int32_t Out = 0;
   EXPECT_TRUE(tryCallI32(RT, Inst, Name, Arg, Out))
@@ -152,9 +164,13 @@ int32_t callI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
 
 int32_t callI32NoArg(Runtime &RT, Instance &Inst, const char *Name) {
   std::vector<TypedValue> Results;
-  EXPECT_TRUE(RT.callWasmFunction(Inst, Name, {}, Results))
-      << (Inst.hasError() ? Inst.getError().getFormattedMessage() : Name);
-  EXPECT_EQ(Results.size(), 1u);
+  const bool Ok = RT.callWasmFunction(Inst, Name, {}, Results);
+  EXPECT_TRUE(Ok) << (Inst.hasError() ? Inst.getError().getFormattedMessage()
+                                      : Name);
+  if (!Ok || Results.size() != 1) {
+    EXPECT_EQ(Results.size(), 1u);
+    return 0;
+  }
   return Results[0].Value.I32;
 }
 
@@ -367,6 +383,83 @@ TEST(MIRPeepholeLitmus, URemByOneKeepsNestedLoad) {
   B.run();
   const std::string Dump = dumpFunc(B.F);
   EXPECT_NE(Dump.find("load"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, URemByOneKeepsNestedFPToSI) {
+  CompileContext Ctx;
+  MType *I32 = &CompileContext::I32Type;
+  MType *F64 = &CompileContext::F64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I32, {F64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  F.appendBlock(Entry);
+  auto *X = F.createInstruction<DreadInstruction>(false, *Entry, F64, 0);
+  auto *Cvt = F.createInstruction<ConversionInstruction>(
+      false, *Entry, OP_wasm_fptosi, I32, X);
+  auto *One = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I32, *MConstantInt::get(Ctx, *I32, 1));
+  auto *URem = F.createInstruction<BinaryInstruction>(false, *Entry, OP_urem,
+                                                      I32, Cvt, One);
+  F.createInstruction<ReturnInstruction>(true, *Entry, I32, URem);
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("wasm_fptosi"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("return const.i32 0"), std::string::npos)
+      << "must keep trapping fptosi (NaN/overflow): " << Dump;
+  finishLitmus(F);
+}
+
+TEST(MIRPeepholeLitmus, URemByOneKeepsNestedFPToUI) {
+  CompileContext Ctx;
+  MType *I32 = &CompileContext::I32Type;
+  MType *F64 = &CompileContext::F64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I32, {F64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  F.appendBlock(Entry);
+  auto *X = F.createInstruction<DreadInstruction>(false, *Entry, F64, 0);
+  auto *Cvt = F.createInstruction<ConversionInstruction>(
+      false, *Entry, OP_wasm_fptoui, I32, X);
+  auto *One = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I32, *MConstantInt::get(Ctx, *I32, 1));
+  auto *URem = F.createInstruction<BinaryInstruction>(false, *Entry, OP_urem,
+                                                      I32, Cvt, One);
+  F.createInstruction<ReturnInstruction>(true, *Entry, I32, URem);
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("wasm_fptoui"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("return const.i32 0"), std::string::npos)
+      << "must keep trapping fptoui (NaN/overflow): " << Dump;
+  finishLitmus(F);
+}
+
+TEST(MIRPeepholeLitmus, URemByOneKeepsNestedI128Overflow) {
+  CompileContext Ctx;
+  MType *I64 = &CompileContext::I64Type;
+  MFunction F(Ctx, 0);
+  F.setFunctionType(MFunctionType::create(Ctx, *I64, {I64, I64, I64, I64}));
+  MBasicBlock *Entry = F.createBasicBlock();
+  F.appendBlock(Entry);
+  auto *LoL = F.createInstruction<DreadInstruction>(false, *Entry, I64, 0);
+  auto *HiL = F.createInstruction<DreadInstruction>(false, *Entry, I64, 1);
+  auto *LoR = F.createInstruction<DreadInstruction>(false, *Entry, I64, 2);
+  auto *HiR = F.createInstruction<DreadInstruction>(false, *Entry, I64, 3);
+  auto *Add = F.createInstruction<WasmOverflowI128BinaryInstruction>(
+      false, *Entry, I64, OP_wasm_uadd128_overflow, LoL, HiL, LoR, HiR);
+  auto *One = F.createInstruction<ConstantInstruction>(
+      false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 1));
+  auto *URem = F.createInstruction<BinaryInstruction>(false, *Entry, OP_urem,
+                                                      I64, Add, One);
+  F.createInstruction<ReturnInstruction>(true, *Entry, I64, URem);
+  MIRPeephole Peep;
+  Peep.runOnMFunction(F);
+  const std::string Dump = dumpFunc(F);
+  EXPECT_NE(Dump.find("wasm_uadd128_overflow"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("return const.i64 0"), std::string::npos)
+      << "must keep trapping i128 overflow: " << Dump;
+  finishLitmus(F);
 }
 
 TEST(MIRPeepholeLitmus, URemDreadOfConstPow2FoldsToAnd) {
@@ -819,6 +912,15 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_TRUE(Inst->hasError()) << Inst->getError().getFormattedMessage();
   Inst->clearError();
   EXPECT_FALSE(tryCallI32(*RT, *Inst, "rem1_of_oob_load", 0, TrapOut));
+  EXPECT_TRUE(Inst->hasError()) << Inst->getError().getFormattedMessage();
+  Inst->clearError();
+  EXPECT_FALSE(tryCallNoArg(*RT, *Inst, "rem1_of_trunc_s_nan", TrapOut));
+  EXPECT_TRUE(Inst->hasError()) << Inst->getError().getFormattedMessage();
+  Inst->clearError();
+  EXPECT_FALSE(tryCallNoArg(*RT, *Inst, "rem1_of_trunc_s_ovf", TrapOut));
+  EXPECT_TRUE(Inst->hasError()) << Inst->getError().getFormattedMessage();
+  Inst->clearError();
+  EXPECT_FALSE(tryCallNoArg(*RT, *Inst, "rem1_of_trunc_u_nan", TrapOut));
   EXPECT_TRUE(Inst->hasError()) << Inst->getError().getFormattedMessage();
   Inst->clearError();
   EXPECT_EQ(callI32(*RT, *Inst, "rem1_of_call", 42), 0);

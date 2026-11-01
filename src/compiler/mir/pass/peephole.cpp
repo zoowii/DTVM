@@ -481,7 +481,8 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
         // x % 1 == 0, but only fold to a constant when x cannot trap or
         // have effects. Otherwise keep evaluating x (and(x, 0) still
         // avoids DIV). isPureExpr alone is not enough: it does not
-        // reject nested udiv/urem/sdiv/srem.
+        // reject nested udiv/urem/sdiv/srem, wasm_fptosi/fptoui, or
+        // i128 overflow ops.
         if (isNontrappingPureExpr(LHS)) {
           return makeIntConst(Ty, 0);
         }
@@ -662,7 +663,13 @@ bool MIRPeephole::exprMayTrap(const MInstruction *Inst) {
   if (Opc == OP_udiv || Opc == OP_urem || Opc == OP_sdiv || Opc == OP_srem) {
     return true;
   }
+  if (Opc == OP_wasm_fptosi || Opc == OP_wasm_fptoui) {
+    return true;
+  }
   if (Opc >= OP_OVERFLOW_BIN_EXPR_START && Opc <= OP_OVERFLOW_BIN_EXPR_END) {
+    return true;
+  }
+  if (Inst->getKind() == MInstruction::OVERFLOW_I128_BINARY) {
     return true;
   }
   for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
