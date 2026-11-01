@@ -121,6 +121,8 @@ else()
 endif()
 
 if(ZEN_ENABLE_ASAN)
+  # VIRTUAL_STACK uses custom stacks incompatible with ASan. Test binaries in
+  # src/tests/CMakeLists.txt must follow the same skip (ZEN_TEST_ENABLE_ASAN).
   if(NOT ZEN_ENABLE_VIRTUAL_STACK)
     add_compile_options(-fsanitize=address)
     if(ZEN_BUILD_PLATFORM_DARWIN)
