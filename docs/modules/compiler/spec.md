@@ -90,6 +90,10 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - After Done, foreground FastRA must not patch the stub; `compileFunctionOnRequest` returns the GreedyRA pointer
 - FastRA may CAS-patch only from the trampoline; background GreedyRA may overwrite trampoline or FastRA
 - Tear-free `xchg` of the 4-byte `rel32` does not by itself enforce this ordering
+- Background GreedyRA is queued for the start function and exported functions
+  only. It must not DFS `CallSeqMap` (direct `call` plus every `call_indirect`
+  type's table functions). Unexported callees compile on demand when their stub
+  is first hit. Eager multipass still compiles the whole module.
 
 ### dMIR Invariants
 
