@@ -823,8 +823,8 @@ TEST(MIRPeepholeLitmus, SubImmI64PreservesBorrowProducer) {
   auto *X = F.createInstruction<DreadInstruction>(false, *Entry, I64, 0);
   auto *One = F.createInstruction<ConstantInstruction>(
       false, *Entry, I64, *MConstantInt::get(Ctx, *I64, 1));
-  auto *Sub = F.createInstruction<BinaryInstruction>(
-      false, *Entry, OP_sub, I64, X, One);
+  auto *Sub = F.createInstruction<BinaryInstruction>(false, *Entry, OP_sub, I64,
+                                                     X, One);
   F.createInstruction<ReturnInstruction>(true, *Entry, I64, Sub);
   MIRPeephole Peep;
   Peep.runOnMFunction(F);
@@ -846,8 +846,8 @@ TEST(MIRPeepholeLitmus, AddImmI64PreservesFinalCarryProducer) {
     return F.createInstruction<ConstantInstruction>(
         false, *Entry, I64, *MConstantInt::get(Ctx, *I64, V));
   };
-  auto *Inner = F.createInstruction<BinaryInstruction>(
-      false, *Entry, OP_add, I64, X, makeConst(10));
+  auto *Inner = F.createInstruction<BinaryInstruction>(false, *Entry, OP_add,
+                                                       I64, X, makeConst(10));
   auto *Outer = F.createInstruction<BinaryInstruction>(
       false, *Entry, OP_add, I64, Inner, makeConst(3));
   F.createInstruction<ReturnInstruction>(true, *Entry, I64, Outer);
@@ -1400,7 +1400,9 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
 
   const int32_t Inputs[] = {0,  1,  2,  4,
                             16, -1, 42, static_cast<int32_t>(0x80000000u)};
-  const char *Fns[] = {"mul8", "add_reassoc", "ctz_eqz",
+  const char *Fns[] = {"mul8",
+                       "add_reassoc",
+                       "ctz_eqz",
                        "clz_eqz",
                        "ctz_eq4",
                        "select_eq_true",

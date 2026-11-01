@@ -937,7 +937,7 @@ struct LeaLoweringFixture {
   std::string lowerRet(MInstruction *V, bool Optimize = false) {
     F.setFunctionType(MFunctionType::create(Ctx, *V->getType(), {I32, I64}));
     F.createInstruction<COMPILER::ReturnInstruction>(true, *Entry, V->getType(),
-                                                   V);
+                                                     V);
     if (Optimize) {
       MIRPeephole Peep;
       Peep.runOnMFunction(F);

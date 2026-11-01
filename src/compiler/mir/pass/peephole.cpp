@@ -654,19 +654,19 @@ MInstruction *MIRPeephole::makeUShr(MType *Ty, MInstruction *LHS,
 }
 
 MInstruction *MIRPeephole::makeAdd(MType *Ty, MInstruction *LHS,
-                                  MInstruction *RHS) {
+                                   MInstruction *RHS) {
   return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_add, Ty, LHS,
                                                  RHS);
 }
 
 MInstruction *MIRPeephole::makeShl(MType *Ty, MInstruction *LHS,
-                                  MInstruction *RHS) {
+                                   MInstruction *RHS) {
   return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_shl, Ty, LHS,
                                                  RHS);
 }
 
 bool MIRPeephole::matchAddImm(MInstruction *Inst, MInstruction *&Dyn,
-                             llvm::APInt &Imm) const {
+                              llvm::APInt &Imm) const {
   if (Inst == nullptr || Inst->getOpcode() != OP_add) {
     return false;
   }

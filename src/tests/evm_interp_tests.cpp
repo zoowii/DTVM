@@ -568,7 +568,7 @@ TEST(EVMRegressionTest, SubWideConstPreservesLowLimbBorrow) {
     auto CallData = zen::utils::fromHex(Case[0]);
     ASSERT_TRUE(CallData);
     expectInterpMatchesMultipass("sub_wide_const_borrow", *Bytecode, *CallData,
-                                EVMC_SUCCESS, Case[1]);
+                                 EVMC_SUCCESS, Case[1]);
   }
 }
 
