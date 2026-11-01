@@ -28,7 +28,12 @@ private:
   MInstruction *foldAlgebra(MInstruction *Inst);
   MInstruction *foldConstCmp(MInstruction *Inst);
   MInstruction *foldSelectConstCond(MInstruction *Inst);
+  MInstruction *foldU32MagicUDiv(MInstruction *Inst);
   bool foldConstBrIf(MBasicBlock &BB, BrIfInstruction &BrIf);
+
+  MInstruction *makeConv(Opcode Opc, MType *Ty, MInstruction *Op);
+  MInstruction *makeBin(Opcode Opc, MType *Ty, MInstruction *LHS,
+                        MInstruction *RHS);
 
   MInstruction *makeIntConst(MType *Ty, uint64_t Val);
   MInstruction *makeICmp(CmpInstruction::Predicate Pred, MType *Ty,
@@ -43,6 +48,8 @@ private:
   // wasm handleIDiv temps peep. Not wired into isIntZero/foldConstBrIf:
   // those must not rewrite signed-overflow or stack-check CFG.
   bool matchAssignedIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
+  bool matchIntConstLookThrough(const MInstruction *Inst,
+                                llvm::APInt &Val) const;
   bool isIntZero(const MInstruction *Inst) const;
   bool isIntOne(const MInstruction *Inst) const;
   bool isIntAllOnes(const MInstruction *Inst) const;

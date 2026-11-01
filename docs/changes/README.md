@@ -47,6 +47,7 @@ Typical triggers:
 
 | Date | Name | Status | Tier | Description |
 |------|------|--------|------|-------------|
+| 2026-11-01 | [u32-magic-div](2026-11-01-u32-magic-div/README.md) | Accepted | Light | i32.div_u by non-pow2 constant → magic multiply |
 | 2026-10-31 | [lazy-greedy-ondemand-onefn](2026-10-31-lazy-greedy-ondemand-onefn/README.md) | Implemented | Light | Single-fn lazy modules compile Greedy on-demand (skip FastRA FG) |
 | 2026-10-31 | [eager-lazy-func-count](2026-10-31-eager-lazy-func-count/README.md) | Implemented | Light | Print eager function-body count vs lazy stub count in statistics |
 | 2026-10-31 | [mir-pow2-divrem-peep](2026-10-31-mir-pow2-divrem-peep/README.md) | Implemented | Light | Unsigned pow2 `udiv`/`urem` → `ushr`/`and`; keep zero-divisor traps |

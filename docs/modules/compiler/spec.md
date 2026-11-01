@@ -30,7 +30,7 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 ### Multi-pass Compilation Pipeline
 
 1. **Frontend→dMIR**: `WasmMirBuilder` / `EVMMirBuilder` translate source/bytecode to `MModule` + `MFunction` (dMIR)
-2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, unsigned pow2 `udiv`/`urem`, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
+2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, unsigned pow2 `udiv`/`urem`, u32 magic `udiv`, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
 3. **dMIR→CgIR**: `X86CgLowering`, `X86CgPeephole`
 4. **Register allocation**: `FastRA` or `CgRAGreedy` + `CgRegisterCoalescer`, `CgVirtRegMap`, `CgLiveIntervals`, etc.
 5. **Post-RA processing**: `PrologEpilogInserter`, `ExpandPostRAPseudos`
@@ -115,7 +115,9 @@ OOB). Load/store Scale stays 1. See
   compares against a non-zero constant. Unsigned `udiv`/`urem` by a
   nonzero constant power of two may become `ushr`/`and`. Const-const
   `udiv`/`urem` with any nonzero divisor may fold to a constant (this
-  does not require a power of two). Discarding a subtree requires a
+  does not require a power of two). `i32` `udiv` by a proven non-zero,
+  non-power-of-two constant may be rewritten via
+  `UnsignedDivisionByConstantInfo` magic multiply. Discarding a subtree requires a
   proven-pure **and nontrapping** tree (`isPureExpr` rejects load / call /
   wasm-check but not integer div/rem, `wasm_fptosi`/`wasm_fptoui`, i128
   overflow ops, or `EVM_UDIV128_BY64`; those must stay). Wasm `handleIDiv`

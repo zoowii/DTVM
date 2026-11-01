@@ -10,6 +10,7 @@
 #include "compiler/mir/instructions.h"
 #include "compiler/mir/opcode.h"
 #include "compiler/mir/pointer.h"
+#include "llvm/Support/Casting.h"
 
 namespace COMPILER {
 
@@ -333,7 +334,8 @@ public:
     MInstruction *RHSRaw = extractOperand(RHSOp);
     // Temps so the /0 check and signed overflow split can reuse operands
     // without re-evaluating a trapping expression. Integer literals are
-    // assigned as constants; MIRPeephole recovers them through dread.
+    // assigned as constants; MIRPeephole recovers them through dread
+    // (pow2 udiv/urem and u32 magic udiv).
     MInstruction *LHS = makeReusableValue(LHSRaw, Mtype);
     MInstruction *RHS = makeReusableValue(RHSRaw, Mtype);
 

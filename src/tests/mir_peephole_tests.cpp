@@ -9,6 +9,7 @@
 #include "compiler/mir/pass/dead_basicblock_elim.h"
 #include "compiler/mir/pass/peephole.h"
 #include "compiler/mir/type.h"
+#include "compiler/utils/magic_div.h"
 #include "runtime/isolation.h"
 #include "runtime/module.h"
 #include "runtime/runtime.h"
@@ -245,6 +246,95 @@ const uint8_t *jitFuncBytes(const zen::runtime::Module &Mod, const char *Name,
 }
 
 } // namespace
+
+TEST(U32MagicUDiv, Div20MatchesDocumentedSequence) {
+  auto Mag = tryU32MagicUDiv(20);
+  ASSERT_TRUE(Mag.has_value());
+  EXPECT_EQ(Mag->Magic, 0xCCCCCCCDu);
+  EXPECT_FALSE(Mag->IsAdd);
+  EXPECT_EQ(Mag->ShiftAmount, 4u);
+}
+
+TEST(U32MagicUDiv, RejectsZeroAndPow2) {
+  EXPECT_FALSE(tryU32MagicUDiv(0).has_value());
+  EXPECT_FALSE(tryU32MagicUDiv(1).has_value());
+  EXPECT_FALSE(tryU32MagicUDiv(2).has_value());
+  EXPECT_FALSE(tryU32MagicUDiv(8).has_value());
+  EXPECT_FALSE(tryU32MagicUDiv(1u << 31).has_value());
+  EXPECT_TRUE(tryU32MagicUDiv(3).has_value());
+  EXPECT_TRUE(tryU32MagicUDiv(7).has_value());
+  EXPECT_TRUE(tryU32MagicUDiv(10).has_value());
+  EXPECT_TRUE(tryU32MagicUDiv(0xFFFFFFFFu).has_value());
+}
+
+TEST(U32MagicUDiv, MatchesHardwareUDiv) {
+  const uint32_t Divisors[] = {3,    5,        6,           7,          9,  10,
+                               11,   14,       15,          20,         21, 100,
+                               1000, 7u * 13u, 0x80000001u, 0xFFFFFFFFu};
+  const uint32_t Numerators[] = {
+      0,          1,           2,           3,           6,
+      7,          8,           9,           10,          19,
+      20,         21,          100,         999,         1000,
+      123456789u, 0x7FFFFFFFu, 0x80000000u, 0x80000001u, 0xFFFFFFFEu,
+      0xFFFFFFFFu};
+  for (uint32_t D : Divisors) {
+    auto Mag = tryU32MagicUDiv(D);
+    ASSERT_TRUE(Mag.has_value()) << "d=" << D;
+    for (uint32_t N : Numerators) {
+      EXPECT_EQ(applyU32MagicUDiv(N, *Mag), N / D) << "n=" << N << " d=" << D;
+    }
+    uint32_t N = 1;
+    for (int I = 0; I < 20000; ++I) {
+      EXPECT_EQ(applyU32MagicUDiv(N, *Mag), N / D) << "n=" << N << " d=" << D;
+      N = N * 1664525u + 1013904223u;
+    }
+  }
+}
+
+TEST(MIRPeepholeLitmus, UDiv20FoldsToMulShift) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(20)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("udiv"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("mul"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("uext"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("3435973837"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, UDiv7FoldsToMul) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(7)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("udiv"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("mul"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, UDivPow2DoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_NE(Dump.find("udiv"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, UDivZeroDoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(0)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_NE(Dump.find("udiv"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, UDivConstConstFolds) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.iconst(123456), B.iconst(20)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("udiv"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 6172"), std::string::npos) << Dump;
+}
 
 TEST(MIRPeepholeLitmus, CtzEqzFoldsToBitTest) {
   MirBuilder B;
@@ -1021,6 +1111,17 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
       << "wasm div_u by 8 still emits DIV";
   EXPECT_TRUE(codeHasShrImm3(DivBytes, DivLen))
       << "wasm div_u by 8 should SHR by 3";
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv20", 0), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv20", 19), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv20", 20), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv20", -1), 214748364);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv7", 13), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv7", 14), 2);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv7", -1), 613566756);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv10", 99), 9);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv10", 100), 10);
+  EXPECT_EQ(callI32(*RT, *Inst, "udiv8", 16), 2);
+  EXPECT_EQ(callI32(*RT, *Inst, "const_udiv20", 0), 6172);
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
@@ -1047,7 +1148,8 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
                        "add0",    "rem_u8",  "div_u8",  "rem_u6",
                        "rem_s8",  "f3",      "f4",      "f8",
-                       "f9",      "f12",     "f13",     "f14"};
+                       "f9",      "f12",     "f13",     "f14",
+                       "udiv20",  "udiv10",  "udiv7",   "udiv8"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
       EXPECT_EQ(callI32(*RTM, **InstM, Fn, X), callI32(*RTS, **InstS, Fn, X))
@@ -1224,7 +1326,8 @@ TEST(MIRPeepholePerf, Microbenchmarks) {
   Instance *Inst = *InstRet;
 
   const char *Names[] = {"bench_ctz_eqz",  "bench_select", "bench_algebra",
-                         "bench_const_br", "bench_mixed",  "bitmix"};
+                         "bench_const_br", "bench_mixed",  "bitmix",
+                         "bench_udiv20"};
   constexpr int32_t kIters = 2000000;
   std::printf("\nMIR peephole microbench (multipass, %d loop iters, 3 runs)\n",
               kIters);
