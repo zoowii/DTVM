@@ -741,6 +741,17 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2", 1), 7);
   EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2", 3), 3);
   EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_nan_7_3", 1), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_2_short", 1), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_2_short", 2), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_2_short", 3), 7);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2_short", 1), 7);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2_short", 2), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2_short", 3), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_nan_short", 1), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_nan_short", 3), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_nan_lhs_short", 1), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f32_gt_2_short", 1), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f32_gt_2_short", 3), 7);
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
@@ -799,7 +810,12 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
                        "f32_gt_nan",
                        "if_f64_gt_2",
                        "if_f64_lt_2",
-                       "if_f64_gt_nan_7_3"};
+                       "if_f64_gt_nan_7_3",
+                       "if_f64_gt_2_short",
+                       "if_f64_lt_2_short",
+                       "if_f64_gt_nan_short",
+                       "if_f64_lt_nan_lhs_short",
+                       "if_f32_gt_2_short"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
       EXPECT_EQ(callI32(*RTM, **InstM, Fn, X), callI32(*RTS, **InstS, Fn, X))
@@ -869,7 +885,10 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
             !tryCallI32(*RT, *Inst, "f64_gt_2", 3, V) || V != 1 ||
             !tryCallI32(*RT, *Inst, "f64_lt_2", 3, V) || V != 0 ||
             !tryCallI32(*RT, *Inst, "if_f64_gt_2", 3, V) || V != 7 ||
-            !tryCallI32(*RT, *Inst, "if_f64_lt_2", 3, V) || V != 3) {
+            !tryCallI32(*RT, *Inst, "if_f64_lt_2", 3, V) || V != 3 ||
+            !tryCallI32(*RT, *Inst, "if_f64_gt_2_short", 3, V) || V != 7 ||
+            !tryCallI32(*RT, *Inst, "if_f64_lt_2_short", 3, V) || V != 3 ||
+            !tryCallI32(*RT, *Inst, "if_f64_gt_nan_short", 1, V) || V != 3) {
           Failures++;
           return;
         }
@@ -935,7 +954,9 @@ TEST(MIRPeepholeConcurrent, ParallelLazyCompileAndExecute) {
             !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
             !tryCallI32(*RT, *Inst, "count_lt", 5, V) || V != 5 ||
             !tryCallI32(*RT, *Inst, "f64_gt_2", 3, V) || V != 1 ||
-            !tryCallI32(*RT, *Inst, "f64_lt_2", 3, V) || V != 0) {
+            !tryCallI32(*RT, *Inst, "f64_lt_2", 3, V) || V != 0 ||
+            !tryCallI32(*RT, *Inst, "if_f64_gt_2_short", 3, V) || V != 7 ||
+            !tryCallI32(*RT, *Inst, "if_f64_lt_2_short", 1, V) || V != 7) {
           Failures++;
           return;
         }

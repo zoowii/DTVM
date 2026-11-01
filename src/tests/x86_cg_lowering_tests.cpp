@@ -87,6 +87,33 @@ void retImm(MFunction &F, MBasicBlock &BB, MType *Ty, uint64_t V) {
                                                    makeInt(F, BB, Ty, V));
 }
 
+// Short diamond: result starts at 3, true arm stores 7, rejoin/false returns
+// it. True's terminator targets False, which is what
+// isShortDiamondTrueFallthrough requires (not a two-arm if-else).
+void buildFpShortDiamond37(MFunction &F, CompileContext &Ctx, MType *I32,
+                           CmpInstruction::Predicate Pred, MInstruction *LHS,
+                           MInstruction *RHS, MBasicBlock *Entry,
+                           MBasicBlock *TrueBB, MBasicBlock *FalseBB) {
+  COMPILER::Variable *Res = F.createVariable(I32);
+  F.createInstruction<COMPILER::DassignInstruction>(true, *Entry, &Ctx.VoidType,
+                                                    makeInt(F, *Entry, I32, 3),
+                                                    Res->getVarIdx());
+  auto *Cmp = F.createInstruction<COMPILER::CmpInstruction>(false, *Entry, Pred,
+                                                            I32, LHS, RHS);
+  F.createInstruction<COMPILER::BrIfInstruction>(true, *Entry, Ctx, Cmp, TrueBB,
+                                                 FalseBB);
+  Entry->addSuccessor(TrueBB);
+  Entry->addSuccessor(FalseBB);
+  F.createInstruction<COMPILER::DassignInstruction>(
+      true, *TrueBB, &Ctx.VoidType, makeInt(F, *TrueBB, I32, 7),
+      Res->getVarIdx());
+  F.createInstruction<COMPILER::BrInstruction>(true, *TrueBB, Ctx, FalseBB);
+  TrueBB->addSuccessor(FalseBB);
+  auto *Ret = F.createInstruction<COMPILER::DreadInstruction>(
+      false, *FalseBB, I32, Res->getVarIdx());
+  F.createInstruction<COMPILER::ReturnInstruction>(true, *FalseBB, I32, Ret);
+}
+
 // br_if cmp, Taken  (no false block). After lowering the JCC target is the
 // Taken CgBB, typically numbered 2 because startNewBlockAfterBranch inserts
 // a fallthrough block as 1.
@@ -549,45 +576,60 @@ TEST(X86CgLowering, FpShortDiamondInvertsFalseEdge) {
 }
 
 TEST(X86CgLowering, FpShortDiamondOltSwapsAndInverts) {
-  CompileContext Ctx;
-  Ctx.initialize();
-  MType *I32 = &CompileContext::I32Type;
-  MType *F64 = &CompileContext::F64Type;
-  MFunction F(Ctx, 0);
-  F.setFunctionType(MFunctionType::create(Ctx, *I32, {F64}));
-  MBasicBlock *Entry = F.createBasicBlock();
-  MBasicBlock *TrueBB = F.createBasicBlock();
-  MBasicBlock *FalseBB = F.createBasicBlock();
-  F.appendBlock(Entry);
-  F.appendBlock(TrueBB);
-  F.appendBlock(FalseBB);
+  struct Case {
+    CmpInstruction::Predicate Pred;
+    bool NanRHS;
+    bool ExpectParamAsUcomiOp0;
+    const char *Name;
+  };
+  const Case Cases[] = {
+      {CmpInstruction::FCMP_OGT, false, true, "OGT finite"},
+      {CmpInstruction::FCMP_OLT, false, false, "OLT finite swap"},
+      {CmpInstruction::FCMP_OGT, true, true, "OGT nan rhs"},
+      {CmpInstruction::FCMP_OLT, true, false, "OLT nan rhs swap"},
+  };
+  for (const Case &C : Cases) {
+    CompileContext Ctx;
+    Ctx.initialize();
+    MType *I32 = &CompileContext::I32Type;
+    MType *F64 = &CompileContext::F64Type;
+    MFunction F(Ctx, 0);
+    F.setFunctionType(MFunctionType::create(Ctx, *I32, {F64}));
+    MBasicBlock *Entry = F.createBasicBlock();
+    MBasicBlock *TrueBB = F.createBasicBlock();
+    MBasicBlock *FalseBB = F.createBasicBlock();
+    F.appendBlock(Entry);
+    F.appendBlock(TrueBB);
+    F.appendBlock(FalseBB);
 
-  auto *Param =
-      F.createInstruction<COMPILER::DreadInstruction>(false, *Entry, F64, 0);
-  auto *Two = makeFP(F, *Entry, F64, APFloat(2.0));
-  auto *Cmp = F.createInstruction<COMPILER::CmpInstruction>(
-      false, *Entry, CmpInstruction::FCMP_OLT, I32, Param, Two);
-  F.createInstruction<COMPILER::BrIfInstruction>(true, *Entry, Ctx, Cmp, TrueBB,
-                                                 FalseBB);
-  Entry->addSuccessor(TrueBB);
-  Entry->addSuccessor(FalseBB);
-  F.createInstruction<COMPILER::BrInstruction>(true, *TrueBB, Ctx, FalseBB);
-  TrueBB->addSuccessor(FalseBB);
-  retImm(F, *FalseBB, I32, 0);
+    auto *Param =
+        F.createInstruction<COMPILER::DreadInstruction>(false, *Entry, F64, 0);
+    auto *RHS = C.NanRHS ? makeFP(F, *Entry, F64,
+                                  APFloat::getNaN(APFloat::IEEEdouble()))
+                         : makeFP(F, *Entry, F64, APFloat(2.0));
+    buildFpShortDiamond37(F, Ctx, I32, C.Pred, Param, RHS, Entry, TrueBB,
+                          FalseBB);
 
-  CgFunction MF(Ctx, F);
-  X86CgLowering Lowering(MF);
-  const std::string Dump = dumpCg(MF);
-  EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
-  // OLT uses COND_A after the operand swap; the diamond inverts to COND_BE.
-  expectOneJcc(MF, X86::COND_BE, 2, Dump);
-  unsigned UcomiOpc = 0;
-  CgRegister U0, U1, ParamV = copyDestFromPhys(MF, X86::XMM0);
-  ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
-  ASSERT_TRUE(ParamV.isVirtual()) << Dump;
-  EXPECT_EQ(U1, ParamV) << Dump;
-  EXPECT_NE(U0, ParamV) << Dump;
-  finishLitmus(F);
+    CgFunction MF(Ctx, F);
+    X86CgLowering Lowering(MF);
+    const std::string Dump = std::string(C.Name) + "\n" + dumpCg(MF);
+    EXPECT_EQ(countOpcode(MF, X86::SETCCr), 0u) << Dump;
+    // OGT/OLT both use COND_A; the diamond inverts to COND_BE on the false
+    // edge.
+    expectOneJcc(MF, X86::COND_BE, 2, Dump);
+    unsigned UcomiOpc = 0;
+    CgRegister U0, U1, ParamV = copyDestFromPhys(MF, X86::XMM0);
+    ASSERT_TRUE(findUcomi(MF, UcomiOpc, U0, U1, Dump));
+    ASSERT_TRUE(ParamV.isVirtual()) << Dump;
+    if (C.ExpectParamAsUcomiOp0) {
+      EXPECT_EQ(U0, ParamV) << Dump;
+      EXPECT_NE(U1, ParamV) << Dump;
+    } else {
+      EXPECT_EQ(U1, ParamV) << Dump;
+      EXPECT_NE(U0, ParamV) << Dump;
+    }
+    finishLitmus(F);
+  }
 }
 
 TEST(X86CgLowering, FcmpOeqUneStayOnTwoTestFallback) {
@@ -630,11 +672,18 @@ struct SetccChainRegs {
   CgRegister Wide;
 };
 
-// CMP; SETCC; [MOVZX]; TEST rr; JE — keep this chain contiguous so
-// optimizeCmp reaches the one-use guards. Extra live consumers belong
+enum class PeepTestKind {
+  RrSame,  // TEST r,r — the foldable form
+  RrOther, // TEST r,other — must not fold
+  RiMask,  // TEST ri with mask 2 — not a boolean nonzero test
+};
+
+// CMP; SETCC; [MOVZX]; TEST; JE — keep this chain contiguous so
+// optimizeCmp reaches the TEST/one-use guards. Extra live consumers belong
 // in a successor, not between these instructions.
 SetccChainRegs buildSetccTestJe(CgFunction &MF, CgBasicBlock &BB,
-                                CgBasicBlock &Dest, bool WithMovzx) {
+                                CgBasicBlock &Dest, bool WithMovzx,
+                                PeepTestKind Kind = PeepTestKind::RrSame) {
   auto &MRI = MF.getRegInfo();
   const auto &TII = MF.getTargetInstrInfo();
   CgRegister LHS = MRI.createVirtualRegister(&X86::GR32RegClass);
@@ -656,16 +705,27 @@ SetccChainRegs buildSetccTestJe(CgFunction &MF, CgBasicBlock &BB,
 
   CgRegister TestReg = Setcc;
   unsigned TestOpc = X86::TEST8rr;
+  const TargetRegisterClass *TestRC = &X86::GR8RegClass;
   if (WithMovzx) {
     MF.createCgInstruction(BB, TII.get(X86::MOVZX32rr8), Setcc, Wide);
     TestReg = Wide;
     TestOpc = X86::TEST32rr;
+    TestRC = &X86::GR32RegClass;
   }
 
-  SmallVector<CgOperand, 2> TestOps{
-      CgOperand::createRegOperand(TestReg, false),
-      CgOperand::createRegOperand(TestReg, false),
-  };
+  SmallVector<CgOperand, 2> TestOps;
+  if (Kind == PeepTestKind::RiMask) {
+    TestOpc = WithMovzx ? X86::TEST32ri : X86::TEST8ri;
+    TestOps = {CgOperand::createRegOperand(TestReg, false),
+               CgOperand::createImmOperand(0x2)};
+  } else if (Kind == PeepTestKind::RrOther) {
+    CgRegister Other = MRI.createVirtualRegister(TestRC);
+    TestOps = {CgOperand::createRegOperand(TestReg, false),
+               CgOperand::createRegOperand(Other, false)};
+  } else {
+    TestOps = {CgOperand::createRegOperand(TestReg, false),
+               CgOperand::createRegOperand(TestReg, false)};
+  }
   MF.createCgInstruction(BB, TII.get(TestOpc), TestOps);
 
   SmallVector<CgOperand, 2> JccOps{
@@ -778,6 +838,49 @@ TEST(X86CgPeephole, OptimizeCmpKeepsLiveBooleanConsumer) {
       EXPECT_EQ(countOpcode(MF, X86::TEST32rr), 1u) << Dump;
     } else {
       EXPECT_EQ(countOpcode(MF, X86::TEST8rr), 1u) << Dump;
+    }
+    expectOneJcc(MF, X86::COND_E, 1, Dump);
+    finishLitmus(F);
+  }
+}
+
+TEST(X86CgPeephole, OptimizeCmpDoesNotFoldMismatchedTest) {
+  struct Case {
+    bool WithMovzx;
+    PeepTestKind Kind;
+    unsigned TestOpc;
+    const char *Name;
+  };
+  const Case Cases[] = {
+      {true, PeepTestKind::RrOther, X86::TEST32rr, "TEST32rr r,other"},
+      {false, PeepTestKind::RrOther, X86::TEST8rr, "TEST8rr r,other"},
+      {true, PeepTestKind::RiMask, X86::TEST32ri, "TEST32ri mask 2"},
+      {false, PeepTestKind::RiMask, X86::TEST8ri, "TEST8ri mask 2"},
+  };
+  for (const Case &C : Cases) {
+    CompileContext Ctx;
+    Ctx.initialize();
+    MType *I32 = &CompileContext::I32Type;
+    MFunction F(Ctx, 0);
+    F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32}));
+    MBasicBlock *Entry = F.createBasicBlock();
+    F.appendBlock(Entry);
+    retImm(F, *Entry, I32, 0);
+
+    CgFunction MF(Ctx, F);
+    CgBasicBlock *BB0 = MF.createCgBasicBlock();
+    CgBasicBlock *BB1 = MF.createCgBasicBlock();
+    MF.appendCgBasicBlock(BB0);
+    MF.appendCgBasicBlock(BB1);
+    buildSetccTestJe(MF, *BB0, *BB1, C.WithMovzx, C.Kind);
+
+    X86CgPeephole Peep(MF);
+    (void)Peep;
+    const std::string Dump = std::string(C.Name) + "\n" + dumpCg(MF);
+    EXPECT_EQ(countOpcode(MF, X86::SETCCr), 1u) << Dump;
+    EXPECT_EQ(countOpcode(MF, C.TestOpc), 1u) << Dump;
+    if (C.WithMovzx) {
+      EXPECT_EQ(countOpcode(MF, X86::MOVZX32rr8), 1u) << Dump;
     }
     expectOneJcc(MF, X86::COND_E, 1, Dump);
     finishLitmus(F);
