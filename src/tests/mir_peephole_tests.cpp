@@ -750,6 +750,50 @@ TEST(MIRPeepholeLitmus, AlgebraIdentities) {
   }
 }
 
+TEST(MIRPeepholeLitmus, MulPow2FoldsToShl) {
+  MirBuilder B;
+  B.ret(B.bin(OP_mul, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("mul"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("shl"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("const.i32 3"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, MulThreeDoesNotFoldToShl) {
+  MirBuilder B;
+  B.ret(B.bin(OP_mul, B.param(), B.iconst(3)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("mul"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, AddImmReassoc) {
+  MirBuilder B;
+  auto *Inner = B.bin(OP_add, B.param(), B.iconst(10408));
+  B.ret(B.bin(OP_add, Inner, B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_NE(Dump.find("const.i32 10416"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, SubImmCanonicalizesToAdd) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sub, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("sub"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("add"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, AddThenSubImmReassoc) {
+  MirBuilder B;
+  auto *Inner = B.bin(OP_add, B.param(), B.iconst(10408));
+  B.ret(B.bin(OP_sub, Inner, B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_NE(Dump.find("const.i32 10400"), std::string::npos) << Dump;
+}
+
 TEST(PhiIncomingLayout, RemoveIncomingKeepsRemainingPairs) {
   CompileContext Ctx;
   MType *I32 = &CompileContext::I32Type;
@@ -1021,6 +1065,8 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
       << "wasm div_u by 8 still emits DIV";
   EXPECT_TRUE(codeHasShrImm3(DivBytes, DivLen))
       << "wasm div_u by 8 should SHR by 3";
+  EXPECT_EQ(callI32(*RT, *Inst, "mul8", 3), 24);
+  EXPECT_EQ(callI32(*RT, *Inst, "add_reassoc", 1), 10417);
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
@@ -1047,7 +1093,8 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
   const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
                        "add0",    "rem_u8",  "div_u8",  "rem_u6",
                        "rem_s8",  "f3",      "f4",      "f8",
-                       "f9",      "f12",     "f13",     "f14"};
+                       "f9",      "f12",     "f13",     "f14",
+                       "mul8",    "add_reassoc"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
       EXPECT_EQ(callI32(*RTM, **InstM, Fn, X), callI32(*RTS, **InstS, Fn, X))

@@ -91,7 +91,7 @@ MInstruction *MIRPeephole::foldExpr(MInstruction *Inst) {
     return New;
   }
   if (MInstruction *New = foldAlgebra(Inst)) {
-    return New;
+    return New == Inst ? New : foldExpr(New);
   }
   return Inst;
 }
@@ -347,6 +347,31 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     if (isIntZero(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
+    {
+      // add(add(x, C1), C2) → add(x, C1+C2) (two's complement wrap).
+      MInstruction *InnerDyn = nullptr;
+      llvm::APInt C1, C2;
+      auto tryReassoc = [&](MInstruction *AddOp,
+                            MInstruction *Other) -> MInstruction * {
+        if (!matchIntConst(Other, C2) || !matchAddImm(AddOp, InnerDyn, C1)) {
+          return nullptr;
+        }
+        if (C1.getBitWidth() != C2.getBitWidth()) {
+          return nullptr;
+        }
+        llvm::APInt Sum = C1 + C2;
+        if (Sum.isZero()) {
+          return InnerDyn;
+        }
+        return makeAdd(Ty, InnerDyn, makeIntConst(Ty, Sum.getZExtValue()));
+      };
+      if (MInstruction *New = tryReassoc(LHS, RHS)) {
+        return New;
+      }
+      if (MInstruction *New = tryReassoc(RHS, LHS)) {
+        return New;
+      }
+    }
     break;
   case OP_sub:
     if (isIntZero(RHS) && isPureExpr(RHS)) {
@@ -354,6 +379,11 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     }
     if (same(LHS, RHS) && isPureExpr(LHS)) {
       return makeIntConst(Ty, 0);
+    }
+    // sub(x, C) → add(x, -C) so later add-imm reassoc / x86 LEA share a path.
+    if (RConst && !RV.isZero()) {
+      llvm::APInt Neg = -RV;
+      return makeAdd(Ty, LHS, makeIntConst(Ty, Neg.getZExtValue()));
     }
     break;
   case OP_mul:
@@ -368,6 +398,29 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     }
     if (isIntOne(LHS) && isPureExpr(LHS)) {
       return RHS;
+    }
+    {
+      auto tryShl = [&](MInstruction *Dyn,
+                        const llvm::APInt &C) -> MInstruction * {
+        if (!C.isPowerOf2() || C.isOne() || C.isZero()) {
+          return nullptr;
+        }
+        const unsigned Sh = C.logBase2();
+        if (Sh >= Ty->getBitWidth()) {
+          return nullptr;
+        }
+        return makeShl(Ty, Dyn, makeIntConst(Ty, Sh));
+      };
+      if (RConst) {
+        if (MInstruction *New = tryShl(LHS, RV)) {
+          return New;
+        }
+      }
+      if (LConst) {
+        if (MInstruction *New = tryShl(RHS, LV)) {
+          return New;
+        }
+      }
     }
     break;
   case OP_and:
@@ -578,6 +631,34 @@ MInstruction *MIRPeephole::makeUShr(MType *Ty, MInstruction *LHS,
                                     MInstruction *RHS) {
   return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_ushr, Ty,
                                                  LHS, RHS);
+}
+
+MInstruction *MIRPeephole::makeAdd(MType *Ty, MInstruction *LHS,
+                                   MInstruction *RHS) {
+  return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_add, Ty, LHS,
+                                                 RHS);
+}
+
+MInstruction *MIRPeephole::makeShl(MType *Ty, MInstruction *LHS,
+                                   MInstruction *RHS) {
+  return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_shl, Ty, LHS,
+                                                 RHS);
+}
+
+bool MIRPeephole::matchAddImm(MInstruction *Inst, MInstruction *&Dyn,
+                              llvm::APInt &Imm) const {
+  if (Inst == nullptr || Inst->getOpcode() != OP_add) {
+    return false;
+  }
+  if (matchIntConst(Inst->getOperand<1>(), Imm)) {
+    Dyn = Inst->getOperand<0>();
+    return true;
+  }
+  if (matchIntConst(Inst->getOperand<0>(), Imm)) {
+    Dyn = Inst->getOperand<1>();
+    return true;
+  }
+  return false;
 }
 
 bool MIRPeephole::matchIntConst(const MInstruction *Inst,

@@ -32,6 +32,9 @@ public:
 
   CgRegister lowerDivRemExpr(const MInstruction &LHS, const MInstruction &RHS,
                              const MType &Type, Opcode Opcode);
+  /// Three-address LEA for integer add/sub with a disp32 immediate.
+  /// Preserves i32 wrap via LEA64_32r; does not fold into load/store disp.
+  CgRegister tryLowerAddSubImmAsLEA(const MInstruction &Inst);
   CgRegister lowerShiftExpr(const MInstruction &LHS, const MInstruction &RHS,
                             const MType &Type, Opcode MOpc);
   CgRegister lowerFPMinMaxExpr(const MInstruction &LHS, const MInstruction &RHS,
