@@ -17,8 +17,11 @@ no paper-total change):
 
 Lazy bodies actually compiled remain `JIT Lazy Compilation(Fg): M times`
 (and Bg). Counts accumulate over the Runtime reporting lifetime (same
-scope as timer records), including `--num-extra-compilations`. Compare
-`N` vs `M` on figlet to see unused-function compile cost.
+scope as timer records), including `--num-extra-compilations`. `N`
+versus Fg `M` is unused compilation **volume** (bodies/stubs), not a
+measured unused-function cost: sizes and FastRA/Greedy tiers differ.
+Treat `N` vs Fg as a distinct-used-function census only for one module,
+single-thread lazy, no extra compilations.
 
 ## Motivation
 
@@ -45,10 +48,11 @@ is **not** in this PR (needs a fib dump; not high-confidence).
 dtvm -m multipass --enable-statistics --log-level info figlet.wasm ...
 # grep "JIT functions compiled (eager)" and "JIT Compilation:"
 
-# lazy: stubs all; bodies on request. Disable BG so Fg is the used-body count.
+# lazy: stubs all; bodies on request. Disable BG so Fg is used-body volume.
 dtvm -m multipass --enable-multipass-lazy --disable-multipass-multithread \
   --enable-statistics --log-level info figlet.wasm ...
 # grep "JIT lazy stubs precompiled" and "JIT Lazy Compilation(Fg)"
+# Fg times are compilation events, not unique-function cost.
 ```
 
 `benchmarks/paper/benchmarks/wapm/figlet.wasm` is a Git LFS pointer
@@ -58,8 +62,8 @@ dtvm -m multipass --enable-multipass-lazy --disable-multipass-multithread \
 
 - [x] Implementation complete
 - [x] Tests added/updated — `statisticsTests`: two-compilation accumulate,
-  unused-body lazy Fg=1, disabled-stats stay zero, repeat `report()` does
-  not double-count.
+  unused-body lazy Fg=1, import fixture (2 internals), disabled eager/lazy,
+  captured `report()` lines, lazy repeat-report.
 - [x] Module specs in `docs/modules/` updated (compiler + utils)
 - [x] Build and tests pass — `statisticsTests`; `specUnitTests peephole
       -c multipass -m multipass` (smoke)

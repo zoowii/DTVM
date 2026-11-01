@@ -52,10 +52,14 @@ public:
   void noteEagerFunctionsCompiled(uint32_t N);
   void noteLazyStubsPrecompiled(uint32_t N);
 
+  // Unlocked readers, same contract as report(): call only after
+  // compilation has quiesced (no concurrent note*/startRecord/stopRecord).
   uint32_t getEagerFunctionsCompiled() const { return EagerFunctionsCompiled; }
   uint32_t getLazyStubsPrecompiled() const { return LazyStubsPrecompiled; }
   uint32_t getRecordCount(StatisticPhase Phase) const;
 
+  // Unlocked. Safe after teardown/quiescence; not safe concurrent with
+  // compilation writers.
   void report() const;
 
 private:
