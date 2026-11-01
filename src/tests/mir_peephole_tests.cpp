@@ -267,6 +267,11 @@ double callF64(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
   return Out;
 }
 
+// NaN comparisons with `>` are false, so `abs(D-2)>eps` would accept NaN.
+bool isCloseToTwo(double D) {
+  return std::isfinite(D) && std::abs(D - 2.0) <= 1e-6;
+}
+
 } // namespace
 
 TEST(MIRPeepholeLitmus, CtzEqzFoldsToBitTest) {
@@ -1250,6 +1255,24 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
   EXPECT_EQ(callI32(*RT, *Inst, "if_slt", -1), 1);
   EXPECT_EQ(callI32(*RT, *Inst, "if_slt", 1), 0);
   EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_nan", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_2", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_2", 3), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_lt_2", 1), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_lt_2", 3), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_nan_lhs", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_gt_nan_rhs", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_lt_nan_lhs", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f64_lt_nan_rhs", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f32_gt_2", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f32_gt_2", 3), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f32_lt_2", 1), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "f32_lt_2", 3), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "f32_gt_nan", 1), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_2", 1), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_2", 3), 7);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2", 1), 7);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_lt_2", 3), 3);
+  EXPECT_EQ(callI32(*RT, *Inst, "if_f64_gt_nan_7_3", 1), 3);
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
@@ -1300,7 +1323,19 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
                        "f64_eq_nan",
                        "f64_ne_nan",
                        "f64_eq_signed_zero",
-                       "if_f64_gt_nan"};
+                       "if_f64_gt_nan",
+                       "f64_gt_2",
+                       "f64_lt_2",
+                       "f64_gt_nan_lhs",
+                       "f64_gt_nan_rhs",
+                       "f64_lt_nan_lhs",
+                       "f64_lt_nan_rhs",
+                       "f32_gt_2",
+                       "f32_lt_2",
+                       "f32_gt_nan",
+                       "if_f64_gt_2",
+                       "if_f64_lt_2",
+                       "if_f64_gt_nan_7_3"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
       EXPECT_EQ(callI32(*RTM, **InstM, Fn, X), callI32(*RTS, **InstS, Fn, X))
@@ -1366,13 +1401,16 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
             !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
             !tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5 ||
             !tryCallI32(*RT, *Inst, "const_br_if_fallthrough", 0, V) ||
-            V != 1 || !tryCallI32(*RT, *Inst, "count_lt", 5, V) || V != 5) {
+            V != 1 || !tryCallI32(*RT, *Inst, "count_lt", 5, V) || V != 5 ||
+            !tryCallI32(*RT, *Inst, "f64_gt_2", 3, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "f64_lt_2", 3, V) || V != 0 ||
+            !tryCallI32(*RT, *Inst, "if_f64_gt_2", 3, V) || V != 7 ||
+            !tryCallI32(*RT, *Inst, "if_f64_lt_2", 3, V) || V != 3) {
           Failures++;
           return;
         }
         double D = 0.0;
-        if (!tryCallF64(*RT, *Inst, "scale02", 5, D) ||
-            std::abs(D - 2.0) > 1e-6) {
+        if (!tryCallF64(*RT, *Inst, "scale02", 5, D) || !isCloseToTwo(D)) {
           Failures++;
           return;
         }
@@ -1431,13 +1469,14 @@ TEST(MIRPeepholeConcurrent, ParallelLazyCompileAndExecute) {
         if (!tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5 ||
             !tryCallI32(*RT, *Inst, "f8", 11, V) || V != 11 ||
             !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
-            !tryCallI32(*RT, *Inst, "count_lt", 5, V) || V != 5) {
+            !tryCallI32(*RT, *Inst, "count_lt", 5, V) || V != 5 ||
+            !tryCallI32(*RT, *Inst, "f64_gt_2", 3, V) || V != 1 ||
+            !tryCallI32(*RT, *Inst, "f64_lt_2", 3, V) || V != 0) {
           Failures++;
           return;
         }
         double D = 0.0;
-        if (!tryCallF64(*RT, *Inst, "scale02", 5, D) ||
-            std::abs(D - 2.0) > 1e-6) {
+        if (!tryCallF64(*RT, *Inst, "scale02", 5, D) || !isCloseToTwo(D)) {
           Failures++;
           return;
         }
