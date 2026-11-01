@@ -18,8 +18,10 @@ CSV/xlsx reproduction). It adds a Phase 1.5-style JSON protocol: CPU pin,
 | WAPM (20, `fortune` for `zuk`) | **yes** | same argv / `--dir` / stdin; cache off |
 | contracts | **out of scope** | runner lives in the contract testbed |
 
-Do not compare a stats-on DTVM wall (`--stats`) against a stats-off wall or
-against Wasmtime: `--enable-statistics` uses `clock_gettime` on the timed path.
+Wall commands never add `--enable-statistics`. With `--stats`, DTVM statistics
+are collected in a separate pass with its own warmup and repetitions. Only
+the uninstrumented pass populates wall comparison fields; the instrumented
+pass and its command are stored under `instrumented` for diagnosis.
 
 ## Quick start
 
@@ -30,6 +32,7 @@ against Wasmtime: `--enable-statistics` uses `clock_gettime` on the timed path.
 
 # Command construction only (no binaries required):
 python3 benchmarks/paper/harness/run.py --selftest
+python3 -m unittest discover -s benchmarks/paper/harness -p 'test_*.py'
 python3 benchmarks/paper/harness/run.py --preset smoke --dry-run
 
 # Tiny measured matrix (atax, fib 1e6, overflow builtin 1e6, figlet):
@@ -81,7 +84,7 @@ Default directory: `benchmarks/paper/raw_data/harness/<preset>_<UTC>/` (gitignor
 | `--cpu` | `0` (`taskset -c`; pass `-1` to disable) |
 | `--warmup` / `--repeats` | `1` / `3` |
 | `--timeout` | `600` seconds per process |
-| `--stats` | off (DTVM `--enable-statistics`) |
+| `--stats` | off (when requested, a separate DTVM statistics pass) |
 | `--scale` | `dev` |
 
 DTVM must be a **Release** build with singlepass + multipass. Overflow
@@ -92,6 +95,14 @@ Wasmtime **45.0.0** is the current paper pin (`VERSIONS.md`). The harness
 always passes `-C cache=n` and `WASMTIME_CACHE=0`.
 
 ## Catalog
+
+A run succeeds only if at least one cell executes and all requested
+repetitions in every pass succeed. Failures and timeouts print `fail` in the
+table and return exit 1; partial successful samples remain in JSON along with
+failure counts and exit codes. Launch errors are recorded without aborting
+the remaining cells, and silent timeouts do not erase earlier error output.
+`--dtvm`/`--wasmtime` and their environment variables select an exact binary:
+an invalid explicit path is an error, rather than falling back to another build.
 
 Workload ids, argv, dirs, stdin, and fairness labels live in
 [`catalog.json`](catalog.json). PolyBench cases are discovered from

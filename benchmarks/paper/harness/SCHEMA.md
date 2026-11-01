@@ -24,7 +24,7 @@ mode names match the Phase 1.5 measured notes: wall time in **seconds**,
 | `cpu` | `taskset -c` index, or `null` if pinning disabled |
 | `warmup` | discarded launches (default 1) |
 | `repeats` | timed launches; median/min/max over **successful** samples |
-| `stats` | whether DTVM `--enable-statistics` was on (adds timer overhead; do not mix with stats-off walls) |
+| `stats` / `statistics_separate_pass` | whether a separate DTVM instrumented pass was requested; wall samples never add statistics |
 | `dtvm_modes` | see mode table below |
 
 ## Mode names
@@ -53,11 +53,26 @@ Default matrix is the Phase 1.5 set: `interp`, `singlepass`, `multipass-G-ST`, `
 | `mode` | see table |
 | `command` | argv actually executed (including `taskset` if pinned) |
 | `cwd` | working directory (WAPM cases run in `benchmarks/wapm/`) |
-| `ok` | at least one successful timed sample |
+| `ok` | warmup and every measured repetition in every requested pass succeeded |
+| `wall_ok` | whether the uninstrumented wall pass succeeded |
 | `exit` | last process exit code |
+| `sample_exits` | wall attempt exit codes in order; timeout and launch-error entries are `null` |
+| `failed_samples` / `timed_out_samples` | failed wall attempts (including launch errors/timeouts) / timed-out wall attempts |
+| `timeout` | whether either pass timed out, including warmup |
 | `samples_s` | successful wall samples, seconds |
 | `median_s` / `min_s` / `max_s` | over `samples_s`; `null` if none succeeded |
 | `statistics` | DTVM `--enable-statistics` medians in ms, or `null` |
+| `instrumented` | separate statistics pass result and command, or `null` if not run; its wall values are diagnostic only |
+
+Failed warmups have no measured attempts. If the wall pass fails, the
+instrumented pass is not attempted. If only the instrumented pass fails,
+`wall_ok=true` but `ok=false`, and the table still prints `fail`. Successful
+partial samples are retained only for diagnosis. Counts exclude warmup.
+
+Process launch exceptions are recorded in `output_tail`; remaining cells
+continue. Empty failure output never erases the last nonempty diagnostic.
+Any failed cell, or a run without successful cells (including an empty
+execution plan), returns exit 1.
 
 Wall time **includes** process startup, JIT, execution, and teardown. It is
 **not** the paper xlsx Compile-only subcolumn (see `docs/XLSX_FORMAT.md`).

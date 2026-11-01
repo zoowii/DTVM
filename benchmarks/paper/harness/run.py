@@ -154,12 +154,13 @@ def warn_if_debug_dtvm(dtvm: Path) -> None:
 
 
 def resolve_dtvm(explicit: Optional[str]) -> Path:
+    chosen = explicit or os.environ.get("DTVM")
+    if chosen:
+        path = Path(chosen)
+        if path.is_file() and os.access(path, os.X_OK):
+            return path.resolve()
+        die(f"requested dtvm binary is missing or not executable: {chosen}")
     candidates = []
-    if explicit:
-        candidates.append(Path(explicit))
-    env = os.environ.get("DTVM")
-    if env:
-        candidates.append(Path(env))
     candidates.extend(
         [
             REPO_ROOT / "build-paper-bench" / "dtvm",
@@ -178,12 +179,13 @@ def resolve_dtvm(explicit: Optional[str]) -> Path:
 
 
 def resolve_wasmtime(explicit: Optional[str]) -> Path:
+    chosen = explicit or os.environ.get("WASMTIME")
+    if chosen:
+        path = Path(chosen)
+        if path.is_file() and os.access(path, os.X_OK):
+            return path.resolve()
+        die(f"requested wasmtime binary is missing or not executable: {chosen}")
     candidates = []
-    if explicit:
-        candidates.append(Path(explicit))
-    env = os.environ.get("WASMTIME")
-    if env:
-        candidates.append(Path(env))
     which = shutil.which("wasmtime")
     if which:
         candidates.append(Path(which))
@@ -273,29 +275,28 @@ def select_cases(
     else:
         die(f"unknown preset {preset!r}")
 
+    if scale == "paper" and preset in ("fib", "overflow") and not only:
+        # Rewrite before filtering: these presets name the dev cases.
+        wanted = [cid.replace("_dev", "_paper") for cid in wanted]
+
     out = []
     for cid in wanted:
         if cid not in by_id:
             die(f"unknown case id {cid!r}")
         case = by_id[cid]
         case_scale = case.get("scale")
-        if case_scale and case_scale != scale and preset not in ("smoke", "phase15"):
+        if (
+            case_scale
+            and case_scale != scale
+            and not only
+            and preset not in ("smoke", "phase15")
+        ):
             # scale-tagged cases are included only when --scale matches, except
             # smoke/phase15 which name explicit *_dev ids.
-            if only:
-                out.append(case)
             continue
         if suites and case["suite"] not in suites:
             continue
         out.append(case)
-    # For fib/overflow presets at paper scale, rewrite *_dev ids if the user
-    # asked --scale paper with a preset that listed _dev.
-    if scale == "paper" and preset in ("fib", "overflow") and not only:
-        rewritten = []
-        for case in out:
-            pid = case["id"].replace("_dev", "_paper")
-            rewritten.append(by_id.get(pid, case))
-        out = rewritten
     return out
 
 
@@ -387,6 +388,7 @@ def time_once(
             cwd=str(cwd),
             input=stdin,
             text=True,
+            errors="replace",
             capture_output=True,
             timeout=timeout,
             env=merged_env,
@@ -418,6 +420,14 @@ def time_once(
             "output": out,
             "timeout": True,
         }
+    except OSError as exc:
+        return {
+            "ok": False,
+            "exit": None,
+            "wall_s": time.perf_counter() - t0,
+            "output": f"{type(exc).__name__}: {exc}",
+            "timeout": False,
+        }
 
 
 def run_cell(
@@ -433,7 +443,9 @@ def run_cell(
     samples: List[float] = []
     exits: List[Optional[int]] = []
     stats_samples: List[Dict[str, float]] = []
+    timed_out_samples = 0
     last_output = ""
+    last_failure_output = ""
     for _ in range(warmup):
         r = time_once(cmd, cwd, stdin, timeout, env)
         last_output = r["output"]
@@ -446,17 +458,23 @@ def run_cell(
             "ok": False,
             "exit": r.get("exit"),
             "timeout": r.get("timeout", False),
+            "sample_exits": [],
+            "failed_samples": 0,
+            "timed_out_samples": 0,
             "samples_s": [],
             "median_s": None,
             "min_s": None,
             "max_s": None,
             "statistics": None,
-            "output_tail": last_output[-4000:] if keep_output else "",
+            "output_tail": last_output[-4000:],
         }
     for _ in range(repeats):
         r = time_once(cmd, cwd, stdin, timeout, env)
         last_output = r["output"]
         exits.append(r["exit"])
+        timed_out_samples += int(r["timeout"])
+        if not r["ok"] and r["output"]:
+            last_failure_output = r["output"]
         if r["ok"]:
             samples.append(float(r["wall_s"]))
             parsed = parse_dtvm_stats(r["output"])
@@ -471,15 +489,21 @@ def run_cell(
             if any(k in s for s in stats_samples)
         }
     return {
-        "ok": bool(samples),
+        "ok": len(samples) == repeats and repeats > 0,
         "exit": exits[-1] if exits else None,
-        "timeout": False,
+        "timeout": timed_out_samples > 0,
+        "sample_exits": exits,
+        "failed_samples": len(exits) - len(samples),
+        "timed_out_samples": timed_out_samples,
         "samples_s": samples,
         "median_s": median(samples),
         "min_s": min(samples) if samples else None,
         "max_s": max(samples) if samples else None,
         "statistics": stats_med,
-        "output_tail": last_output[-4000:] if (keep_output or not samples) else "",
+        "output_tail": (
+            (last_failure_output or last_output)[-4000:]
+            if keep_output or len(samples) != repeats else ""
+        ),
     }
 
 
@@ -516,7 +540,9 @@ def markdown_table(runs: Sequence[Dict[str, Any]]) -> str:
             )
             if cell is None:
                 row.append("—")
-            elif cell["median_s"] is None:
+            elif cell.get("skipped"):
+                row.append("skip")
+            elif not cell.get("ok", True) or cell["median_s"] is None:
                 row.append("fail")
             else:
                 row.append(f"{cell['median_s']:.4f}")
@@ -678,7 +704,7 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument(
         "--stats",
         action="store_true",
-        help="pass --enable-statistics (DTVM only); wall times then include timer overhead",
+        help="collect DTVM statistics in a separate instrumented pass",
     )
     p.add_argument("--dtvm")
     p.add_argument("--wasmtime")
@@ -698,6 +724,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_argparser().parse_args(argv)
     if args.selftest:
         return selftest()
+    if args.repeats < 1 or args.warmup < 0 or args.timeout <= 0:
+        die("--repeats must be positive, --warmup non-negative, and --timeout positive")
 
     catalog = read_json(CATALOG_PATH)
     all_cases = load_cases(catalog)
@@ -761,7 +789,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 modes = [WASMTIME_MODE]
             for mode in modes:
                 if rt == "dtvm":
-                    cmd = dtvm_cmd(dtvm_bin, case, mode, args.stats)
+                    cmd = dtvm_cmd(dtvm_bin, case, mode, stats=False)
                     env = None
                 else:
                     cmd = wasmtime_cmd(wt_bin, case)
@@ -783,6 +811,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "fairness": case.get("fairness", "same-wasm"),
                     "cwd": str(case_cwd(case)),
                     "command": full,
+                    "instrumented_command": (
+                        prefix + dtvm_cmd(dtvm_bin, case, mode, stats=True)
+                        if rt == "dtvm" and args.stats else None
+                    ),
                     "stdin": case.get("stdin"),
                 }
                 for case, rt, mode, full, _env in plan
@@ -810,6 +842,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             env,
             args.keep_output,
         )
+        instrumented = None
+        if rt == "dtvm" and args.stats and cell["ok"]:
+            instrumented_cmd = prefix + dtvm_cmd(dtvm_bin, case, mode, stats=True)
+            instrumented = run_cell(
+                instrumented_cmd, case_cwd(case), case.get("stdin"),
+                args.warmup, args.repeats, args.timeout, env, args.keep_output
+            )
+            instrumented["command"] = instrumented_cmd
         rec = {
             "bench": case["id"],
             "suite": case["suite"],
@@ -820,17 +860,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "command": cmd,
             "cwd": str(case_cwd(case)),
             "exit": cell["exit"],
-            "ok": cell["ok"],
+            "timeout": cell["timeout"] or bool(instrumented and instrumented["timeout"]),
+            "sample_exits": cell["sample_exits"],
+            "failed_samples": cell["failed_samples"],
+            "timed_out_samples": cell["timed_out_samples"],
+            "ok": cell["ok"] and (instrumented is None or instrumented["ok"]),
+            "wall_ok": cell["ok"],
             "samples_s": cell["samples_s"],
             "median_s": cell["median_s"],
             "min_s": cell["min_s"],
             "max_s": cell["max_s"],
-            "statistics": cell["statistics"],
+            "statistics": (instrumented or cell)["statistics"],
+            "instrumented": instrumented,
         }
         if cell.get("output_tail") and (args.keep_output or not cell["ok"]):
             rec["output_tail"] = cell["output_tail"]
+        if instrumented and instrumented.get("output_tail"):
+            rec["output_tail"] = instrumented["output_tail"]
         runs.append(rec)
-        med = rec["median_s"]
+        med = rec["median_s"] if rec["ok"] else None
         print(
             f"    median_s={med if med is not None else 'fail'} "
             f"n={len(rec['samples_s'])} fairness={rec['fairness']}",
@@ -849,6 +897,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "repeats": args.repeats,
             "timeout_s": args.timeout,
             "stats": bool(args.stats),
+            "statistics_separate_pass": bool(args.stats),
             "dtvm": str(dtvm_bin) if dtvm_bin else None,
             "wasmtime": str(wt_bin) if wt_bin else None,
             "dtvm_modes": dtvm_modes,
@@ -868,6 +917,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     failed = [r for r in runs if not r["ok"]]
     if failed:
         print(f"warning: {len(failed)} failed cells", file=sys.stderr)
+        return 1
+    if not any(r["ok"] for r in runs):
+        print("error: no benchmark cells executed successfully", file=sys.stderr)
         return 1
     return 0
 

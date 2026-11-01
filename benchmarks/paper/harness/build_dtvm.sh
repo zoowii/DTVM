@@ -33,7 +33,7 @@ LLVM_DIR="$(find_llvm_dir)"
 echo "LLVM_DIR=$LLVM_DIR"
 echo "BUILD=$BUILD"
 
-cmake -B "$BUILD" -G Ninja \
+cmake -S "$ROOT" -B "$BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DLLVM_DIR="$LLVM_DIR" \
   -DZEN_ENABLE_SINGLEPASS_JIT=ON \
