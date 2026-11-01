@@ -1719,7 +1719,9 @@ CgRegister X86CgLowering::tryLowerAddSubImmAsLEA(const MInstruction &Inst) {
     return 0;
   }
   const MType *Ty = Inst.getType();
-  if (!Ty->isInteger() || (!Ty->isI32() && !Ty->isI64())) {
+  // i32 only: LEA does not write CF. EVM 256-bit add uses i64 ADD then ADC
+  // (`handleAddU64Const` / limb 0 of `BO_ADD`); LEA64r would drop that carry.
+  if (!Ty || !Ty->isI32()) {
     return 0;
   }
 
@@ -1750,16 +1752,11 @@ CgRegister X86CgLowering::tryLowerAddSubImmAsLEA(const MInstruction &Inst) {
   const int64_t Imm = DispAP.getSExtValue();
 
   CgRegister SrcReg = lowerExpr(*Dyn);
-  const bool IsI32 = Ty->isI32();
-  CgRegister BaseReg = SrcReg;
-  if (IsI32) {
-    // Zero-extend the i32 into a GR64 so LEA64_32r computes
-    // trunc32(zext32(x) + disp) == wrap32(x + disp).
-    BaseReg =
-        fastEmitInst_subregtoreg(&X86::GR64RegClass, SrcReg, X86::sub_32bit);
-  }
+  // Zero-extend the i32 into a GR64 so LEA64_32r computes
+  // trunc32(zext32(x) + disp) == wrap32(x + disp).
+  CgRegister BaseReg =
+      fastEmitInst_subregtoreg(&X86::GR64RegClass, SrcReg, X86::sub_32bit);
 
-  const unsigned LEAOpc = IsI32 ? X86::LEA64_32r : X86::LEA64r;
   CgRegister ResultReg = createReg(TLI.getRegClassFor(getMVT(*Ty)));
   SmallVector<CgOperand, 6> LEAOperands{
       CgOperand::createRegOperand(ResultReg, true),
@@ -1769,7 +1766,7 @@ CgRegister X86CgLowering::tryLowerAddSubImmAsLEA(const MInstruction &Inst) {
       CgOperand::createImmOperand(Imm),
       CgOperand::createRegOperand(X86::NoRegister, false),
   };
-  MF->createCgInstruction(*CurBB, TII.get(LEAOpc), LEAOperands);
+  MF->createCgInstruction(*CurBB, TII.get(X86::LEA64_32r), LEAOperands);
   return ResultReg;
 }
 

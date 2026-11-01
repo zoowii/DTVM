@@ -31,7 +31,7 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 
 1. **Frontend→dMIR**: `WasmMirBuilder` / `EVMMirBuilder` translate source/bytecode to `MModule` + `MFunction` (dMIR)
 2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, unsigned pow2 `udiv`/`urem`, add-imm reassoc, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
-3. **dMIR→CgIR**: `X86CgLowering` (integer add/sub-imm → 3-address `LEA64_32r`/`LEA64r`; does **not** fold `add(dyn,imm)` into load/store disp — wasm wrap32), `X86CgPeephole`
+3. **dMIR→CgIR**: `X86CgLowering` (i32 add/sub-imm → 3-address `LEA64_32r`; i64 stays ADD/SUB so CF is live for EVM ADC; does **not** fold `add(dyn,imm)` into load/store disp — wasm wrap32), `X86CgPeephole`
 4. **Register allocation**: `FastRA` or `CgRAGreedy` + `CgRegisterCoalescer`, `CgVirtRegMap`, `CgLiveIntervals`, etc.
 5. **Post-RA processing**: `PrologEpilogInserter`, `ExpandPostRAPseudos`
 6. **Machine code emission**: `X86MCLowering` → ELF `.text` section
@@ -135,11 +135,13 @@ OOB). Load/store Scale stays 1. See
   `_operand_num`. Pred/succ removal is swap-pop: `vector::erase` on a
   bump-allocated `CompileVector` can memmove into the LLVM ASan red zone.
 
-- x86 integer `add`/`sub` with a signed-disp32 immediate lowers to
-  three-address `LEA64r` / `LEA64_32r` (`trunc32(zext32(x)+disp)` for
-  i32, which equals wasm wrap32). The addend must **not** be folded
-  into load/store `Displacement`: x86-64 `[base+index+disp]` is a
-  64-bit EA and is not `zext64(wrap32(x+C))+N`.
+- x86 i32 `add`/`sub` with a signed-disp32 immediate lowers to
+  three-address `LEA64_32r` (`trunc32(zext32(x)+disp)`, which equals
+  wasm wrap32). i64 add/sub-imm stays ADD/SUB: `LEA` does not write
+  CF, and EVM 256-bit add uses i64 ADD then ADC. The addend must
+  **not** be folded into load/store `Displacement`: x86-64
+  `[base+index+disp]` is a 64-bit EA and is not
+  `zext64(wrap32(x+C))+N`.
 
 ### EVM JIT Invariants
 

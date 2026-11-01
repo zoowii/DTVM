@@ -9,9 +9,9 @@
 Two trap-safe integer addressing cleanups that do **not** fold `add(dyn,imm)`
 into load/store displacement (rejected in DTVMStack #626 / zoowii/DTVM#14):
 
-1. Lower integer `add`/`sub` with a signed-disp32 immediate to a three-address
-   x86 `LEA`. i32 uses `LEA64_32r` so the result is
-   `trunc32(zext32(x)+disp) == wrap32(x+disp)`.
+1. Lower i32 `add`/`sub` with a signed-disp32 immediate to three-address
+   `LEA64_32r` so the result is `trunc32(zext32(x)+disp) == wrap32(x+disp)`.
+   i64 stays ADD/SUB so EFLAGS.CF remains available for EVM ADC chains.
 2. MIR: `add(add(x,C1),C2) → add(x,C1+C2)`, `sub(x,C) → add(x,-C)`,
    `mul(x, 1<<k) → shl(x,k)`.
 

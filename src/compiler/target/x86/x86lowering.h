@@ -32,8 +32,9 @@ public:
 
   CgRegister lowerDivRemExpr(const MInstruction &LHS, const MInstruction &RHS,
                              const MType &Type, Opcode Opcode);
-  /// Three-address LEA for integer add/sub with a disp32 immediate.
-  /// Preserves i32 wrap via LEA64_32r; does not fold into load/store disp.
+  /// Three-address LEA for i32 add/sub with a disp32 immediate.
+  /// Preserves wrap via LEA64_32r; does not fold into load/store disp.
+  /// i64 stays ADD/SUB so EFLAGS.CF remains available for EVM ADC chains.
   CgRegister tryLowerAddSubImmAsLEA(const MInstruction &Inst);
   CgRegister lowerShiftExpr(const MInstruction &LHS, const MInstruction &RHS,
                             const MType &Type, Opcode MOpc);
