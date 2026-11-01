@@ -7,6 +7,9 @@
 #include "compiler/mir/constants.h"
 #include "compiler/mir/instruction.h"
 #include "compiler/mir/instructions.h"
+#include "compiler/mir/opcode.h"
+#include "compiler/mir/variable.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Casting.h"
@@ -18,6 +21,7 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
   for (MBasicBlock *BB : Func) {
     rewriteBlock(*BB);
   }
+  hoistNonEntryFPConsts(Func);
 
 #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
   llvm::dbgs() << "\n########## MIR Dump After MIR Peephole ##########\n\n";
@@ -357,6 +361,11 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     if (isIntZero(LHS) && isPureExpr(LHS)) {
       return RHS;
     }
+    // i64 ADD may feed EVM ADC: reassociation preserves the value but
+    // can change the carry-out of the final addition.
+    if (!Ty->isI32()) {
+      break;
+    }
     {
       // add(add(x, C1), C2) → add(x, C1+C2) (two's complement wrap).
       MInstruction *InnerDyn = nullptr;
@@ -390,8 +399,9 @@ MInstruction *MIRPeephole::foldAlgebra(MInstruction *Inst) {
     if (same(LHS, RHS) && isPureExpr(LHS)) {
       return makeIntConst(Ty, 0);
     }
-    // sub(x, C) → add(x, -C) so later add-imm reassoc / x86 LEA share a path.
-    if (RConst && !RV.isZero()) {
+    // Only i32: i64 SUB can produce the borrow consumed by EVM SBB.
+    // ADD(x, -C) has the same value but a different CF for nonzero C.
+    if (Ty->isI32() && RConst && !RV.isZero()) {
       llvm::APInt Neg = -RV;
       return makeAdd(Ty, LHS, makeIntConst(Ty, Neg.getZExtValue()));
     }
@@ -644,19 +654,19 @@ MInstruction *MIRPeephole::makeUShr(MType *Ty, MInstruction *LHS,
 }
 
 MInstruction *MIRPeephole::makeAdd(MType *Ty, MInstruction *LHS,
-                                   MInstruction *RHS) {
+                                  MInstruction *RHS) {
   return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_add, Ty, LHS,
                                                  RHS);
 }
 
 MInstruction *MIRPeephole::makeShl(MType *Ty, MInstruction *LHS,
-                                   MInstruction *RHS) {
+                                  MInstruction *RHS) {
   return F->createInstruction<BinaryInstruction>(false, *CurBB, OP_shl, Ty, LHS,
                                                  RHS);
 }
 
 bool MIRPeephole::matchAddImm(MInstruction *Inst, MInstruction *&Dyn,
-                              llvm::APInt &Imm) const {
+                             llvm::APInt &Imm) const {
   if (Inst == nullptr || Inst->getOpcode() != OP_add) {
     return false;
   }
@@ -807,5 +817,115 @@ bool MIRPeephole::evalICmp(CmpInstruction::Predicate Pred,
   default:
     ZEN_ASSERT(false && "evalICmp: non-integer predicate");
     return false;
+  }
+}
+
+static MConstantFloat *matchNonZeroFPConst(MInstruction *Inst) {
+  auto *C = llvm::dyn_cast<ConstantInstruction>(Inst);
+  if (!C || !C->getType()->isFloat()) {
+    return nullptr;
+  }
+  auto *CF = llvm::dyn_cast<MConstantFloat>(&C->getConstant());
+  if (!CF || CF->getValue().isExactlyValue(+0.0)) {
+    return nullptr;
+  }
+  return CF;
+}
+
+// Materialize each distinct non-+0.0 FP constant used outside the entry
+// block once in entry. This is not loop/preheader analysis and has no
+// use-frequency or cold-path filter: every eligible constant is initialized
+// on every invocation, which can grow the frame and live ranges.
+void MIRPeephole::hoistNonEntryFPConsts(MFunction &Func) {
+  if (Func.getNumBasicBlocks() < 2) {
+    return;
+  }
+  MBasicBlock *Entry = Func.getEntryBasicBlock();
+  if (!Entry->predecessors().empty()) {
+    // Backedge into the entry would re-execute a hoisted dassign.
+    return;
+  }
+
+  llvm::DenseMap<MConstantFloat *, MType *> ToHoist;
+  llvm::SmallVector<std::pair<MConstantFloat *, MType *>, 4> Ordered;
+  auto Collect = [&](auto &&Self, MInstruction *Inst) -> void {
+    if (Inst == nullptr) {
+      return;
+    }
+    if (MConstantFloat *CF = matchNonZeroFPConst(Inst)) {
+      if (ToHoist.try_emplace(CF, Inst->getType()).second) {
+        Ordered.emplace_back(CF, Inst->getType());
+      }
+      return;
+    }
+    for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
+      Self(Self, Inst->getOperand(I));
+    }
+  };
+
+  for (MBasicBlock *BB : Func) {
+    if (BB == Entry) {
+      continue;
+    }
+    for (MInstruction *Stmt : *BB) {
+      Collect(Collect, Stmt);
+    }
+  }
+  if (Ordered.empty()) {
+    return;
+  }
+
+  llvm::DenseMap<MConstantFloat *, uint32_t> VarOf;
+  llvm::SmallPtrSet<MInstruction *, 8> InitAssigns;
+  size_t InsertIdx = 0;
+  for (MInstruction *Stmt : *Entry) {
+    if (Stmt->getOpcode() != OP_phi) {
+      break;
+    }
+    ++InsertIdx;
+  }
+
+  CompileContext &Ctx = Func.getContext();
+  for (auto [CF, Ty] : Ordered) {
+    Variable *Var = Func.createVariable(Ty);
+    const uint32_t VarIdx = Var->getVarIdx();
+    VarOf[CF] = VarIdx;
+    MInstruction *Init =
+        Func.createInstruction<ConstantInstruction>(false, *Entry, Ty, *CF);
+    MInstruction *Assign = Func.createInstruction<DassignInstruction>(
+        false, *Entry, &Ctx.VoidType, Init, VarIdx);
+    Entry->addStatement(InsertIdx++, Assign);
+    InitAssigns.insert(Assign);
+  }
+
+  auto Replace = [&](auto &&Self, MInstruction *Inst) -> void {
+    if (Inst == nullptr) {
+      return;
+    }
+    if (InitAssigns.contains(Inst)) {
+      return;
+    }
+    for (OperandNum I = 0, E = Inst->getNumOperands(); I != E; ++I) {
+      MInstruction *Op = Inst->getOperand(I);
+      if (Op == nullptr) {
+        continue;
+      }
+      if (MConstantFloat *CF = matchNonZeroFPConst(Op)) {
+        auto It = VarOf.find(CF);
+        if (It != VarOf.end()) {
+          MInstruction *Dr = Func.createInstruction<DreadInstruction>(
+              false, *Entry, Op->getType(), It->second);
+          Inst->setOperand(I, Dr);
+          continue;
+        }
+      }
+      Self(Self, Op);
+    }
+  };
+
+  for (MBasicBlock *BB : Func) {
+    for (MInstruction *Stmt : *BB) {
+      Replace(Replace, Stmt);
+    }
   }
 }

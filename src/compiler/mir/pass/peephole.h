@@ -8,7 +8,9 @@
 
 namespace COMPILER {
 
-/// Local algebraic / terminator peepholes on dMIR trees (Wasmtime-inspired).
+/// Local algebraic / terminator peepholes on dMIR trees (Wasmtime-inspired),
+/// plus entry-wide hoisting of non-zero FP constants used outside the entry
+/// block (no loop/preheader or use-frequency analysis).
 /// Function-local, deterministic, no shared mutable state.
 class MIRPeephole {
 public:
@@ -22,6 +24,7 @@ private:
   void rewriteBlock(MBasicBlock &BB);
   MInstruction *rewriteExpr(MInstruction *Inst);
   MInstruction *foldExpr(MInstruction *Inst);
+  void hoistNonEntryFPConsts(MFunction &Func);
 
   MInstruction *foldBitCountEqZero(MInstruction *Inst);
   MInstruction *foldSelectICmp(MInstruction *Inst);
