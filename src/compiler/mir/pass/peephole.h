@@ -17,6 +17,7 @@ public:
 private:
   MFunction *F = nullptr;
   MBasicBlock *CurBB = nullptr;
+  MInstruction *CurStmt = nullptr;
 
   void rewriteBlock(MBasicBlock &BB);
   MInstruction *rewriteExpr(MInstruction *Inst);
@@ -27,7 +28,12 @@ private:
   MInstruction *foldAlgebra(MInstruction *Inst);
   MInstruction *foldConstCmp(MInstruction *Inst);
   MInstruction *foldSelectConstCond(MInstruction *Inst);
+  MInstruction *foldU32MagicUDiv(MInstruction *Inst);
   bool foldConstBrIf(MBasicBlock &BB, BrIfInstruction &BrIf);
+
+  MInstruction *makeConv(Opcode Opc, MType *Ty, MInstruction *Op);
+  MInstruction *makeBin(Opcode Opc, MType *Ty, MInstruction *LHS,
+                        MInstruction *RHS);
 
   MInstruction *makeIntConst(MType *Ty, uint64_t Val);
   MInstruction *makeICmp(CmpInstruction::Predicate Pred, MType *Ty,
@@ -35,6 +41,7 @@ private:
   MInstruction *makeAnd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
 
   static bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val);
+  bool matchIntConstLookThrough(const MInstruction *Inst, llvm::APInt &Val);
   static bool isIntZero(const MInstruction *Inst);
   static bool isIntOne(const MInstruction *Inst);
   static bool isIntAllOnes(const MInstruction *Inst);

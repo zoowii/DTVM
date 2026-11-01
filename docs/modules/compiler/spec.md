@@ -97,8 +97,12 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - `MVerifier` must pass before entering CgIR lowering
 - `MIRPeephole` is function-local and deterministic: it rewrites nested
   integer expression trees and constant `br_if` terminators only. It must
-  not fold `div`/`rem` (zero-divisor traps) or `ctz`/`clz` compares against
-  a non-zero constant. Discarding a subtree requires a proven-pure tree
+  not fold `div`/`rem` when the divisor may be zero (wasm integer-divide-
+  by-zero traps). `i32` `udiv` by a proven non-zero, non-power-of-two
+  constant may be rewritten via `UnsignedDivisionByConstantInfo` magic
+  multiply (Hacker's Delight); power-of-two `udiv`/`urem` stay as-is
+  (#626). It must not fold `ctz`/`clz` compares against a non-zero
+  constant. Discarding a subtree requires a proven-pure tree
   (no load / call / wasm-check). Folding a constant `br_if` must drop the
   untaken CFG edge **and** any phi incoming on the still-live target that
   came from this block. After the pass, `DeadMBasicBlockElim` may drop

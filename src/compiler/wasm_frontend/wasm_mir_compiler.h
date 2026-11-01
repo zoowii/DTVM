@@ -10,6 +10,7 @@
 #include "compiler/mir/instructions.h"
 #include "compiler/mir/opcode.h"
 #include "compiler/mir/pointer.h"
+#include "llvm/Support/Casting.h"
 
 namespace COMPILER {
 
@@ -329,8 +330,16 @@ public:
   Operand handleIDiv(Operand LHSOp, Operand RHSOp) {
     MType *Mtype = Ctx.getMIRTypeFromWASMType(Type);
 
-    MInstruction *LHS = makeReusableValue(extractOperand(LHSOp), Mtype);
-    MInstruction *RHS = makeReusableValue(extractOperand(RHSOp), Mtype);
+    MInstruction *LHS = extractOperand(LHSOp);
+    MInstruction *RHS = extractOperand(RHSOp);
+    // Constants are already shareable; spilling them to temps hides
+    // immediate divisors from peepholes (u32 magic udiv, pow2 udiv).
+    if (!llvm::isa<ConstantInstruction>(LHS)) {
+      LHS = makeReusableValue(LHS, Mtype);
+    }
+    if (!llvm::isa<ConstantInstruction>(RHS)) {
+      RHS = makeReusableValue(RHS, Mtype);
+    }
 
 #if !defined(ZEN_BUILD_TARGET_X86_64) or !defined(ZEN_ENABLE_CPU_EXCEPTION)
     MInstruction *DivByZero = createInstruction<CmpInstruction>(
