@@ -472,17 +472,30 @@ if(ZEN_ENABLE_SPEC_TEST)
         "${CMAKE_SOURCE_DIR}/tests/wast/multipass/fib_iter_onefn.wat"
     )
     set(FIB_ITER_ONEFN_WASM "${CMAKE_CURRENT_BINARY_DIR}/fib_iter_onefn.wasm")
+    set(FIB_ITER_TWOFN_WAT
+        "${CMAKE_SOURCE_DIR}/tests/wast/multipass/fib_iter_twofn.wat"
+    )
+    set(FIB_ITER_TWOFN_WASM "${CMAKE_CURRENT_BINARY_DIR}/fib_iter_twofn.wasm")
     add_custom_command(
       OUTPUT ${FIB_ITER_ONEFN_WASM}
       COMMAND wat2wasm ${FIB_ITER_ONEFN_WAT} -o ${FIB_ITER_ONEFN_WASM}
       DEPENDS ${FIB_ITER_ONEFN_WAT}
       VERBATIM
     )
-    add_custom_target(fib_iter_onefn_wasm DEPENDS ${FIB_ITER_ONEFN_WASM})
-    add_dependencies(lazyJitGreedyOndemandTests fib_iter_onefn_wasm)
+    add_custom_command(
+      OUTPUT ${FIB_ITER_TWOFN_WASM}
+      COMMAND wat2wasm ${FIB_ITER_TWOFN_WAT} -o ${FIB_ITER_TWOFN_WASM}
+      DEPENDS ${FIB_ITER_TWOFN_WAT}
+      VERBATIM
+    )
+    add_custom_target(
+      fib_iter_lazy_wasm DEPENDS ${FIB_ITER_ONEFN_WASM} ${FIB_ITER_TWOFN_WASM}
+    )
+    add_dependencies(lazyJitGreedyOndemandTests fib_iter_lazy_wasm)
     target_compile_definitions(
       lazyJitGreedyOndemandTests
       PRIVATE FIB_ITER_ONEFN_WASM_PATH="${FIB_ITER_ONEFN_WASM}"
+              FIB_ITER_TWOFN_WASM_PATH="${FIB_ITER_TWOFN_WASM}"
     )
     if(ZEN_ENABLE_ASAN)
       target_compile_options(

@@ -561,11 +561,13 @@ LazyJITCompiler::LazyJITCompiler(Module *WasmMod)
   const runtime::RuntimeConfig &Config = WasmMod->getRuntime()->getConfig();
 
   // Single-internal-function modules skip the FastRA FG + Greedy BG split.
-  // FastRA on that path is the measured fib regression (heavy rbp spills);
-  // Greedy on-demand is cheap and matches eager-G / lazy-G-ST. No ThreadPool
-  // means compileFunctionOnRequest uses Greedy and unconditional stub
-  // publish; there is no concurrent FastRA, so trampoline → Greedy stays
-  // monotonic without the Done/CAS protocol.
+  // Measured tradeoff for fib-like loops: Greedy on-demand matches eager-G
+  // / lazy-G-ST quality and avoids a duplicate FastRA body on the first
+  // long-running call. This is not a claim that no one-function module can
+  // benefit from FastRA-first tiering (a large, short-lived one-fn compile
+  // might still want it). No ThreadPool means compileFunctionOnRequest
+  // uses the configured allocator (Greedy unless DisableMultipassGreedyRA)
+  // and unconditional stub publish; there is no concurrent FastRA.
   const bool UseBackgroundGreedy =
       !Config.DisableMultipassMultithread && NumInternalFunctions > 1;
   if (UseBackgroundGreedy) {
@@ -720,6 +722,7 @@ uint8_t *LazyJITCompiler::compileFunction(WasmFrontendContext &Ctx,
 void LazyJITCompiler::compileFunctionInBackgroud(WasmFrontendContext &Ctx,
                                                  uint32_t FuncIdx) {
   ZEN_LOG_DEBUG("compile function %d in background", FuncIdx);
+  BackgroundCompileCount.fetch_add(1, std::memory_order_relaxed);
   CompileStatuses[FuncIdx] = CompileStatus::InProgress;
   auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyBgCompilation);
   uint8_t *JITFuncCodePtr =
@@ -741,7 +744,9 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
   uint32_t FuncIdx = StubBuilder.getFuncIdxByStubCodePtr(FuncStubCodePtr);
   if (!ThreadPool) {
     // Single-thread lazy, or single-internal-function modules (no FastRA
-    // FG / Greedy BG split). Greedy on-demand; unconditional stub publish.
+    // FG / Greedy BG split). Configured allocator on-demand (Greedy unless
+    // DisableMultipassGreedyRA); unconditional stub publish.
+    ForegroundCompileCount.fetch_add(1, std::memory_order_relaxed);
     auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyFgCompilation);
     uint8_t *JITFuncCodePtr =
         compileFunction(*MainContext, FuncIdx, Config.DisableMultipassGreedyRA);
@@ -754,6 +759,7 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
     return GreedyRACodePtrs[FuncIdx];
   }
   ZEN_LOG_DEBUG("compile function %d on request", FuncIdx);
+  ForegroundCompileCount.fetch_add(1, std::memory_order_relaxed);
   auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyFgCompilation);
   // Compile the function with fastRA for faster compilation. Parallel
   // foreground compiles of the same FuncIdx may each produce a FastRA body;

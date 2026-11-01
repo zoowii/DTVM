@@ -90,7 +90,7 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - After Done, foreground FastRA must not patch the stub; `compileFunctionOnRequest` returns the GreedyRA pointer
 - FastRA may CAS-patch only from the trampoline; background GreedyRA may overwrite trampoline or FastRA
 - Tear-free `xchg` of the 4-byte `rel32` does not by itself enforce this ordering
-- Modules with exactly one internal function skip the FastRA/background-Greedy split: no `ThreadPool`, on-request compile uses Greedy (same as single-thread lazy), and the stub is published trampoline → Greedy with unconditional `xchg`. There is no concurrent FastRA publisher.
+- Modules with exactly one internal function skip the FastRA/background-Greedy split as a measured policy for fib-like workloads: no `ThreadPool`, on-request compile uses the configured allocator (Greedy unless `DisableMultipassGreedyRA`), and the stub is published trampoline → compiled body with unconditional `xchg`. There is no concurrent FastRA publisher. This is not a claim that no one-function module can benefit from FastRA-first tiering.
 
 ### dMIR Invariants
 
