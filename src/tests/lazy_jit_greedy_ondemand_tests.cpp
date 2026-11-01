@@ -1,0 +1,351 @@
+// Copyright (C) 2021-2026 the DTVM authors. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#include "compiler/compiler.h"
+#include "compiler/stub/stub_jmp_target.h"
+#include "runtime/isolation.h"
+#include "runtime/module.h"
+#include "runtime/runtime.h"
+#include "zetaengine.h"
+
+#include <gtest/gtest.h>
+
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <fstream>
+#include <string>
+#include <thread>
+#include <vector>
+
+using COMPILER::LazyJITCompiler;
+using zen::common::RunMode;
+using zen::common::TypedValue;
+using zen::runtime::CodeEntry;
+using zen::runtime::Instance;
+using zen::runtime::Isolation;
+using zen::runtime::Module;
+using zen::runtime::Runtime;
+using zen::runtime::RuntimeConfig;
+
+namespace {
+
+std::vector<uint8_t> loadWasmFile(const char *Path) {
+  std::ifstream In(Path, std::ios::binary);
+  EXPECT_TRUE(In) << "failed to open " << Path;
+  return std::vector<uint8_t>((std::istreambuf_iterator<char>(In)),
+                              std::istreambuf_iterator<char>());
+}
+
+std::unique_ptr<Runtime> makeRuntime(bool Lazy, bool DisableGreedyRA,
+                                     bool DisableMT) {
+  RuntimeConfig Cfg;
+  Cfg.Mode = RunMode::MultipassMode;
+#ifdef ZEN_ENABLE_BUILTIN_WASI
+  Cfg.DisableWASI = true;
+#endif
+#ifdef ZEN_ENABLE_MULTIPASS_JIT
+  Cfg.EnableMultipassLazy = Lazy;
+  Cfg.DisableMultipassGreedyRA = DisableGreedyRA;
+  Cfg.DisableMultipassMultithread = DisableMT;
+  Cfg.NumMultipassThreads = 4;
+#endif
+  return Runtime::newRuntime(Cfg);
+}
+
+int32_t callI32(Runtime &RT, Instance &Inst, const char *Name, int32_t Arg) {
+  std::vector<TypedValue> Results;
+  EXPECT_TRUE(RT.callWasmFunction(Inst, Name, {std::to_string(Arg)}, Results))
+      << (Inst.hasError() ? Inst.getError().getFormattedMessage() : Name);
+  EXPECT_EQ(Results.size(), 1u);
+  return Results[0].Value.I32;
+}
+
+/// If Ptr is a lazy stub `jmp rel32`, return the compiled body (or nullptr
+/// while still on the trampoline). Otherwise treat Ptr as the body.
+const uint8_t *resolvedJitBody(const uint8_t *Ptr) {
+  if (!Ptr || Ptr[0] != 0xe9) {
+    return Ptr;
+  }
+  if (COMPILER::stub_jmp::loadRel32(Ptr) ==
+      COMPILER::stub_jmp::kTrampolineRel32) {
+    return nullptr;
+  }
+  return Ptr + 5 + COMPILER::stub_jmp::loadRel32(Ptr);
+}
+
+struct CodeShape {
+  uint32_t StackSub = 0;
+  uint32_t RbpStores = 0;
+};
+
+/// Prefix heuristic, not a complete-function spill count. Scans a bounded
+/// byte window for `sub $imm, %rsp` and `mov %rN, disp(%rbp)` encodings.
+/// Does not stop at `ret` (this kernel's early return precedes the loop).
+/// Immediates/displacements can false-positive; use only for relative
+/// FastRA vs Greedy comparison on these fixtures.
+CodeShape scanCodeShapePrefix(const uint8_t *P, size_t N) {
+  CodeShape S;
+  if (!P || N < 4) {
+    return S;
+  }
+  size_t I = 0;
+  if (N >= 4 && P[0] == 0xf3 && P[1] == 0x0f && P[2] == 0x1e && P[3] == 0xfa) {
+    I = 4;
+  }
+  while (I + 2 < N) {
+    size_t J = I;
+    uint8_t B = P[J];
+    bool RexW = false;
+    if ((B & 0xf0) == 0x40) {
+      RexW = (B & 0x08) != 0;
+      ++J;
+      if (J >= N) {
+        break;
+      }
+      B = P[J];
+    }
+    if (RexW && B == 0x83 && J + 2 < N && P[J + 1] == 0xec) {
+      S.StackSub = P[J + 2];
+      I = J + 3;
+      continue;
+    }
+    if (RexW && B == 0x81 && J + 5 < N && P[J + 1] == 0xec) {
+      uint32_t Imm = 0;
+      std::memcpy(&Imm, P + J + 2, 4);
+      S.StackSub = Imm;
+      I = J + 6;
+      continue;
+    }
+    if (B == 0x89 && J + 1 < N) {
+      uint8_t ModRM = P[J + 1];
+      if ((ModRM & 0xc7) == 0x45 && J + 2 < N) {
+        ++S.RbpStores;
+        I = J + 3;
+        continue;
+      }
+      if ((ModRM & 0xc7) == 0x85 && J + 5 < N) {
+        ++S.RbpStores;
+        I = J + 6;
+        continue;
+      }
+    }
+    ++I;
+  }
+  return S;
+}
+
+constexpr size_t kShapePrefixBytes = 512;
+
+struct LoadedMod {
+  std::unique_ptr<Runtime> RT;
+  Module *Mod = nullptr;
+  Instance *Inst = nullptr;
+  LazyJITCompiler *Lazy = nullptr;
+};
+
+LoadedMod loadModule(const std::vector<uint8_t> &Bytes, const char *Name,
+                     bool Lazy, bool DisableGreedyRA, bool DisableMT) {
+  LoadedMod Out;
+  Out.RT = makeRuntime(Lazy, DisableGreedyRA, DisableMT);
+  EXPECT_NE(Out.RT, nullptr);
+  auto ModRet = Out.RT->loadModule(Name, Bytes.data(), Bytes.size());
+  EXPECT_TRUE(ModRet) << ModRet.getError().getFormattedMessage();
+  Out.Mod = *ModRet;
+  Isolation *Iso = Out.RT->createManagedIsolation();
+  EXPECT_NE(Iso, nullptr);
+  auto InstRet = Iso->createInstance(*Out.Mod);
+  EXPECT_TRUE(InstRet) << InstRet.getError().getFormattedMessage();
+  Out.Inst = *InstRet;
+  if (Lazy) {
+    Out.Lazy = Out.Mod->getLazyJITCompiler();
+    EXPECT_NE(Out.Lazy, nullptr);
+  }
+  return Out;
+}
+
+CodeShape bodyShape(Module &Mod, uint32_t FuncIdx) {
+  CodeEntry *CE = Mod.getCodeEntry(FuncIdx);
+  EXPECT_NE(CE, nullptr);
+  EXPECT_NE(CE->JITCodePtr, nullptr);
+  const uint8_t *Body = resolvedJitBody(CE->JITCodePtr);
+  EXPECT_NE(Body, nullptr) << "lazy stub still on trampoline";
+  return scanCodeShapePrefix(Body, kShapePrefixBytes);
+}
+
+bool stubIsTrampoline(Module &Mod, uint32_t FuncIdx) {
+  CodeEntry *CE = Mod.getCodeEntry(FuncIdx);
+  EXPECT_NE(CE, nullptr);
+  return resolvedJitBody(CE->JITCodePtr) == nullptr;
+}
+
+/// Wait for completed background Greedy publications (not merely started
+/// attempts). `getBackgroundPublishCount` is incremented with release after
+/// canonical pointer, Done, and stub xchg, so an acquire load that observes
+/// Min is a completion barrier for those publishes.
+bool waitForBackgroundPublishes(LazyJITCompiler &Lazy, uint32_t Min,
+                                int TimeoutMs) {
+  const auto Deadline =
+      std::chrono::steady_clock::now() + std::chrono::milliseconds(TimeoutMs);
+  while (Lazy.getBackgroundPublishCount() < Min) {
+    if (std::chrono::steady_clock::now() >= Deadline) {
+      return false;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  return true;
+}
+
+struct CompiledFib {
+  LoadedMod LM;
+  CodeShape Shape;
+  int32_t Fib10 = 0;
+};
+
+CompiledFib compileAndRunOneFn(bool Lazy, bool DisableGreedyRA,
+                               bool DisableMT) {
+  CompiledFib Out;
+  auto Bytes = loadWasmFile(FIB_ITER_ONEFN_WASM_PATH);
+  EXPECT_FALSE(Bytes.empty());
+  Out.LM = loadModule(Bytes, "fib", Lazy, DisableGreedyRA, DisableMT);
+  Out.Fib10 = callI32(*Out.LM.RT, *Out.LM.Inst, "fib", 10);
+  Out.Shape = bodyShape(*Out.LM.Mod, 0);
+  return Out;
+}
+
+} // namespace
+
+TEST(LazyJitGreedyOndemand, FastRASpillsMoreThanGreedyOnFibLoop) {
+  CompiledFib Fast =
+      compileAndRunOneFn(/*Lazy=*/false, /*DisableGreedyRA=*/true,
+                         /*DisableMT=*/true);
+  CompiledFib Greedy = compileAndRunOneFn(
+      /*Lazy=*/false, /*DisableGreedyRA=*/false, /*DisableMT=*/true);
+  EXPECT_EQ(Fast.Fib10, 55);
+  EXPECT_EQ(Greedy.Fib10, 55);
+  EXPECT_GT(Fast.Shape.RbpStores, Greedy.Shape.RbpStores)
+      << "prefix heuristic FastRA rbp-stores=" << Fast.Shape.RbpStores
+      << " Greedy rbp-stores=" << Greedy.Shape.RbpStores
+      << " FastRA sub=" << Fast.Shape.StackSub
+      << " Greedy sub=" << Greedy.Shape.StackSub;
+  EXPECT_GE(Fast.Shape.StackSub, Greedy.Shape.StackSub);
+}
+
+TEST(LazyJitGreedyOndemand, LazyMtOneFnHasNoBackgroundPool) {
+  auto Bytes = loadWasmFile(FIB_ITER_ONEFN_WASM_PATH);
+  ASSERT_FALSE(Bytes.empty());
+  LoadedMod LM = loadModule(Bytes, "fib1", /*Lazy=*/true,
+                            /*DisableGreedyRA=*/false, /*DisableMT=*/false);
+  ASSERT_NE(LM.Mod, nullptr);
+  ASSERT_NE(LM.Lazy, nullptr);
+  EXPECT_EQ(LM.Mod->getNumInternalFunctions(), 1u);
+  EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
+  EXPECT_TRUE(stubIsTrampoline(*LM.Mod, 0));
+
+  EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
+  EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 1u);
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
+  EXPECT_FALSE(stubIsTrampoline(*LM.Mod, 0));
+
+  CompiledFib Greedy = compileAndRunOneFn(
+      /*Lazy=*/false, /*DisableGreedyRA=*/false, /*DisableMT=*/true);
+  CompiledFib Fast =
+      compileAndRunOneFn(/*Lazy=*/false, /*DisableGreedyRA=*/true,
+                         /*DisableMT=*/true);
+  CodeShape LazyShape = bodyShape(*LM.Mod, 0);
+  EXPECT_EQ(LazyShape.RbpStores, Greedy.Shape.RbpStores);
+  EXPECT_EQ(LazyShape.StackSub, Greedy.Shape.StackSub);
+  EXPECT_NE(LazyShape.RbpStores, Fast.Shape.RbpStores)
+      << "litmus is weak if FastRA and Greedy prefix counts match";
+
+  EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 1u)
+      << "second call must not recompile";
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u)
+      << "no late background compile after the first call";
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
+  EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
+}
+
+TEST(LazyJitGreedyOndemand, LazyMtOneFnDisableGreedyIsFastRASync) {
+  auto Bytes = loadWasmFile(FIB_ITER_ONEFN_WASM_PATH);
+  ASSERT_FALSE(Bytes.empty());
+  LoadedMod LM = loadModule(Bytes, "fibf", /*Lazy=*/true,
+                            /*DisableGreedyRA=*/true, /*DisableMT=*/false);
+  ASSERT_NE(LM.Lazy, nullptr);
+  EXPECT_EQ(LM.Mod->getNumInternalFunctions(), 1u);
+  EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
+  EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 1u);
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
+
+  CompiledFib Fast =
+      compileAndRunOneFn(/*Lazy=*/false, /*DisableGreedyRA=*/true,
+                         /*DisableMT=*/true);
+  CompiledFib Greedy = compileAndRunOneFn(
+      /*Lazy=*/false, /*DisableGreedyRA=*/false, /*DisableMT=*/true);
+  CodeShape LazyShape = bodyShape(*LM.Mod, 0);
+  EXPECT_EQ(LazyShape.RbpStores, Fast.Shape.RbpStores);
+  EXPECT_EQ(LazyShape.StackSub, Fast.Shape.StackSub);
+  EXPECT_GT(LazyShape.RbpStores, Greedy.Shape.RbpStores);
+}
+
+TEST(LazyJitGreedyOndemand, LazyMtTwoFnStillTiers) {
+  auto Bytes = loadWasmFile(FIB_ITER_TWOFN_WASM_PATH);
+  ASSERT_FALSE(Bytes.empty());
+  LoadedMod LM = loadModule(Bytes, "fib2", /*Lazy=*/true,
+                            /*DisableGreedyRA=*/false, /*DisableMT=*/false);
+  ASSERT_NE(LM.Lazy, nullptr);
+  EXPECT_EQ(LM.Mod->getNumInternalFunctions(), 2u);
+  EXPECT_TRUE(LM.Lazy->hasBackgroundCompilePool())
+      << "two-internal-function lazy-MT must keep the Greedy background pool";
+  ASSERT_TRUE(waitForBackgroundPublishes(*LM.Lazy, 2, 5000))
+      << "timed out waiting for background Greedy publication; started="
+      << LM.Lazy->getBackgroundCompileCount()
+      << " published=" << LM.Lazy->getBackgroundPublishCount();
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 2u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 2u);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 0u);
+
+  for (uint32_t I = 0; I < 2; ++I) {
+    EXPECT_FALSE(stubIsTrampoline(*LM.Mod, I))
+        << "func " << I << " still on trampoline";
+    CodeEntry *CE = LM.Mod->getCodeEntry(I);
+    ASSERT_NE(CE, nullptr);
+    const uint8_t *Body = resolvedJitBody(CE->JITCodePtr);
+    EXPECT_EQ(Body, LM.Lazy->getGreedyRACodePtr(I))
+        << "canonical stub must match published GreedyRA body for func " << I;
+  }
+
+  EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
+  EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "id", 7), 7);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 0u)
+      << "calls after Greedy publication must not start FastRA";
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 2u);
+  EXPECT_TRUE(LM.Lazy->hasBackgroundCompilePool());
+}
+
+TEST(LazyJitGreedyOndemand, LazyStOneFnStillGreedy) {
+  CompiledFib LazyST = compileAndRunOneFn(
+      /*Lazy=*/true, /*DisableGreedyRA=*/false, /*DisableMT=*/true);
+  CompiledFib Greedy = compileAndRunOneFn(
+      /*Lazy=*/false, /*DisableGreedyRA=*/false, /*DisableMT=*/true);
+  ASSERT_NE(LazyST.LM.Lazy, nullptr);
+  EXPECT_FALSE(LazyST.LM.Lazy->hasBackgroundCompilePool());
+  EXPECT_EQ(LazyST.LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LazyST.LM.Lazy->getBackgroundPublishCount(), 0u);
+  EXPECT_EQ(LazyST.LM.Lazy->getForegroundCompileCount(), 1u);
+  EXPECT_EQ(LazyST.Fib10, 55);
+  EXPECT_EQ(LazyST.Shape.RbpStores, Greedy.Shape.RbpStores);
+  EXPECT_EQ(LazyST.Shape.StackSub, Greedy.Shape.StackSub);
+}
