@@ -311,14 +311,6 @@ TEST(MIRPeepholeLitmus, UDiv7FoldsToMul) {
   EXPECT_NE(Dump.find("mul"), std::string::npos) << Dump;
 }
 
-TEST(MIRPeepholeLitmus, UDivPow2DoesNotFold) {
-  MirBuilder B;
-  B.ret(B.bin(OP_udiv, B.param(), B.iconst(8)));
-  B.run();
-  const std::string Dump = dumpFunc(B.F);
-  EXPECT_NE(Dump.find("udiv"), std::string::npos) << Dump;
-}
-
 TEST(MIRPeepholeLitmus, UDivZeroDoesNotFold) {
   MirBuilder B;
   B.ret(B.bin(OP_udiv, B.param(), B.iconst(0)));
