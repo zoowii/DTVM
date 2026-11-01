@@ -7,6 +7,8 @@ Run from the repository root:
 import contextlib
 import io
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -74,6 +76,48 @@ class HarnessTests(unittest.TestCase):
         self.assertFalse(cell["ok"])
         self.assertIn("measurement failed", cell["output_tail"])
 
+    def test_silent_timeout_does_not_erase_failure_output(self):
+        timeout = self.sample(False, True)
+        timeout["output"] = ""
+        cell = self.measure([self.sample(False), timeout, self.sample()])
+        self.assertFalse(cell["ok"])
+        self.assertIn("measurement failed", cell["output_tail"])
+        self.assertEqual(cell["timed_out_samples"], 1)
+
+    def test_launch_error_is_a_failed_measurement(self):
+        for error in (FileNotFoundError("missing loader"), OSError("Exec format error")):
+            with self.subTest(error=error):
+                with patch.object(harness.subprocess, "run", side_effect=error):
+                    cell = harness.run_cell(
+                        ["broken"], Path("."), None, 0, 2, 1, None, False
+                    )
+                self.assertFalse(cell["ok"])
+                self.assertFalse(cell["timeout"])
+                self.assertEqual(cell["failed_samples"], 2)
+                self.assertEqual(cell["sample_exits"], [None, None])
+                self.assertIn(str(error), cell["output_tail"])
+
+    def test_real_launch_errors_are_saved_and_next_cell_runs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            binary = tmp / "broken-dtvm"
+            binary.write_text("#!/nonexistent/paper-bench-interpreter\n")
+            binary.chmod(0o755)
+            out = tmp / "results"
+            proc = subprocess.run([
+                sys.executable, str(Path(harness.__file__).resolve()),
+                "--cases", "atax", "--runtimes", "dtvm",
+                "--dtvm", str(binary), "--dtvm-modes", "interp,singlepass",
+                "--cpu", "-1", "--warmup", "0", "--repeats", "1",
+                "--out", str(out)
+            ], capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 1, proc.stderr)
+            result = json.loads((out / "results.json").read_text())
+            self.assertEqual(len(result["runs"]), 2)
+            for cell in result["runs"]:
+                self.assertFalse(cell["ok"])
+                self.assertIn("FileNotFoundError", cell["output_tail"])
+
     def test_all_successful_samples_pass(self):
         cell = self.measure([self.sample(), self.sample(), self.sample()])
         self.assertTrue(cell["ok"])
@@ -87,19 +131,20 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(cell["sample_exits"], [])
         self.assertIn("measurement failed", cell["output_tail"])
 
-    def run_main(self, args, samples=()):
+    def run_main(self, args, samples=(), wasmtime=None):
         with tempfile.TemporaryDirectory() as out:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 with patch.object(harness, "time_once", side_effect=samples), \
                         patch.object(harness, "require_wasm"), \
-                        patch.object(harness, "find_wasmtime", return_value=None), \
+                        patch.object(harness, "find_wasmtime", return_value=wasmtime), \
                         patch.object(harness, "find_wasmer", return_value=None), \
                         patch.object(harness, "resolve_dtvm", return_value=Path("/fake/dtvm")):
                     code = harness.main([
                         "--cases", "atax", "--cpu", "-1", "--warmup", "0",
                         "--repeats", "3", "--out", out, *args
                     ])
-            return code, json.loads((Path(out) / "results.json").read_text())
+            filename = "commands.json" if "--dry-run" in args else "results.json"
+            return code, json.loads((Path(out) / filename).read_text())
 
     def test_skipped_only_runs_fail(self):
         for runtime in ("wasmtime", "wasmer"):
@@ -134,6 +179,82 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(result["runs"][0]["failed_samples"], 2)
         self.assertTrue(result["runs"][0]["timeout"])
         self.assertIn("measurement failed", result["runs"][0]["output_tail"])
+
+    def test_statistics_use_separate_samples_and_commands(self):
+        for flags in (["--metric", "both"], ["--metric", "ttfi"], ["--stats"]):
+            commands = []
+
+            def sample(cmd, *args):
+                commands.append(cmd)
+                rec = self.sample()
+                if "--enable-statistics" in cmd:
+                    rec["wall_s"] = 9.0
+                    rec["output"] = "Total compilation time: 12 ms (12345 μs)\n"
+                return rec
+
+            with self.subTest(flags=flags):
+                code, result = self.run_main(
+                    ["--runtimes", "dtvm", "--dtvm-modes", "interp", *flags],
+                    sample
+                )
+                self.assertEqual(code, 0)
+                self.assertEqual(len(commands), 6)
+                self.assertTrue(all("--enable-statistics" not in c for c in commands[:3]))
+                self.assertTrue(all("--enable-statistics" in c for c in commands[3:]))
+                cell = result["runs"][0]
+                self.assertEqual(cell["samples_s"], [0.1] * 3)
+                self.assertEqual(cell["median_s"], 0.1)
+                self.assertEqual(cell["ttfi"]["ttfi_ms"], 12.345)
+                self.assertEqual(cell["instrumented"]["median_s"], 9.0)
+
+    def test_instrumented_failure_fails_cell_without_polluting_wall_samples(self):
+        code, result = self.run_main(
+            ["--runtimes", "dtvm", "--dtvm-modes", "interp", "--metric", "both"],
+            [self.sample()] * 3 + [self.sample(False, True)] * 3
+        )
+        self.assertEqual(code, 1)
+        cell = result["runs"][0]
+        self.assertFalse(cell["ok"])
+        self.assertTrue(cell["wall_ok"])
+        self.assertTrue(cell["timeout"])
+        self.assertEqual(cell["median_s"], 0.1)
+        self.assertEqual(cell["instrumented"]["failed_samples"], 3)
+        self.assertIn("measurement failed", cell["output_tail"])
+
+    def test_failed_wall_pass_does_not_start_instrumented_pass(self):
+        code, result = self.run_main(
+            ["--runtimes", "dtvm", "--dtvm-modes", "interp", "--metric", "both"],
+            [self.sample(False)] * 3
+        )
+        self.assertEqual(code, 1)
+        self.assertIsNone(result["runs"][0]["instrumented"])
+
+    def test_both_dry_run_exposes_both_commands(self):
+        code, result = self.run_main([
+            "--runtimes", "dtvm", "--dtvm-modes", "interp",
+            "--metric", "both", "--dry-run"
+        ])
+        self.assertEqual(code, 0)
+        cmd = result["commands"][0]
+        self.assertNotIn("--enable-statistics", cmd["command"])
+        self.assertIn("--enable-statistics", cmd["instrumented_command"])
+
+    def test_both_keeps_wasmtime_on_one_uninstrumented_pass(self):
+        commands = []
+
+        def sample(cmd, *args):
+            commands.append(cmd)
+            return self.sample()
+
+        code, result = self.run_main(
+            ["--runtimes", "dtvm,wasmtime", "--dtvm-modes", "interp",
+             "--metric", "both"], sample, Path("/fake/wasmtime")
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(len(commands), 9)
+        self.assertTrue(all(c[0] == "/fake/wasmtime" for c in commands[-3:]))
+        self.assertTrue(all("--enable-statistics" not in c for c in commands[-3:]))
+        self.assertIsNone(result["runs"][1]["instrumented"])
 
 
 if __name__ == "__main__":

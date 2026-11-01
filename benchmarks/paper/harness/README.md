@@ -19,8 +19,11 @@ found**; otherwise those cells are `skipped` with no invented numbers.
 | WAPM (20, `fortune` for `zuk`) | **yes** | same argv / `--dir` / stdin; cache off |
 | contracts | **out of scope** | runner lives in the contract testbed |
 
-Do not compare a stats-on DTVM wall (`--stats`) against a stats-off wall or
-against Wasmtime: `--enable-statistics` uses `clock_gettime` on the timed path.
+Wall samples never add `--enable-statistics`: its timers and logging would
+bias comparisons with Wasmtime. `--stats` and `--metric ttfi|both` collect
+DTVM statistics/TTFI in a separate pass, with its own warmup and repetitions.
+This adds another set of DTVM invocations; instrumented wall times are kept
+only as diagnostics under `instrumented`, outside the wall comparison table.
 
 ## Quick start
 
@@ -83,7 +86,7 @@ Default directory: `benchmarks/paper/raw_data/harness/<preset>_<UTC>/` (gitignor
 | `--cpu` | `0` (`taskset -c`; pass `-1` to disable) |
 | `--warmup` / `--repeats` | `1` / `3` |
 | `--timeout` | `600` seconds per process |
-| `--stats` | off (DTVM `--enable-statistics`) |
+| `--stats` | off (when requested, a separate DTVM statistics pass) |
 | `--scale` | `dev` |
 
 DTVM must be a **Release** build with singlepass + multipass. Overflow
@@ -101,6 +104,9 @@ executed cell completes all requested repetitions. Partial failures and
 timeouts produce `fail` in the table and exit 1; successful samples remain
 in JSON alongside failure counts and exit codes. If all runtimes are skipped,
 the harness also exits 1. Missing Wasmtime remains optional when DTVM succeeds.
+Both passes must succeed when statistics are requested. Launch errors are
+recorded in the results and do not abort subsequent cells. Failure logs are
+preserved even if a later failed attempt produces no output.
 
 ```bash
 # DTVM-only is valid when Wasmtime is not installed:

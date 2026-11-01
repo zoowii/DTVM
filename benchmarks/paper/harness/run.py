@@ -502,6 +502,7 @@ def time_once(
             cwd=str(cwd),
             input=stdin,
             text=True,
+            errors="replace",
             capture_output=True,
             timeout=timeout,
             env=merged_env,
@@ -532,6 +533,14 @@ def time_once(
             "wall_s": elapsed,
             "output": out,
             "timeout": True,
+        }
+    except OSError as exc:
+        return {
+            "ok": False,
+            "exit": None,
+            "wall_s": time.perf_counter() - t0,
+            "output": f"{type(exc).__name__}: {exc}",
+            "timeout": False,
         }
 
 
@@ -586,7 +595,7 @@ def run_cell(
         last_output = r["output"]
         exits.append(r["exit"])
         timed_out_samples += int(r["timeout"])
-        if not r["ok"]:
+        if not r["ok"] and r["output"]:
             last_failure_output = r["output"]
         if r["ok"]:
             samples.append(float(r["wall_s"]))
@@ -913,7 +922,7 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument(
         "--stats",
         action="store_true",
-        help="pass --enable-statistics (DTVM only); wall times then include timer overhead",
+        help="collect DTVM statistics in a separate instrumented pass",
     )
     p.add_argument(
         "--metric",
@@ -1066,7 +1075,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 skip_reason = None
                 env = None
                 if rt == "dtvm":
-                    cmd = dtvm_cmd(dtvm_bin, case, mode, want_stats)
+                    # Published wall samples must never include statistics overhead.
+                    cmd = dtvm_cmd(dtvm_bin, case, mode, stats=False)
                 elif wt_bin is None and not args.dry_run:
                     cmd = []
                     skip_reason = "wasmtime-not-found"
@@ -1091,6 +1101,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "fairness": case.get("fairness", "same-wasm"),
                     "cwd": str(case_cwd(case)),
                     "command": full,
+                    "instrumented_command": (
+                        prefix + dtvm_cmd(dtvm_bin, case, mode, stats=True)
+                        if rt == "dtvm" and want_stats else None
+                    ),
                     "stdin": case.get("stdin"),
                     "skip_reason": skip_reason,
                 }
@@ -1105,6 +1119,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     runs = []
     total = len(plan)
     for i, (case, rt, mode, cmd, env, skip_reason) in enumerate(plan, 1):
+        instrumented_cmd = (
+            prefix + dtvm_cmd(dtvm_bin, case, mode, stats=True)
+            if rt == "dtvm" and want_stats and not skip_reason else None
+        )
         print(
             f"[{i}/{total}] {rt}/{mode} {case['id']}",
             flush=True,
@@ -1122,6 +1140,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 env,
                 args.keep_output,
             )
+        instrumented = None
+        if instrumented_cmd and cell["ok"]:
+            instrumented = run_cell(
+                instrumented_cmd,
+                case_cwd(case),
+                case.get("stdin"),
+                args.warmup,
+                args.repeats,
+                args.timeout,
+                env,
+                args.keep_output,
+            )
+            instrumented["command"] = instrumented_cmd
         rec = {
             "bench": case["id"],
             "suite": case["suite"],
@@ -1132,22 +1163,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "command": cmd or None,
             "cwd": str(case_cwd(case)),
             "exit": cell["exit"],
-            "timeout": cell["timeout"],
+            "timeout": cell["timeout"] or bool(instrumented and instrumented["timeout"]),
             "sample_exits": cell["sample_exits"],
             "failed_samples": cell["failed_samples"],
             "timed_out_samples": cell["timed_out_samples"],
-            "ok": cell["ok"],
+            "ok": cell["ok"] and (instrumented is None or instrumented["ok"]),
+            "wall_ok": cell["ok"],
             "skipped": bool(cell.get("skipped")),
             "skip_reason": cell.get("skip_reason"),
             "samples_s": cell["samples_s"],
             "median_s": cell["median_s"],
             "min_s": cell["min_s"],
             "max_s": cell["max_s"],
-            "statistics": cell["statistics"],
-            "ttfi": cell.get("ttfi"),
+            "statistics": (instrumented or cell)["statistics"],
+            "ttfi": (instrumented or cell).get("ttfi"),
+            "instrumented": instrumented,
         }
         if cell.get("output_tail") and (args.keep_output or not cell["ok"]):
             rec["output_tail"] = cell["output_tail"]
+        if instrumented and instrumented.get("output_tail"):
+            rec["output_tail"] = instrumented["output_tail"]
         runs.append(rec)
         if rec.get("skipped"):
             print(
@@ -1175,6 +1210,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "repeats": args.repeats,
             "timeout_s": args.timeout,
             "stats": want_stats,
+            "statistics_separate_pass": want_stats,
             "dtvm": str(dtvm_bin) if dtvm_bin else None,
             "wasmtime": str(wt_bin) if wt_bin else None,
             "wasmtime_present": bool(

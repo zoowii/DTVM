@@ -23,9 +23,16 @@ fields (`samples_s`, `median_s`, …) are unchanged.
 
 | Value | What is primary | DTVM `--enable-statistics` |
 |-------|-----------------|----------------------------|
-| `wall` (default) | process wall seconds | only if `--stats` |
-| `ttfi` | compile-to-first-invoke ms | **on** (needed for the stats estimate) |
-| `both` | both fields populated | on |
+| `wall` (default) | process wall seconds | separate pass only if `--stats` |
+| `ttfi` | compile-to-first-invoke ms | separate instrumented pass |
+| `both` | both fields populated | separate instrumented pass |
+
+Every cell first collects wall samples without adding `--enable-statistics`.
+When statistics are requested, a successful DTVM wall pass is followed by an
+instrumented pass with its own warmup and repetitions. Only the first pass
+populates top-level wall fields; the second supplies `statistics` and `ttfi`.
+`config.statistics_separate_pass` indicates this collection policy. Wasmtime
+uses its original command; any compile report is parsed from that command.
 
 Wall **must not** be copied into `ttfi.ttfi_ms`. If the binary does not
 print `Total compilation time` and DTVM stats cannot form the lazy
@@ -69,16 +76,27 @@ line: wall comparison is still valid; TTFI stays `null`.
 | `median_s` / `samples_s` | wall seconds; **`null` / `[]` when skipped** |
 | `ttfi` | `{ttfi_ms, ttfi_source, compile_ms, execution_ms, ttfi_unavailable}` |
 | `statistics` | DTVM stats medians in ms, or `null` |
-| `ok` | true only if warmup and all requested measured repetitions succeeded |
-| `sample_exits` | exit codes of measured attempts in order; timeout entries are `null` |
-| `failed_samples` / `timed_out_samples` | failed measured attempts (including timeouts) / timed-out measured attempts |
-| `timeout` | true if warmup or any measured attempt timed out |
+| `ok` | true only if warmup and all repetitions in every requested pass succeeded |
+| `wall_ok` | whether the wall pass succeeded |
+| `sample_exits` | wall attempt exit codes in order; timeout and launch-error entries are `null` |
+| `failed_samples` / `timed_out_samples` | failed wall attempts (including launch errors/timeouts) / timed-out wall attempts |
+| `timeout` | true if either pass timed out, including warmup |
+| `instrumented` | DTVM statistics pass result and `command`, or `null` if not run; its wall fields are diagnostic only |
 
 Markdown tables print `skip` for skipped cells, `fail` for real failures,
 never a placeholder millisecond. Partial failures retain successful samples
 and their medians in JSON for diagnosis, but the cell is `ok=false` and the
 table prints `fail`. Counts exclude warmup; a failed warmup has no measured
 attempts and is identified by `ttfi_unavailable=warmup-failed`.
+Instrumented-pass counts, exit codes, timeout state and failure output are
+stored separately under `instrumented`. Its failure also makes the parent
+cell fail even when `wall_ok=true`. If the wall pass fails, the instrumented
+pass is not attempted.
+
+Process launch errors (e.g. missing loader or incompatible executable) are
+recorded as failed attempts with an exception message in `output_tail`, and
+remaining cells continue. Empty failure output never erases an earlier
+nonempty failure diagnostic.
 
 The process exits 1 if any executed cell failed or no cell succeeded
 (including an empty plan or all runtimes skipped). Missing optional runtimes
