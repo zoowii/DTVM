@@ -69,9 +69,20 @@ line: wall comparison is still valid; TTFI stays `null`.
 | `median_s` / `samples_s` | wall seconds; **`null` / `[]` when skipped** |
 | `ttfi` | `{ttfi_ms, ttfi_source, compile_ms, execution_ms, ttfi_unavailable}` |
 | `statistics` | DTVM stats medians in ms, or `null` |
+| `ok` | true only if warmup and all requested measured repetitions succeeded |
+| `sample_exits` | exit codes of measured attempts in order; timeout entries are `null` |
+| `failed_samples` / `timed_out_samples` | failed measured attempts (including timeouts) / timed-out measured attempts |
+| `timeout` | true if warmup or any measured attempt timed out |
 
 Markdown tables print `skip` for skipped cells, `fail` for real failures,
-never a placeholder millisecond.
+never a placeholder millisecond. Partial failures retain successful samples
+and their medians in JSON for diagnosis, but the cell is `ok=false` and the
+table prints `fail`. Counts exclude warmup; a failed warmup has no measured
+attempts and is identified by `ttfi_unavailable=warmup-failed`.
+
+The process exits 1 if any executed cell failed or no cell succeeded
+(including an empty plan or all runtimes skipped). Missing optional runtimes
+do not fail a run when at least one cell succeeds and no executed cell fails.
 
 ## Fairness (unchanged)
 
@@ -86,7 +97,7 @@ never a placeholder millisecond.
 `run.py` looks at `--wasmtime`, `$WASMTIME`, `PATH`, then
 `runtimes/wasmtime-45.0.0/out/wasmtime`. If none is executable:
 
-- default: skip Wasmtime cells, record `skipped_runtimes`, exit 0 if DTVM ran
+- default: skip Wasmtime cells, record `skipped_runtimes`, exit 0 if DTVM cells all succeeded
 - `--require-wasmtime`: exit 2
 
 Wasmer is **not** timed by this harness. If `--runtimes wasmer` is passed

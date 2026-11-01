@@ -32,6 +32,7 @@ against Wasmtime: `--enable-statistics` uses `clock_gettime` on the timed path.
 # Command construction only (no binaries required):
 python3 benchmarks/paper/harness/run.py --selftest
 python3 benchmarks/paper/harness/run.py --preset smoke --dry-run
+python3 -m unittest discover -s benchmarks/paper/harness -p 'test_*.py'
 
 # Tiny measured matrix (atax, fib 1e6, overflow builtin 1e6, figlet):
 ./benchmarks/paper/harness/smoke.sh
@@ -94,6 +95,12 @@ the harness passes `-C cache=n` and `WASMTIME_CACHE=0`. When absent, it
 skips (use `--require-wasmtime` to fail). TTFI (`--metric ttfi|both`) is
 parsed from `Total compilation time` or DTVM stats; wall time is never
 used as a stand-in.
+
+A run succeeds only when at least one cell executes successfully and every
+executed cell completes all requested repetitions. Partial failures and
+timeouts produce `fail` in the table and exit 1; successful samples remain
+in JSON alongside failure counts and exit codes. If all runtimes are skipped,
+the harness also exits 1. Missing Wasmtime remains optional when DTVM succeeds.
 
 ```bash
 # DTVM-only is valid when Wasmtime is not installed:

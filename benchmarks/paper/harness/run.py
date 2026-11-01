@@ -389,29 +389,28 @@ def select_cases(
     else:
         die(f"unknown preset {preset!r}")
 
+    if scale == "paper" and preset in ("fib", "overflow") and not only:
+        # Rewrite before filtering: these presets name the dev cases.
+        wanted = [cid.replace("_dev", "_paper") for cid in wanted]
+
     out = []
     for cid in wanted:
         if cid not in by_id:
             die(f"unknown case id {cid!r}")
         case = by_id[cid]
         case_scale = case.get("scale")
-        if case_scale and case_scale != scale and preset not in ("smoke", "phase15"):
+        if (
+            case_scale
+            and case_scale != scale
+            and not only
+            and preset not in ("smoke", "phase15")
+        ):
             # scale-tagged cases are included only when --scale matches, except
             # smoke/phase15 which name explicit *_dev ids.
-            if only:
-                out.append(case)
             continue
         if suites and case["suite"] not in suites:
             continue
         out.append(case)
-    # For fib/overflow presets at paper scale, rewrite *_dev ids if the user
-    # asked --scale paper with a preset that listed _dev.
-    if scale == "paper" and preset in ("fib", "overflow") and not only:
-        rewritten = []
-        for case in out:
-            pid = case["id"].replace("_dev", "_paper")
-            rewritten.append(by_id.get(pid, case))
-        out = rewritten
     return out
 
 
@@ -550,7 +549,9 @@ def run_cell(
     exits: List[Optional[int]] = []
     stats_samples: List[Dict[str, float]] = []
     ttfi_samples: List[Dict[str, Any]] = []
+    timed_out_samples = 0
     last_output = ""
+    last_failure_output = ""
     for _ in range(warmup):
         r = time_once(cmd, cwd, stdin, timeout, env)
         last_output = r["output"]
@@ -563,6 +564,9 @@ def run_cell(
             "ok": False,
             "exit": r.get("exit"),
             "timeout": r.get("timeout", False),
+            "sample_exits": [],
+            "failed_samples": 0,
+            "timed_out_samples": 0,
             "samples_s": [],
             "median_s": None,
             "min_s": None,
@@ -575,12 +579,15 @@ def run_cell(
                 "execution_ms": None,
                 "ttfi_unavailable": "warmup-failed",
             },
-            "output_tail": last_output[-4000:] if keep_output else "",
+            "output_tail": last_output[-4000:],
         }
     for _ in range(repeats):
         r = time_once(cmd, cwd, stdin, timeout, env)
         last_output = r["output"]
         exits.append(r["exit"])
+        timed_out_samples += int(r["timeout"])
+        if not r["ok"]:
+            last_failure_output = r["output"]
         if r["ok"]:
             samples.append(float(r["wall_s"]))
             parsed = parse_dtvm_stats(r["output"])
@@ -612,16 +619,22 @@ def run_cell(
         if ttfi_med["ttfi_ms"] is not None:
             ttfi_med["ttfi_unavailable"] = None
     return {
-        "ok": bool(samples),
+        "ok": len(samples) == repeats and repeats > 0,
         "exit": exits[-1] if exits else None,
-        "timeout": False,
+        "timeout": timed_out_samples > 0,
+        "sample_exits": exits,
+        "failed_samples": len(exits) - len(samples),
+        "timed_out_samples": timed_out_samples,
         "samples_s": samples,
         "median_s": median(samples),
         "min_s": min(samples) if samples else None,
         "max_s": max(samples) if samples else None,
         "statistics": stats_med,
         "ttfi": ttfi_med,
-        "output_tail": last_output[-4000:] if (keep_output or not samples) else "",
+        "output_tail": (
+            (last_failure_output or last_output)[-4000:]
+            if keep_output or len(samples) != repeats else ""
+        ),
     }
 
 
@@ -632,6 +645,9 @@ def skipped_cell(reason: str) -> Dict[str, Any]:
         "skip_reason": reason,
         "exit": None,
         "timeout": False,
+        "sample_exits": [],
+        "failed_samples": 0,
+        "timed_out_samples": 0,
         "samples_s": [],
         "median_s": None,
         "min_s": None,
@@ -683,7 +699,7 @@ def markdown_table(runs: Sequence[Dict[str, Any]]) -> str:
                 row.append("—")
             elif cell.get("skipped"):
                 row.append("skip")
-            elif cell["median_s"] is None:
+            elif not cell.get("ok", True) or cell["median_s"] is None:
                 row.append("fail")
             else:
                 row.append(f"{cell['median_s']:.4f}")
@@ -929,6 +945,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_argparser().parse_args(argv)
     if args.selftest:
         return selftest()
+    if args.repeats < 1 or args.warmup < 0 or args.timeout <= 0:
+        die("--repeats must be positive, --warmup non-negative, and --timeout positive")
 
     catalog = read_json(CATALOG_PATH)
     all_cases = load_cases(catalog)
@@ -1114,6 +1132,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "command": cmd or None,
             "cwd": str(case_cwd(case)),
             "exit": cell["exit"],
+            "timeout": cell["timeout"],
+            "sample_exits": cell["sample_exits"],
+            "failed_samples": cell["failed_samples"],
+            "timed_out_samples": cell["timed_out_samples"],
             "ok": cell["ok"],
             "skipped": bool(cell.get("skipped")),
             "skip_reason": cell.get("skip_reason"),
@@ -1133,7 +1155,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 flush=True,
             )
         else:
-            med = rec["median_s"]
+            med = rec["median_s"] if rec["ok"] else None
             print(
                 f"    median_s={med if med is not None else 'fail'} "
                 f"n={len(rec['samples_s'])} fairness={rec['fairness']}",
@@ -1183,6 +1205,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
     if failed:
         print(f"warning: {len(failed)} failed cells", file=sys.stderr)
+        return 1
+    if not any(r["ok"] for r in runs):
+        print("error: no benchmark cells executed successfully", file=sys.stderr)
         return 1
     return 0
 

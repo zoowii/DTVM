@@ -1,0 +1,140 @@
+"""Regression tests for case selection and benchmark failure reporting.
+
+Run from the repository root:
+    python3 -m unittest discover -s benchmarks/paper/harness -p 'test_*.py'
+"""
+
+import contextlib
+import io
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import run as harness
+
+
+class HarnessTests(unittest.TestCase):
+    def setUp(self):
+        self.catalog = harness.read_json(harness.CATALOG_PATH)
+        self.cases = harness.load_cases(self.catalog)
+
+    def select(self, preset, scale, only=None, suites=None):
+        return harness.select_cases(
+            self.cases, preset, self.catalog, only, scale, suites
+        )
+
+    def test_paper_presets_select_paper_iterations(self):
+        for preset, iterations in (("fib", "500000000"), ("overflow", "100000000")):
+            with self.subTest(preset=preset):
+                cases = self.select(preset, "paper")
+                self.assertEqual(len(cases), 2)
+                self.assertTrue(all(c["id"].endswith("_paper") for c in cases))
+                self.assertTrue(all(c["args"][0] == iterations for c in cases))
+
+    def test_dev_and_smoke_presets_keep_dev_iterations(self):
+        for preset in ("fib", "overflow"):
+            self.assertTrue(all(c["scale"] == "dev" for c in self.select(preset, "dev")))
+        smoke = self.select("smoke", "paper")
+        self.assertEqual(len(smoke), 5)
+        self.assertTrue(all(c.get("scale", "dev") == "dev" for c in smoke))
+
+    def test_explicit_cases_override_scale_but_obey_suite_filter(self):
+        cases = self.select("fib", "paper", ["fib_iter_dev"])
+        self.assertEqual([c["id"] for c in cases], ["fib_iter_dev"])
+        self.assertEqual(self.select("fib", "paper", ["fib_iter_dev"], ["wapm"]), [])
+
+    @staticmethod
+    def sample(ok=True, timeout=False):
+        return dict(ok=ok, exit=None if timeout else (0 if ok else 1),
+                    timeout=timeout, wall_s=0.1,
+                    output="success" if ok else "measurement failed")
+
+    def measure(self, samples, warmup=0):
+        with patch.object(harness, "time_once", side_effect=samples):
+            return harness.run_cell(
+                ["fake"], Path("."), None, warmup, len(samples) - warmup,
+                1.0, None, False
+            )
+
+    def test_partial_failure_is_not_a_successful_cell(self):
+        cell = self.measure([self.sample(), self.sample(False), self.sample(False, True)])
+        self.assertFalse(cell["ok"])
+        self.assertTrue(cell["timeout"])
+        self.assertEqual(cell["sample_exits"], [0, 1, None])
+        self.assertEqual(cell["failed_samples"], 2)
+        self.assertEqual(cell["timed_out_samples"], 1)
+        self.assertEqual(cell["samples_s"], [0.1])
+        cell.update(bench="atax", fairness="same-wasm", runtime="dtvm", mode="interp")
+        self.assertIn("| fail |", harness.markdown_table([cell]))
+
+    def test_failed_output_survives_later_success(self):
+        cell = self.measure([self.sample(False), self.sample()])
+        self.assertFalse(cell["ok"])
+        self.assertIn("measurement failed", cell["output_tail"])
+
+    def test_all_successful_samples_pass(self):
+        cell = self.measure([self.sample(), self.sample(), self.sample()])
+        self.assertTrue(cell["ok"])
+        self.assertEqual(cell["failed_samples"], 0)
+        self.assertFalse(cell["timeout"])
+
+    def test_warmup_failure_prevents_measurement(self):
+        cell = self.measure([self.sample(False, True), self.sample()], warmup=1)
+        self.assertFalse(cell["ok"])
+        self.assertTrue(cell["timeout"])
+        self.assertEqual(cell["sample_exits"], [])
+        self.assertIn("measurement failed", cell["output_tail"])
+
+    def run_main(self, args, samples=()):
+        with tempfile.TemporaryDirectory() as out:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                with patch.object(harness, "time_once", side_effect=samples), \
+                        patch.object(harness, "require_wasm"), \
+                        patch.object(harness, "find_wasmtime", return_value=None), \
+                        patch.object(harness, "find_wasmer", return_value=None), \
+                        patch.object(harness, "resolve_dtvm", return_value=Path("/fake/dtvm")):
+                    code = harness.main([
+                        "--cases", "atax", "--cpu", "-1", "--warmup", "0",
+                        "--repeats", "3", "--out", out, *args
+                    ])
+            return code, json.loads((Path(out) / "results.json").read_text())
+
+    def test_skipped_only_runs_fail(self):
+        for runtime in ("wasmtime", "wasmer"):
+            with self.subTest(runtime=runtime):
+                code, result = self.run_main(["--runtimes", runtime])
+                self.assertEqual(code, 1)
+                self.assertFalse(any(r["ok"] for r in result["runs"]))
+
+    def test_missing_optional_runtime_does_not_fail_successful_dtvm(self):
+        code, result = self.run_main(
+            ["--runtimes", "dtvm,wasmtime", "--dtvm-modes", "interp"],
+            [self.sample()] * 3
+        )
+        self.assertEqual(code, 0)
+        self.assertTrue(result["runs"][0]["ok"])
+        self.assertTrue(result["runs"][1]["skipped"])
+
+    def test_empty_execution_plan_fails(self):
+        code, result = self.run_main([
+            "--runtimes", "dtvm", "--dtvm-modes", "interp",
+            "--cases", "jacobi-2d"
+        ])
+        self.assertEqual(code, 1)
+        self.assertEqual(result["runs"], [])
+
+    def test_partial_failure_propagates_to_results_and_exit_status(self):
+        code, result = self.run_main(
+            ["--runtimes", "dtvm", "--dtvm-modes", "interp"],
+            [self.sample(), self.sample(False), self.sample(False, True)]
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(result["runs"][0]["failed_samples"], 2)
+        self.assertTrue(result["runs"][0]["timeout"])
+        self.assertIn("measurement failed", result["runs"][0]["output_tail"])
+
+
+if __name__ == "__main__":
+    unittest.main()
