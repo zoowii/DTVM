@@ -750,6 +750,46 @@ TEST(MIRPeepholeLitmus, AlgebraIdentities) {
   }
 }
 
+TEST(MIRPeepholeLitmus, SignedPositivePow2DivFoldsToBiasShift) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sdiv, B.param(), B.iconst(8)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("sdiv"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("sshr"), std::string::npos) << Dump;
+  EXPECT_NE(Dump.find("and"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, SignedDivByOneIsIdentity) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sdiv, B.param(), B.iconst(1)));
+  B.run();
+  const std::string Dump = dumpFunc(B.F);
+  EXPECT_EQ(Dump.find("sdiv"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("sshr"), std::string::npos) << Dump;
+}
+
+TEST(MIRPeepholeLitmus, SignedDivBySevenDoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sdiv, B.param(), B.iconst(7)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("sdiv"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, SignedDivByNegEightDoesNotFold) {
+  MirBuilder B;
+  B.ret(B.bin(OP_sdiv, B.param(), B.iconst(static_cast<uint64_t>(-8))));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("sdiv"), std::string::npos) << dumpFunc(B.F);
+}
+
+TEST(MIRPeepholeLitmus, UnsignedPow2DivDoesNotFoldHere) {
+  MirBuilder B;
+  B.ret(B.bin(OP_udiv, B.param(), B.iconst(8)));
+  B.run();
+  EXPECT_NE(dumpFunc(B.F).find("udiv"), std::string::npos) << dumpFunc(B.F);
+}
+
 TEST(PhiIncomingLayout, RemoveIncomingKeepsRemainingPairs) {
   CompileContext Ctx;
   MType *I32 = &CompileContext::I32Type;
@@ -1021,6 +1061,11 @@ TEST(MIRPeepholeWasm, MultipassMatchesExpected) {
       << "wasm div_u by 8 still emits DIV";
   EXPECT_TRUE(codeHasShrImm3(DivBytes, DivLen))
       << "wasm div_u by 8 should SHR by 3";
+  EXPECT_EQ(callI32(*RT, *Inst, "div8", 0), 0);
+  EXPECT_EQ(callI32(*RT, *Inst, "div8", 8), 1);
+  EXPECT_EQ(callI32(*RT, *Inst, "div8", -9), -1);
+  EXPECT_EQ(callI32(*RT, *Inst, "div8", static_cast<int32_t>(0x80000000u)),
+            static_cast<int32_t>(0xf0000000u));
 }
 
 #ifdef ZEN_ENABLE_SINGLEPASS_JIT
@@ -1101,7 +1146,7 @@ TEST(MIRPeepholeConcurrent, ParallelCompileAndExecute) {
             !tryCallI32(*RT, *Inst, "f13", 0, V) || V != 1 ||
             !tryCallI32(*RT, *Inst, "f15", 0, V) || V != 5 ||
             !tryCallI32(*RT, *Inst, "const_br_if_fallthrough", 0, V) ||
-            V != 1) {
+            V != 1 || !tryCallI32(*RT, *Inst, "div8", -9, V) || V != -1) {
           Failures++;
           return;
         }
@@ -1224,7 +1269,8 @@ TEST(MIRPeepholePerf, Microbenchmarks) {
   Instance *Inst = *InstRet;
 
   const char *Names[] = {"bench_ctz_eqz",  "bench_select", "bench_algebra",
-                         "bench_const_br", "bench_mixed",  "bitmix"};
+                         "bench_const_br", "bench_mixed",  "bitmix",
+                         "bench_div8"};
   constexpr int32_t kIters = 2000000;
   std::printf("\nMIR peephole microbench (multipass, %d loop iters, 3 runs)\n",
               kIters);

@@ -30,7 +30,7 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 ### Multi-pass Compilation Pipeline
 
 1. **Frontend→dMIR**: `WasmMirBuilder` / `EVMMirBuilder` translate source/bytecode to `MModule` + `MFunction` (dMIR)
-2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, unsigned pow2 `udiv`/`urem`, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
+2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, unsigned pow2 `udiv`/`urem`, signed positive-pow2 `sdiv`, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
 3. **dMIR→CgIR**: `X86CgLowering`, `X86CgPeephole`
 4. **Register allocation**: `FastRA` or `CgRAGreedy` + `CgRegisterCoalescer`, `CgVirtRegMap`, `CgLiveIntervals`, etc.
 5. **Post-RA processing**: `PrologEpilogInserter`, `ExpandPostRAPseudos`
@@ -115,7 +115,11 @@ OOB). Load/store Scale stays 1. See
   compares against a non-zero constant. Unsigned `udiv`/`urem` by a
   nonzero constant power of two may become `ushr`/`and`. Const-const
   `udiv`/`urem` with any nonzero divisor may fold to a constant (this
-  does not require a power of two). Discarding a subtree requires a
+  does not require a power of two). `sdiv` by a strictly-positive
+  power-of-two constant of known i32/i64 bitwidth may become toward-zero
+  bias+shift (overflow-impossible; divisor != -1). `handleIDiv` for wasm
+  `div_s` with that same divisor class skips the `INT_MIN / -1` overflow
+  diamond. Discarding a subtree requires a
   proven-pure **and nontrapping** tree (`isPureExpr` rejects load / call /
   wasm-check but not integer div/rem, `wasm_fptosi`/`wasm_fptoui`, i128
   overflow ops, or `EVM_UDIV128_BY64`; those must stay). Wasm `handleIDiv`

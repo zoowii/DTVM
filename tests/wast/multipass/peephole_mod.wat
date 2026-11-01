@@ -153,4 +153,18 @@
       (local.set 1 (i32.const 1))
       (br_if 0 (i32.const 0)))
     (local.get 1))
+  ;; Signed +pow2 division kernel (i32 / 8). Used for Greedy microbench.
+  (func (export "bench_div8") (param i32) (result i32)
+    (local $n i32) (local $x i32)
+    (local.set $n (local.get 0))
+    (local.set $x (i32.const 1))
+    (loop $L
+      (local.set $x
+        (i32.add (local.get $x)
+                 (i32.div_s (local.get $x) (i32.const 8))))
+      (local.set $n (i32.sub (local.get $n) (i32.const 1)))
+      (br_if $L (local.get $n)))
+    (local.get $x))
+  (func (export "div8") (param i32) (result i32)
+    (i32.div_s (local.get 0) (i32.const 8)))
 )

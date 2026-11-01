@@ -28,6 +28,7 @@ private:
   MInstruction *foldAlgebra(MInstruction *Inst);
   MInstruction *foldConstCmp(MInstruction *Inst);
   MInstruction *foldSelectConstCond(MInstruction *Inst);
+  MInstruction *foldSignedPositivePow2Div(MInstruction *Inst);
   bool foldConstBrIf(MBasicBlock &BB, BrIfInstruction &BrIf);
 
   MInstruction *makeIntConst(MType *Ty, uint64_t Val);
@@ -35,6 +36,8 @@ private:
                          MInstruction *LHS, MInstruction *RHS);
   MInstruction *makeAnd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
   MInstruction *makeUShr(MType *Ty, MInstruction *LHS, MInstruction *RHS);
+  MInstruction *makeBin(Opcode Opc, MType *Ty, MInstruction *LHS,
+                        MInstruction *RHS);
 
   bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
   // Same-block dassign of a ConstantInstruction through dread.
@@ -43,6 +46,8 @@ private:
   // wasm handleIDiv temps peep. Not wired into isIntZero/foldConstBrIf:
   // those must not rewrite signed-overflow or stack-check CFG.
   bool matchAssignedIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
+  bool matchPositivePow2Const(const MInstruction *Inst,
+                              unsigned &ShiftAmt) const;
   bool isIntZero(const MInstruction *Inst) const;
   bool isIntOne(const MInstruction *Inst) const;
   bool isIntAllOnes(const MInstruction *Inst) const;
