@@ -179,11 +179,15 @@ bool stubIsTrampoline(Module &Mod, uint32_t FuncIdx) {
   return resolvedJitBody(CE->JITCodePtr) == nullptr;
 }
 
-bool waitForBackgroundCompiles(LazyJITCompiler &Lazy, uint32_t Min,
-                               int TimeoutMs) {
+/// Wait for completed background Greedy publications (not merely started
+/// attempts). `getBackgroundPublishCount` is incremented with release after
+/// canonical pointer, Done, and stub xchg, so an acquire load that observes
+/// Min is a completion barrier for those publishes.
+bool waitForBackgroundPublishes(LazyJITCompiler &Lazy, uint32_t Min,
+                                int TimeoutMs) {
   const auto Deadline =
       std::chrono::steady_clock::now() + std::chrono::milliseconds(TimeoutMs);
-  while (Lazy.getBackgroundCompileCount() < Min) {
+  while (Lazy.getBackgroundPublishCount() < Min) {
     if (std::chrono::steady_clock::now() >= Deadline) {
       return false;
     }
@@ -238,12 +242,14 @@ TEST(LazyJitGreedyOndemand, LazyMtOneFnHasNoBackgroundPool) {
   EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
   EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 0u);
   EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
   EXPECT_TRUE(stubIsTrampoline(*LM.Mod, 0));
 
   EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
   EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
   EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 1u);
   EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
   EXPECT_FALSE(stubIsTrampoline(*LM.Mod, 0));
 
   CompiledFib Greedy = compileAndRunOneFn(
@@ -261,10 +267,12 @@ TEST(LazyJitGreedyOndemand, LazyMtOneFnHasNoBackgroundPool) {
   EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 1u)
       << "second call must not recompile";
   EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u)
       << "no late background compile after the first call";
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
   EXPECT_FALSE(LM.Lazy->hasBackgroundCompilePool());
 }
 
@@ -279,6 +287,7 @@ TEST(LazyJitGreedyOndemand, LazyMtOneFnDisableGreedyIsFastRASync) {
   EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
   EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 1u);
   EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 0u);
 
   CompiledFib Fast =
       compileAndRunOneFn(/*Lazy=*/false, /*DisableGreedyRA=*/true,
@@ -300,12 +309,29 @@ TEST(LazyJitGreedyOndemand, LazyMtTwoFnStillTiers) {
   EXPECT_EQ(LM.Mod->getNumInternalFunctions(), 2u);
   EXPECT_TRUE(LM.Lazy->hasBackgroundCompilePool())
       << "two-internal-function lazy-MT must keep the Greedy background pool";
-  EXPECT_TRUE(waitForBackgroundCompiles(*LM.Lazy, 1, 5000))
-      << "timed out waiting for a background compile; bg="
-      << LM.Lazy->getBackgroundCompileCount();
-  EXPECT_GE(LM.Lazy->getBackgroundCompileCount(), 1u);
+  EXPECT_TRUE(waitForBackgroundPublishes(*LM.Lazy, 2, 5000))
+      << "timed out waiting for background Greedy publication; started="
+      << LM.Lazy->getBackgroundCompileCount()
+      << " published=" << LM.Lazy->getBackgroundPublishCount();
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 2u);
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 2u);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 0u);
+
+  for (uint32_t I = 0; I < 2; ++I) {
+    EXPECT_FALSE(stubIsTrampoline(*LM.Mod, I))
+        << "func " << I << " still on trampoline";
+    CodeEntry *CE = LM.Mod->getCodeEntry(I);
+    ASSERT_NE(CE, nullptr);
+    const uint8_t *Body = resolvedJitBody(CE->JITCodePtr);
+    EXPECT_EQ(Body, LM.Lazy->getGreedyRACodePtr(I))
+        << "canonical stub must match published GreedyRA body for func " << I;
+  }
+
   EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "fib", 10), 55);
   EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "id", 7), 7);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 0u)
+      << "calls after Greedy publication must not start FastRA";
+  EXPECT_EQ(LM.Lazy->getBackgroundPublishCount(), 2u);
   EXPECT_TRUE(LM.Lazy->hasBackgroundCompilePool());
 }
 
@@ -317,6 +343,7 @@ TEST(LazyJitGreedyOndemand, LazyStOneFnStillGreedy) {
   ASSERT_NE(LazyST.LM.Lazy, nullptr);
   EXPECT_FALSE(LazyST.LM.Lazy->hasBackgroundCompilePool());
   EXPECT_EQ(LazyST.LM.Lazy->getBackgroundCompileCount(), 0u);
+  EXPECT_EQ(LazyST.LM.Lazy->getBackgroundPublishCount(), 0u);
   EXPECT_EQ(LazyST.LM.Lazy->getForegroundCompileCount(), 1u);
   EXPECT_EQ(LazyST.Fib10, 55);
   EXPECT_EQ(LazyST.Shape.RbpStores, Greedy.Shape.RbpStores);

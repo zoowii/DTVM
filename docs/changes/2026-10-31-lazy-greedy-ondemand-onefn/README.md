@@ -52,9 +52,13 @@ matters for this kernel.
   with no background tier. Multi-function modules still use FastRA FG
   with CAS-from-trampoline and Done-forbids-FastRA-patch.
 - Tests: `lazyJitGreedyOndemandTests` asserts no background pool / zero
-  BG compiles for one-internal-fn lazy-MT (not only stub shape after
-  `fib` returns), locks `DisableMultipassGreedyRA=true`, and checks a
-  two-internal-function control still tiers.
+  BG compile attempts and zero BG publishes for one-internal-fn lazy-MT
+  (not only stub shape after `fib` returns), locks
+  `DisableMultipassGreedyRA=true`, and checks a two-internal-function
+  control still creates the pool, completes Greedy publication, and
+  leaves both stubs on the canonical `GreedyRACodePtrs` body. FG/BG
+  compile getters are attempt/start counts; `getBackgroundPublishCount`
+  is the completion seam.
 
 ## Checklist
 

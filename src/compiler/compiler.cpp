@@ -724,6 +724,7 @@ uint8_t *LazyJITCompiler::compileFunction(WasmFrontendContext &Ctx,
 void LazyJITCompiler::compileFunctionInBackgroud(WasmFrontendContext &Ctx,
                                                  uint32_t FuncIdx) {
   ZEN_LOG_DEBUG("compile function %d in background", FuncIdx);
+  // Attempt/start count: incremented at entry, before compile/Done/stub patch.
   BackgroundCompileCount.fetch_add(1, std::memory_order_relaxed);
   CompileStatuses[FuncIdx] = CompileStatus::InProgress;
   auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyBgCompilation);
@@ -739,6 +740,9 @@ void LazyJITCompiler::compileFunctionInBackgroud(WasmFrontendContext &Ctx,
   GreedyRACodePtrs[FuncIdx] = JITFuncCodePtr;
   CompileStatuses[FuncIdx] = CompileStatus::Done;
   JITStubBuilder::updateStubJmpTargetPtr(FuncStubCodePtr, JITFuncCodePtr);
+  // Completion/publication count: after canonical pointer, Done, and stub
+  // xchg. Release pairs with acquire loads of getBackgroundPublishCount.
+  BackgroundPublishCount.fetch_add(1, std::memory_order_release);
   Stats.stopRecord(Timer);
 }
 
@@ -748,6 +752,7 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
     // Single-thread lazy, or single-internal-function modules (no FastRA
     // FG / Greedy BG split). Configured allocator on-demand (Greedy unless
     // DisableMultipassGreedyRA); unconditional stub publish.
+    // Attempt/start count: entered the no-pool on-request compile path.
     ForegroundCompileCount.fetch_add(1, std::memory_order_relaxed);
     auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyFgCompilation);
     uint8_t *JITFuncCodePtr =
@@ -761,6 +766,8 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
     return GreedyRACodePtrs[FuncIdx];
   }
   ZEN_LOG_DEBUG("compile function %d on request", FuncIdx);
+  // Attempt/start count: entered FastRA on-request compile, before Done
+  // re-check / CAS.
   ForegroundCompileCount.fetch_add(1, std::memory_order_relaxed);
   auto Timer = Stats.startRecord(utils::StatisticPhase::JITLazyFgCompilation);
   // Compile the function with fastRA for faster compilation. Parallel

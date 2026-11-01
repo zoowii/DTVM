@@ -187,6 +187,16 @@ classDiagram
 
 Single-internal-function lazy modules do not create `ThreadPool` / `CompileStatuses` / `GreedyRACodePtrs`. On-request compile uses the configured allocator (Greedy unless `DisableMultipassGreedyRA`) and publishes the stub trampoline → compiled body without the FastRA CAS path.
 
+### LazyJITCompiler compile counters
+
+| Counter | When incremented |
+| --- | --- |
+| `ForegroundCompileCount` | Entry to an on-request compile path (before body/stub publish). Attempt/start count, not completion. |
+| `BackgroundCompileCount` | Entry to `compileFunctionInBackgroud` (before InProgress/compile/`Done`/stub patch). Attempt/start count, not completion. |
+| `BackgroundPublishCount` | After `GreedyRACodePtrs` store, `Done`, and stub `xchg`. Completed Greedy publication. |
+
+`getForegroundCompileCount` / `getBackgroundCompileCount` are attempt getters; an acquire load is not a completion barrier. `getBackgroundPublishCount` is the completion seam: an acquire load that observes N happens-after those N background stub publications.
+
 ---
 
 ## DTO / Shared Types
