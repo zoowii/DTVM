@@ -185,7 +185,7 @@ classDiagram
 | `InProgress` | Compiling |
 | `Done` | Background GreedyRA is canonical in `GreedyRACodePtrs`; FastRA must not patch the stub |
 
-Single-internal-function lazy modules do not create `ThreadPool` / `CompileStatuses` / `GreedyRACodePtrs`. On-request compile uses Greedy and publishes the stub trampoline → Greedy without the FastRA CAS path.
+Single-internal-function lazy modules do not create `ThreadPool` / `CompileStatuses` / `GreedyRACodePtrs`. On-request compile uses the configured allocator (Greedy unless `DisableMultipassGreedyRA`) and publishes the stub trampoline → compiled body without the FastRA CAS path.
 
 ---
 

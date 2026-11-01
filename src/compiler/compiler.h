@@ -7,6 +7,9 @@
 #include "compiler/common/common_defs.h"
 #include "compiler/stub/stub_builder.h"
 
+#include <atomic>
+#include <cstdint>
+
 namespace COMPILER {
 
 class CompileContext;
@@ -76,6 +79,19 @@ public:
 
   uint8_t *compileFunctionOnRequest(uint8_t *FuncStubCodePtr);
 
+  /// Test seam: false for single-internal-function lazy modules (no FastRA
+  /// FG / Greedy BG split) and for single-thread lazy.
+  bool hasBackgroundCompilePool() const {
+    return static_cast<bool>(ThreadPool);
+  }
+
+  uint32_t getForegroundCompileCount() const {
+    return ForegroundCompileCount.load(std::memory_order_acquire);
+  }
+  uint32_t getBackgroundCompileCount() const {
+    return BackgroundCompileCount.load(std::memory_order_acquire);
+  }
+
 private:
   enum class CompileStatus : uint8_t {
     None,
@@ -90,15 +106,19 @@ private:
   WasmFrontendContext *MainContext;
   MModule *Mod;
 
-  // These four fields are only used in multithread lazy compilation when
-  // NumInternalFunctions > 1 (single-function modules skip the FastRA FG
-  // / Greedy BG split).
+  // Background pool fields: only when multithread lazy is on and the module
+  // has more than one internal function. One-internal-function modules skip
+  // the FastRA FG / Greedy BG split as a measured policy for fib-like
+  // workloads (a large one-fn module can still theoretically benefit from
+  // FastRA-first tiering).
   std::vector<WasmFrontendContext> AuxContexts;
   // must be declared before ThreadPool
   std::unique_ptr<std::atomic<CompileStatus>[]> CompileStatuses;
   // must be declared before ThreadPool
   std::unique_ptr<std::atomic<uint8_t *>[]> GreedyRACodePtrs;
   std::unique_ptr<common::ThreadPool<WasmFrontendContext>> ThreadPool;
+  std::atomic<uint32_t> ForegroundCompileCount{0};
+  std::atomic<uint32_t> BackgroundCompileCount{0};
 };
 
 class MIRTextJITCompiler final : public JITCompilerBase {

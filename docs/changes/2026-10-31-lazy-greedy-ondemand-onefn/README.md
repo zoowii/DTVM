@@ -7,50 +7,54 @@
 ## Overview
 
 Single-internal-function WASM modules skip the lazy FastRA-foreground /
-Greedy-background split. On-request compile uses Greedy (same as
-single-thread lazy) and publishes trampoline → Greedy with no FastRA
-CAS and no `CompileStatus::Done` protocol.
+Greedy-background split. On-request compile uses the configured
+allocator (Greedy unless `DisableMultipassGreedyRA`) and publishes
+trampoline → compiled body with no FastRA CAS and no
+`CompileStatus::Done` protocol.
 
 ## Motivation
 
 Prior notes reported lazy-FastRA `sub $0x50` / ~34 rbp stores vs
 lazy-Greedy 0 spills on fib. In this tree, on `fib_iter_onefn.wat` and
-`example/fib.wast`, FastRA still spills and Greedy does not:
+`example/fib.wast`, FastRA still spills and Greedy does not. Prefix
+heuristic (`scanCodeShapePrefix`, 512-byte window; not a complete
+function spill count):
 
 | Kernel | FastRA | Greedy |
 | --- | --- | --- |
-| `fib_iter_onefn` (1 fn) | 5 rbp stores, `sub $0x18` | 0 stores, no frame |
-| `example/fib` recursive | 6 rbp stores, `sub $0x20` | 0 stores, CSRs only |
-| `example/fib` iterative | 8 rbp stores, `sub $0x14` | 0 stores, no frame |
+| `fib_iter_onefn` (1 fn) | rbp stores + `sub $imm, %rsp` | 0 rbp spill stores, no stack subtraction/spill slots |
+| `example/fib` recursive | rbp stores + `sub $imm, %rsp` | 0 rbp spill stores (CSRs / `push %rbp; mov %rsp,%rbp` remain) |
+| `example/fib` iterative | rbp stores + `sub $imm, %rsp` | 0 rbp spill stores, no stack subtraction/spill slots |
+
+Greedy still emits a frame pointer (`push %rbp; mov %rsp,%rbp`). "No
+stack subtraction/spill slots" is not "no frame."
 
 The exact 34 / `$0x50` shape did not reproduce on these small kernels
 (likely a larger dump or a different fib), but the RA gap is real.
-Lazy-Greedy single-thread already matches eager Greedy. The
-FastRA-then-Greedy tier only helps when a background worker can overlap
-with execution on another CPU; a one-function module has nothing else
-to compile, so the first call pays FastRA spill tax and a duplicate
-Greedy compile.
+Lazy-Greedy single-thread already matches eager Greedy.
 
-FastRA's extra spills are inherent to local allocation (live-out and
-call-clobber reloads), not a one-line RA bug, so this change takes the
-cheaper path: use Greedy on-demand when the module cannot benefit from
-tiering.
+This is a **measured policy tradeoff** for fib-like one-function
+workloads, not a universal claim that one-function modules cannot
+benefit from tiering. A large function called once briefly can still
+want a quicker FastRA first response; repeated calls can still want a
+background Greedy upgrade. Function count does not bound compile cost.
+The old tier also cannot replace an already-running FastRA activation,
+which is why skipping FastRA on the first long-running one-fn call
+matters for this kernel.
 
 ## Impact
 
 - `compiler`: `LazyJITCompiler` creates `ThreadPool` only when
   multithread lazy is enabled **and** `NumInternalFunctions > 1`.
-- `compileFunctionOnRequest` is unchanged: no pool still means Greedy
-  plus unconditional stub publish. Multi-function modules still use
-  FastRA FG with CAS-from-trampoline and Done-forbids-FastRA-patch.
-- Tests: `lazyJitGreedyOndemandTests` compares FastRA vs Greedy spill
-  shape on `fib_iter_onefn.wat` and checks lazy+multithread 1-fn matches
-  Greedy.
-
-Modules with two or more internal functions still use FastRA on the
-foreground lazy path. Fixing FastRA itself (keep loop-carried values in
-CSRs, or pin live-ins across blocks) is not a small high-confidence
-patch.
+- `compileFunctionOnRequest` is unchanged except counters/comments: no
+  pool still means the configured allocator plus unconditional stub
+  publish. `DisableMultipassGreedyRA` still forces FastRA synchronously
+  with no background tier. Multi-function modules still use FastRA FG
+  with CAS-from-trampoline and Done-forbids-FastRA-patch.
+- Tests: `lazyJitGreedyOndemandTests` asserts no background pool / zero
+  BG compiles for one-internal-fn lazy-MT (not only stub shape after
+  `fib` returns), locks `DisableMultipassGreedyRA=true`, and checks a
+  two-internal-function control still tiers.
 
 ## Checklist
 
