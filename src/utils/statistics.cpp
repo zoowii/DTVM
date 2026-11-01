@@ -59,7 +59,7 @@ void Statistics::noteEagerFunctionsCompiled(uint32_t N) {
     return;
   }
   common::LockGuard<common::Mutex> Lock(Mtx);
-  EagerFunctionsCompiled = N;
+  EagerFunctionsCompiled += N;
 }
 
 void Statistics::noteLazyStubsPrecompiled(uint32_t N) {
@@ -67,7 +67,18 @@ void Statistics::noteLazyStubsPrecompiled(uint32_t N) {
     return;
   }
   common::LockGuard<common::Mutex> Lock(Mtx);
-  LazyStubsPrecompiled = N;
+  LazyStubsPrecompiled += N;
+}
+
+uint32_t Statistics::getRecordCount(StatisticPhase Phase) const {
+  uint32_t N = 0;
+  for (const auto &[P, TimeCost] : Records) {
+    (void)TimeCost;
+    if (P == Phase) {
+      ++N;
+    }
+  }
+  return N;
 }
 
 void Statistics::report() const {
