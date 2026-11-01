@@ -282,8 +282,10 @@ dispatch, fallback, gas, and runtime ABI behavior are unchanged.
   function bodies (accumulates across modules / extra compilations).
   Lazy records `JIT lazy stubs precompiled: N` the same way (stubs, not
   the resolver). Bodies actually compiled remain
-  `JIT Lazy Compilation(Fg|Bg): M times`. Compare N vs Fg only with
-  `--disable-multipass-multithread` so Bg does not also compile.
+  `JIT Lazy Compilation(Fg|Bg): M times`. `N` vs Fg is unused compilation
+  volume (bodies/stubs), not unused-function cost. Compare them as a
+  distinct-used-function census only for one module, single-thread lazy,
+  no extra compilations (`--disable-multipass-multithread`).
 - When `ZEN_ENABLE_LINUX_PERF` is enabled, perf JIT dump symbols (e.g., `EVMBB*`) are emitted for generated blocks
 
 ---
