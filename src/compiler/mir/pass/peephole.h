@@ -17,6 +17,7 @@ public:
 private:
   MFunction *F = nullptr;
   MBasicBlock *CurBB = nullptr;
+  MInstruction *CurStmt = nullptr;
 
   void rewriteBlock(MBasicBlock &BB);
   MInstruction *rewriteExpr(MInstruction *Inst);
@@ -33,16 +34,28 @@ private:
   MInstruction *makeICmp(CmpInstruction::Predicate Pred, MType *Ty,
                          MInstruction *LHS, MInstruction *RHS);
   MInstruction *makeAnd(MType *Ty, MInstruction *LHS, MInstruction *RHS);
+  MInstruction *makeUShr(MType *Ty, MInstruction *LHS, MInstruction *RHS);
 
-  static bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val);
-  static bool isIntZero(const MInstruction *Inst);
-  static bool isIntOne(const MInstruction *Inst);
-  static bool isIntAllOnes(const MInstruction *Inst);
+  bool matchIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
+  // Same-block dassign of a ConstantInstruction through dread.
+  // foldAlgebra applies this to both operands of every integer BINARY
+  // (const-const add/sub/mul/bitwise/shift as well as udiv/urem), so
+  // wasm handleIDiv temps peep. Not wired into isIntZero/foldConstBrIf:
+  // those must not rewrite signed-overflow or stack-check CFG.
+  bool matchAssignedIntConst(const MInstruction *Inst, llvm::APInt &Val) const;
+  bool isIntZero(const MInstruction *Inst) const;
+  bool isIntOne(const MInstruction *Inst) const;
+  bool isIntAllOnes(const MInstruction *Inst) const;
   static bool evalICmp(CmpInstruction::Predicate Pred, const llvm::APInt &LHS,
                        const llvm::APInt &RHS);
   // Loads / calls / wasm-checks are expressions; discarding them can
   // drop gas, bounds, or instance accesses. Only discard proven-pure trees.
   static bool isPureExpr(const MInstruction *Inst);
+  // isPureExpr does not reject integer div/rem, wasm_fptosi/fptoui,
+  // i128 overflow ops, or EVM_UDIV128_BY64 (they trap on 0 / NaN /
+  // overflow / unguarded DIV64r).
+  static bool exprMayTrap(const MInstruction *Inst);
+  static bool isNontrappingPureExpr(const MInstruction *Inst);
   static void removeEdgeAndPhiIncomings(MBasicBlock &From, MBasicBlock *To);
 };
 

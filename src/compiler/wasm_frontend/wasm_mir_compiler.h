@@ -329,8 +329,13 @@ public:
   Operand handleIDiv(Operand LHSOp, Operand RHSOp) {
     MType *Mtype = Ctx.getMIRTypeFromWASMType(Type);
 
-    MInstruction *LHS = makeReusableValue(extractOperand(LHSOp), Mtype);
-    MInstruction *RHS = makeReusableValue(extractOperand(RHSOp), Mtype);
+    MInstruction *LHSRaw = extractOperand(LHSOp);
+    MInstruction *RHSRaw = extractOperand(RHSOp);
+    // Temps so the /0 check and signed overflow split can reuse operands
+    // without re-evaluating a trapping expression. Integer literals are
+    // assigned as constants; MIRPeephole recovers them through dread.
+    MInstruction *LHS = makeReusableValue(LHSRaw, Mtype);
+    MInstruction *RHS = makeReusableValue(RHSRaw, Mtype);
 
 #if !defined(ZEN_BUILD_TARGET_X86_64) or !defined(ZEN_ENABLE_CPU_EXCEPTION)
     MInstruction *DivByZero = createInstruction<CmpInstruction>(
@@ -680,7 +685,9 @@ private:
     return makeReusableValue(Value, Type);
   }
 
-  // Return {MemoryBase, Index(Scale = 1), Offset}
+  // Return {MemoryBase, Index(Scale = 1), Offset}.
+  // Do not fold i32.add(dynamic, imm) into Offset; wrap32 then unbounded
+  // memarg offset is not [zext(x) + (N+C)]. Scale stays 1.
   std::tuple<MInstruction *, MInstruction *, int32_t>
   getMemoryLocation(MInstruction *Base, uint32_t Offset, MType *Type);
 

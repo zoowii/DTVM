@@ -108,7 +108,16 @@ if(ZEN_ENABLE_SPEC_TEST)
     endif()
   endif()
 
-  if(ZEN_ENABLE_ASAN)
+  # Top-level CMakeLists skips -fsanitize=address when VIRTUAL_STACK is on (ASan
+  # cannot instrument the alternate stack). Per-test ASan flags must match, or
+  # instrumented tests mix with uninstrumented compiler/runtime objects and
+  # segfault (same class as DTVMStack#629).
+  set(ZEN_TEST_ENABLE_ASAN OFF)
+  if(ZEN_ENABLE_ASAN AND NOT ZEN_ENABLE_VIRTUAL_STACK)
+    set(ZEN_TEST_ENABLE_ASAN ON)
+  endif()
+
+  if(ZEN_TEST_ENABLE_ASAN)
     target_compile_options(mempoolTests PRIVATE -fsanitize=address)
     target_compile_options(cAPITests PRIVATE -fsanitize=address)
 
@@ -385,7 +394,7 @@ if(ZEN_ENABLE_SPEC_TEST)
     target_include_directories(
       lazyJitStubTests PRIVATE ${googletest_SOURCE_DIR}/googletest/include
     )
-    if(ZEN_ENABLE_ASAN)
+    if(ZEN_TEST_ENABLE_ASAN)
       target_compile_options(lazyJitStubTests PRIVATE -fsanitize=address)
       if(ZEN_BUILD_PLATFORM_DARWIN)
         target_link_libraries(
@@ -431,7 +440,7 @@ if(ZEN_ENABLE_SPEC_TEST)
     target_compile_definitions(
       mirPeepholeTests PRIVATE PEEP_WASM_PATH="${PEEP_MOD_WASM}"
     )
-    if(ZEN_ENABLE_ASAN)
+    if(ZEN_TEST_ENABLE_ASAN)
       target_compile_options(mirPeepholeTests PRIVATE -fsanitize=address)
       if(ZEN_BUILD_PLATFORM_DARWIN)
         target_link_libraries(

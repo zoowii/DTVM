@@ -30,7 +30,7 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 ### Multi-pass Compilation Pipeline
 
 1. **Frontend→dMIR**: `WasmMirBuilder` / `EVMMirBuilder` translate source/bytecode to `MModule` + `MFunction` (dMIR)
-2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
+2. **dMIR optimization**: `MVerifier`, `MIRPeephole` (ctz/clz-eq-0, select+icmp, local algebra, unsigned pow2 `udiv`/`urem`, constant `br_if`), `DeadMBasicBlockElim`, re-`MVerifier`
 3. **dMIR→CgIR**: `X86CgLowering`, `X86CgPeephole`
 4. **Register allocation**: `FastRA` or `CgRAGreedy` + `CgRegisterCoalescer`, `CgVirtRegMap`, `CgLiveIntervals`, etc.
 5. **Post-RA processing**: `PrologEpilogInserter`, `ExpandPostRAPseudos`
@@ -91,15 +91,35 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
 - FastRA may CAS-patch only from the trampoline; background GreedyRA may overwrite trampoline or FastRA
 - Tear-free `xchg` of the 4-byte `rel32` does not by itself enforce this ordering
 
+### Wasm linear-memory addressing
+
+Wasm32 effective address is `zext64(wrap32(base)) + memarg_offset`, then
+trap if `ea + access_size` exceeds memory length. `getMemoryLocation`
+may fuse a **constant** wasm address with the memarg offset into a 32-bit
+displacement. It must not fold `i32.add(dynamic, imm)` into that
+displacement: x86-64 `[MemBase + zext(x) + (N+C)]` is not wrap-equivalent
+(extra OOB when `x+C` wraps; a wrapping i32 combine of `C+N` can miss
+OOB). Load/store Scale stays 1. See
+`tests/wast/multipass/address_add_imm_wrap.wast`.
+
 ### dMIR Invariants
 
 - `MBasicBlock`s in `MFunction` are connected by control flow; `MInstruction`s belong to an `MBasicBlock` or are embedded as expressions in another `MInstruction`
 - `MVerifier` must pass before entering CgIR lowering
 - `MIRPeephole` is function-local and deterministic: it rewrites nested
   integer expression trees and constant `br_if` terminators only. It must
-  not fold `div`/`rem` (zero-divisor traps) or `ctz`/`clz` compares against
-  a non-zero constant. Discarding a subtree requires a proven-pure tree
-  (no load / call / wasm-check). Folding a constant `br_if` must drop the
+  not fold `sdiv`/`srem`, `udiv`/`urem` by zero (wasm traps), or `ctz`/`clz`
+  compares against a non-zero constant. Unsigned `udiv`/`urem` by a
+  nonzero constant power of two may become `ushr`/`and`. Const-const
+  `udiv`/`urem` with any nonzero divisor may fold to a constant (this
+  does not require a power of two). Discarding a subtree requires a
+  proven-pure **and nontrapping** tree (`isPureExpr` rejects load / call /
+  wasm-check but not integer div/rem, `wasm_fptosi`/`wasm_fptoui`, i128
+  overflow ops, or `EVM_UDIV128_BY64`; those must stay). Wasm `handleIDiv`
+  assigns integer literals to temps; `foldAlgebra` recovers a same-block
+  `dassign` of a constant through `dread` for **every integer BINARY**
+  (not only `udiv`/`urem`) so `rem_u`/`div_u` by a
+  power of two still become `and`/`ushr`. Folding a constant `br_if` must drop the
   untaken CFG edge **and** any phi incoming on the still-live target that
   came from this block. After the pass, `DeadMBasicBlockElim` may drop
   unreachable blocks and must keep live phi incoming lists aligned with
