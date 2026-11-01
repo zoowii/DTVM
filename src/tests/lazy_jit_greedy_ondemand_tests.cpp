@@ -309,7 +309,7 @@ TEST(LazyJitGreedyOndemand, LazyMtTwoFnStillTiers) {
   EXPECT_EQ(LM.Mod->getNumInternalFunctions(), 2u);
   EXPECT_TRUE(LM.Lazy->hasBackgroundCompilePool())
       << "two-internal-function lazy-MT must keep the Greedy background pool";
-  EXPECT_TRUE(waitForBackgroundPublishes(*LM.Lazy, 2, 5000))
+  ASSERT_TRUE(waitForBackgroundPublishes(*LM.Lazy, 2, 5000))
       << "timed out waiting for background Greedy publication; started="
       << LM.Lazy->getBackgroundCompileCount()
       << " published=" << LM.Lazy->getBackgroundPublishCount();
