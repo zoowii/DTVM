@@ -243,12 +243,13 @@ def warn_if_debug_dtvm(dtvm: Path) -> None:
 
 
 def resolve_dtvm(explicit: Optional[str]) -> Path:
+    chosen = explicit or os.environ.get("DTVM")
+    if chosen:
+        path = Path(chosen)
+        if path.is_file() and os.access(path, os.X_OK):
+            return path.resolve()
+        die(f"requested dtvm binary is missing or not executable: {chosen}")
     candidates = []
-    if explicit:
-        candidates.append(Path(explicit))
-    env = os.environ.get("DTVM")
-    if env:
-        candidates.append(Path(env))
     candidates.extend(
         [
             REPO_ROOT / "build-paper-bench" / "dtvm",

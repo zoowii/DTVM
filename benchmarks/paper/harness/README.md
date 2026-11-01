@@ -107,6 +107,9 @@ the harness also exits 1. Missing Wasmtime remains optional when DTVM succeeds.
 Both passes must succeed when statistics are requested. Launch errors are
 recorded in the results and do not abort subsequent cells. Failure logs are
 preserved even if a later failed attempt produces no output.
+An explicit `--dtvm` or `$DTVM` path must be executable; it never silently
+falls back to another build. Explicit Wasmtime paths likewise never fall
+back, but missing Wasmtime follows the optional-runtime skip policy.
 
 ```bash
 # DTVM-only is valid when Wasmtime is not installed:

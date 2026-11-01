@@ -7,6 +7,7 @@ Run from the repository root:
 import contextlib
 import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -255,6 +256,46 @@ class HarnessTests(unittest.TestCase):
         self.assertTrue(all(c[0] == "/fake/wasmtime" for c in commands[-3:]))
         self.assertTrue(all("--enable-statistics" not in c for c in commands[-3:]))
         self.assertIsNone(result["runs"][1]["instrumented"])
+
+
+    def test_explicit_runtime_paths_do_not_fall_back(self):
+        for resolver, var in ((harness.resolve_dtvm, "DTVM"),):
+            with self.subTest(runtime=var):
+                with patch.dict(os.environ, {var: sys.executable}):
+                    with contextlib.redirect_stderr(io.StringIO()):
+                        with self.assertRaises(SystemExit) as exc:
+                            resolver("/nonexistent/paper-bench-runtime")
+                    self.assertEqual(exc.exception.code, 2)
+                with patch.dict(os.environ, {var: "/nonexistent/paper-bench-runtime"}):
+                    self.assertEqual(resolver(sys.executable), Path(sys.executable).resolve())
+                    with contextlib.redirect_stderr(io.StringIO()):
+                        with self.assertRaises(SystemExit):
+                            resolver(None)
+
+
+    def test_build_script_can_run_outside_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            llvm = tmp / "llvm"
+            llvm.mkdir()
+            (llvm / "LLVMConfig.cmake").touch()
+            fake = tmp / "cmake"
+            fake.write_text("#!" + sys.executable + "\n" +
+                "import os,sys,json\nfrom pathlib import Path\n" +
+                "with open(os.environ['CMAKE_TEST_LOG'], 'a') as f: f.write(json.dumps(sys.argv[1:])+'\\n')\n" +
+                "if '--build' in sys.argv:\n" +
+                " p=Path(sys.argv[2])/'dtvm';p.parent.mkdir(parents=True,exist_ok=True);p.touch();p.chmod(0o755)\n")
+            fake.chmod(0o755)
+            env = dict(os.environ, PATH=str(tmp) + os.pathsep + os.environ.get("PATH", ""),
+                       LLVM_DIR=str(llvm), BUILD_DIR=str(tmp / "build"),
+                       CMAKE_TEST_LOG=str(tmp / "cmake.jsonl"), JOBS="1")
+            script = harness.HARNESS_DIR / "build_dtvm.sh"
+            proc = subprocess.run(["bash", str(script)], cwd=tmp, env=env,
+                                  capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            args = json.loads((tmp / "cmake.jsonl").read_text().splitlines()[0])
+            self.assertEqual(args[args.index("-S") + 1], str(harness.REPO_ROOT))
+
 
 
 if __name__ == "__main__":
