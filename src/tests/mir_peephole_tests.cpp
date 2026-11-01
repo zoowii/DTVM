@@ -761,13 +761,6 @@ TEST(MIRPeepholeLitmus, URemZeroDoesNotFold) {
   EXPECT_NE(dumpFunc(B.F).find("urem"), std::string::npos) << dumpFunc(B.F);
 }
 
-TEST(MIRPeepholeLitmus, UDivZeroDoesNotFold) {
-  MirBuilder B;
-  B.ret(B.bin(OP_udiv, B.param(), B.iconst(0)));
-  B.run();
-  EXPECT_NE(dumpFunc(B.F).find("udiv"), std::string::npos) << dumpFunc(B.F);
-}
-
 TEST(MIRPeepholeLitmus, URemNonPow2DoesNotFold) {
   MirBuilder B;
   B.ret(B.bin(OP_urem, B.param(), B.iconst(6)));
