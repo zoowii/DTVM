@@ -1090,10 +1090,10 @@ TEST(MIRPeepholeWasm, SinglepassMatchesMultipass) {
 
   const int32_t Inputs[] = {0,  1,  2,  4,
                             16, -1, 42, static_cast<int32_t>(0x80000000u)};
-  const char *Fns[] = {"ctz_eqz", "clz_eqz", "ctz_eq4", "select_eq_true",
-                       "add0",    "rem_u8",  "div_u8",  "rem_u6",
-                       "rem_s8",  "f3",      "f4",      "f8",
-                       "f9",      "f12",     "f13",     "f14",
+  const char *Fns[] = {"ctz_eqz", "clz_eqz",    "ctz_eq4", "select_eq_true",
+                       "add0",    "rem_u8",     "div_u8",  "rem_u6",
+                       "rem_s8",  "f3",         "f4",      "f8",
+                       "f9",      "f12",        "f13",     "f14",
                        "mul8",    "add_reassoc"};
   for (const char *Fn : Fns) {
     for (int32_t X : Inputs) {
