@@ -3,9 +3,10 @@
 One entry point for **PolyBench**, **fib**, **overflow**, and **WAPM** wall
 times, with a Wasmtime column **on the same `.wasm` where that is fair**.
 
-This does not replace the older per-suite scripts under `scripts/` (TTFI
-CSV/xlsx reproduction). It adds a Phase 1.5-style JSON protocol: CPU pin,
-1 warmup + N timed runs, median/min/max seconds, optional DTVM statistics.
+This does not replace the older per-suite scripts under `scripts/` (CSV
+xlsx dumps). Wall and TTFI now share schema `paper-bench-v1` and the same
+mode names (`lazy` → `lazy-F-ST`, …). Wasmtime runs **only if a binary is
+found**; otherwise those cells are `skipped` with no invented numbers.
 
 ## What is fair
 
@@ -68,8 +69,8 @@ Default directory: `benchmarks/paper/raw_data/harness/<preset>_<UTC>/` (gitignor
 
 | File | Contents |
 |------|----------|
-| `results.json` | schema `phase15-v1` (see [SCHEMA.md](SCHEMA.md)) |
-| `median-table.md` | median wall seconds, one column per runtime/mode |
+| `results.json` | schema `paper-bench-v1` (see [SCHEMA.md](SCHEMA.md)) |
+| `median-table.md` | median wall seconds; `skip` if Wasmtime/Wasmer missing |
 | `commands.json` | `--dry-run` argv dump |
 
 ## Environment
@@ -88,8 +89,18 @@ DTVM must be a **Release** build with singlepass + multipass. Overflow
 `overflow_dtvm_*` also needs `-DZEN_ENABLE_CHECKED_ARITHMETIC=ON`.
 `build_dtvm.sh` turns both on.
 
-Wasmtime **45.0.0** is the current paper pin (`VERSIONS.md`). The harness
-always passes `-C cache=n` and `WASMTIME_CACHE=0`.
+Wasmtime **45.0.0** is the current paper pin (`VERSIONS.md`). When present,
+the harness passes `-C cache=n` and `WASMTIME_CACHE=0`. When absent, it
+skips (use `--require-wasmtime` to fail). TTFI (`--metric ttfi|both`) is
+parsed from `Total compilation time` or DTVM stats; wall time is never
+used as a stand-in.
+
+```bash
+# DTVM-only is valid when Wasmtime is not installed:
+python3 benchmarks/paper/harness/run.py --preset smoke --runtimes dtvm
+# TTFI + wall, same catalog:
+python3 benchmarks/paper/harness/run.py --preset wapm --metric both --dtvm-modes lazy
+```
 
 ## Catalog
 
@@ -103,4 +114,4 @@ long interpreter kernels).
 - Package overview: [`../README.md`](../README.md)
 - PolyBench wall CSV (older): [`../docs/POLYBENCH_REPRODUCE.md`](../docs/POLYBENCH_REPRODUCE.md)
 - fib / overflow 5-way (incl. Wasmer): [`../benchmarks/overflow/REPRODUCE_fib_overflow_5way.md`](../benchmarks/overflow/REPRODUCE_fib_overflow_5way.md)
-- Change proposal: [`../../../docs/changes/2026-11-01-paper-bench-harness/README.md`](../../../docs/changes/2026-11-01-paper-bench-harness/README.md)
+- Change proposals: [`../../../docs/changes/2026-11-01-paper-bench-harness/README.md`](../../../docs/changes/2026-11-01-paper-bench-harness/README.md), [`../../../docs/changes/2026-11-01-paper-bench-schema/README.md`](../../../docs/changes/2026-11-01-paper-bench-schema/README.md)

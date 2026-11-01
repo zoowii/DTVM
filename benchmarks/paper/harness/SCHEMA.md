@@ -1,95 +1,114 @@
-# Paper-bench JSON schema (`phase15-v1`)
+# Paper-bench JSON schema (`paper-bench-v1`)
 
-The harness writes one JSON object per run to `results.json`. Units and
-mode names match the Phase 1.5 measured notes: wall time in **seconds**,
-`--enable-statistics` breakdowns in **milliseconds**.
+One schema for **wall** and **TTFI**. Mode names are the Phase 1.5 set;
+older TTFI/xlsx profile strings are aliases. Wasmtime/Wasmer columns are
+omitted or marked `skipped` when the binary is missing — **never filled
+with invented numbers**.
+
+`phase15-v1` (wall-only) is superseded by this document. Existing wall
+fields (`samples_s`, `median_s`, …) are unchanged.
 
 ## Top-level
 
 | Field | Meaning |
 |-------|---------|
-| `schema_version` | Always `phase15-v1` |
+| `schema_version` | `paper-bench-v1` |
 | `generated_utc` | UTC stamp `YYYYMMDDTHHMMSSZ` |
 | `host` | `uname`, `cpu_model`, `cpu_mhz`, `governor`, `no_turbo` |
-| `config` | preset, scale, CPU pin, warmup/repeats, binary paths, modes |
+| `config` | preset, scale, **metric**, CPU pin, binaries, `skipped_runtimes`, `mode_aliases` |
 | `fairness_notes` | copied from `catalog.json` |
 | `runs` | one object per (bench, runtime, mode) cell |
 
-## `config`
+## `config.metric`
+
+| Value | What is primary | DTVM `--enable-statistics` |
+|-------|-----------------|----------------------------|
+| `wall` (default) | process wall seconds | only if `--stats` |
+| `ttfi` | compile-to-first-invoke ms | **on** (needed for the stats estimate) |
+| `both` | both fields populated | on |
+
+Wall **must not** be copied into `ttfi.ttfi_ms`. If the binary does not
+print `Total compilation time` and DTVM stats cannot form the lazy
+estimate, `ttfi_ms` is `null` and `ttfi_unavailable` explains why
+(`not-instrumented`, `wasmtime-not-found`, …).
+
+## Canonical modes
+
+| Canonical | Runtime | CLI / meaning | Aliases (old scripts) |
+|-----------|---------|---------------|------------------------|
+| `interp` | DTVM | `-m interpreter` | `interpreter` |
+| `singlepass` | DTVM | `-m singlepass` | `sp` |
+| `multipass-G-ST` | DTVM | multipass GreedyRA, **serial** | `multipass-g-st` |
+| `lazy-F-ST` | DTVM | lazy FastRA serial | `lazy`, `dtvm multipass + lazy` |
+| `multipass-F-ST` | DTVM | paper xlsx "dtvm multipass" (FastRA serial eager) | `multipass` |
+| `lazy-G-ST` | DTVM | lazy GreedyRA serial | |
+| `multipass-G-MT` | DTVM | greedy + multithread **on** | `multipass_greedy_mt` |
+| `lazy-G-MT` | DTVM | lazy + greedy + MT on | `lazy_greedy_mt` |
+| `cranelift-nocache` | Wasmtime | `wasmtime run -C cache=n` + `WASMTIME_CACHE=0` | `default`, `wasmtime`, `cranelift`, `nocache` |
+
+`--dtvm-modes lazy,multipass` is accepted and stored as `lazy-F-ST`,
+`multipass-F-ST`.
+
+## TTFI sources (no wall fallback)
+
+| `ttfi_source` | How `ttfi_ms` is filled |
+|---------------|-------------------------|
+| `total-compilation-time` | `Total compilation time: N ms (X μs)` → `X/1000` (same as `avg_compile_time.py`) |
+| `dtvm-stats-est` | `load + precompile + instantiation + (fg_total / fg_count)` |
+| `null` | not available; do not invent |
+
+Stock Wasmtime 45 **without** the paper `ttfi-report` patch has no compile
+line: wall comparison is still valid; TTFI stays `null`.
+
+## `runs[]` (wall fields plus)
 
 | Field | Meaning |
 |-------|---------|
-| `preset` | `smoke` / `phase15` / `polybench` / `fib` / `overflow` / `wapm` / `all` |
-| `scale` | `dev` (1e6 fib/overflow iters) or `paper` (500M / 100M) |
-| `cpu` | `taskset -c` index, or `null` if pinning disabled |
-| `warmup` | discarded launches (default 1) |
-| `repeats` | timed launches; median/min/max over **successful** samples |
-| `stats` | whether DTVM `--enable-statistics` was on (adds timer overhead; do not mix with stats-off walls) |
-| `dtvm_modes` | see mode table below |
+| `skipped` | `true` if the cell was not run |
+| `skip_reason` | e.g. `wasmtime-not-found` |
+| `median_s` / `samples_s` | wall seconds; **`null` / `[]` when skipped** |
+| `ttfi` | `{ttfi_ms, ttfi_source, compile_ms, execution_ms, ttfi_unavailable}` |
+| `statistics` | DTVM stats medians in ms, or `null` |
 
-## Mode names
+Markdown tables print `skip` for skipped cells, `fail` for real failures,
+never a placeholder millisecond.
 
-| Mode | Runtime | CLI |
-|------|---------|-----|
-| `interp` | DTVM | `-m interpreter` |
-| `singlepass` | DTVM | `-m singlepass` |
-| `multipass-G-ST` | DTVM | `-m multipass --disable-multipass-multithread` (GreedyRA default, serial) |
-| `lazy-F-ST` | DTVM | `-m multipass --enable-multipass-lazy --disable-multipass-greedyra --disable-multipass-multithread` |
-| `multipass-F-ST` | DTVM | paper xlsx "dtvm multipass": greedy off, serial, eager |
-| `lazy-G-ST` | DTVM | lazy + GreedyRA, serial |
-| `cranelift-nocache` | Wasmtime | `wasmtime run -C cache=n` plus `WASMTIME_CACHE=0` |
+## Fairness (unchanged)
 
-Default matrix is the Phase 1.5 set: `interp`, `singlepass`, `multipass-G-ST`, `lazy-F-ST`, plus Wasmtime `cranelift-nocache`. Pass `--paper-modes` for the xlsx pair.
+| Label | Wasmtime? |
+|-------|-----------|
+| `same-wasm` | yes, if a Wasmtime binary exists |
+| `dtvm-hostapi-only` | no |
+| `different-wasm` | Wasmtime-only overflow modules (opcode `0xfc`) |
 
-## `runs[]`
+## Optional Wasmtime runner
 
-| Field | Meaning |
-|-------|---------|
-| `bench` | catalog id (`atax`, `fib_iter_dev`, `figlet`, …) |
-| `suite` | `polybench` / `fib` / `overflow` / `wapm` |
-| `wasm` | path relative to `benchmarks/paper/` |
-| `fairness` | `same-wasm` or `dtvm-hostapi-only` |
-| `runtime` | `dtvm` or `wasmtime` |
-| `mode` | see table |
-| `command` | argv actually executed (including `taskset` if pinned) |
-| `cwd` | working directory (WAPM cases run in `benchmarks/wapm/`) |
-| `ok` | at least one successful timed sample |
-| `exit` | last process exit code |
-| `samples_s` | successful wall samples, seconds |
-| `median_s` / `min_s` / `max_s` | over `samples_s`; `null` if none succeeded |
-| `statistics` | DTVM `--enable-statistics` medians in ms, or `null` |
+`run.py` looks at `--wasmtime`, `$WASMTIME`, `PATH`, then
+`runtimes/wasmtime-45.0.0/out/wasmtime`. If none is executable:
 
-Wall time **includes** process startup, JIT, execution, and teardown. It is
-**not** the paper xlsx Compile-only subcolumn (see `docs/XLSX_FORMAT.md`).
+- default: skip Wasmtime cells, record `skipped_runtimes`, exit 0 if DTVM ran
+- `--require-wasmtime`: exit 2
 
-## Fairness
+Wasmer is **not** timed by this harness. If `--runtimes wasmer` is passed
+and the binary is missing, that is recorded as `wasmer-not-found` with no
+numbers. If a Wasmer binary exists, the harness still does not emit Wasmer
+ms (`wasmer-runner-not-in-this-harness`) rather than guessing.
 
-| Label | Wasmtime? | Why |
-|-------|-----------|-----|
-| `same-wasm` | yes | identical `.wasm`, equivalent entry/args/dir/stdin; Wasmtime cache off |
-| `dtvm-hostapi-only` | no | DTVM `checked_i64_*` host imports (`overflow_dtvm_*`) |
-| `different-wasm` | DTVM cannot load | Wasmtime overflow modules use opcode `0xfc` / bulk-memory; paper overflow is different-wasm by construction |
-
-`fortune` stands in for the paper WAPM row `zuk`, matching `scripts/run_lazy_20.sh`.
-
-## Example cell
+## Example skipped Wasmtime cell
 
 ```json
 {
   "bench": "atax",
-  "suite": "polybench",
-  "wasm": "benchmarks/polybenchc/atax.wasm",
+  "runtime": "wasmtime",
+  "mode": "cranelift-nocache",
   "fairness": "same-wasm",
-  "runtime": "dtvm",
-  "mode": "multipass-G-ST",
-  "samples_s": [0.121, 0.118, 0.119],
-  "median_s": 0.119,
-  "min_s": 0.118,
-  "max_s": 0.121,
-  "statistics": {
-    "jit_compilation_ms": 87.0,
-    "execution_ms": 72.1,
-    "total_ms": 159.6
+  "skipped": true,
+  "skip_reason": "wasmtime-not-found",
+  "median_s": null,
+  "samples_s": [],
+  "ttfi": {
+    "ttfi_ms": null,
+    "ttfi_unavailable": "wasmtime-not-found"
   }
 }
 ```
