@@ -415,3 +415,128 @@ TEST(LazyJitGreedyOndemand, EntrySeedFixtureKeepsEagerAndSerialBehavior) {
     EXPECT_FALSE(stubIsTrampoline(*Eager.Mod, I));
   }
 }
+
+namespace {
+LoadedMod loadPromotionFixture(uint32_t Threshold, uint32_t MaxFunctions = 32,
+                               uint64_t MaxBytes = 65536,
+                               uint32_t BudgetMs = 1000,
+                               uint32_t MaxFunctionBytes = 4096) {
+  LoadedMod Out;
+  RuntimeConfig Cfg;
+  Cfg.Mode = RunMode::MultipassMode;
+#ifdef ZEN_ENABLE_BUILTIN_WASI
+  Cfg.DisableWASI = true;
+#endif
+  Cfg.EnableMultipassLazy = true;
+  Cfg.NumMultipassThreads = 2;
+  Cfg.EnableLazyDemandPromotion = true;
+  Cfg.LazyPromotionCallThreshold = Threshold;
+  Cfg.LazyPromotionMaxFunctions = MaxFunctions;
+  Cfg.LazyPromotionMaxBytes = MaxBytes;
+  Cfg.LazyPromotionBudgetMs = BudgetMs;
+  Cfg.LazyPromotionMaxFunctionBytes = MaxFunctionBytes;
+  Out.RT = Runtime::newRuntime(Cfg);
+  EXPECT_NE(Out.RT, nullptr);
+  auto Bytes = loadWasmFile(LAZY_ENTRY_SEEDS_WASM_PATH);
+  auto ModRet = Out.RT->loadModule("promotion", Bytes.data(), Bytes.size());
+  EXPECT_TRUE(ModRet);
+  Out.Mod = *ModRet;
+  Out.Lazy = Out.Mod->getLazyJITCompiler();
+  EXPECT_TRUE(waitForBackgroundPublishes(*Out.Lazy, 2, 5000));
+  auto *Iso = Out.RT->createManagedIsolation();
+  auto InstRet = Iso->createInstance(*Out.Mod);
+  EXPECT_TRUE(InstRet);
+  Out.Inst = *InstRet;
+  return Out;
+}
+} // namespace
+
+TEST(LazyDemandPromotion, CountsCallsWithoutRecompilingBeforeThreshold) {
+  auto LM = loadPromotionFixture(100);
+  for (int32_t I = 0; I < 20; ++I) {
+    EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "entry", I), 3 * I + 11);
+  }
+  EXPECT_EQ(LM.Lazy->getDemandCallCount(2), 20u);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 4u);
+  EXPECT_EQ(LM.Lazy->getDemandPromotionCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getBackgroundCompileCount(), 2u);
+  EXPECT_TRUE(stubIsTrampoline(*LM.Mod, 2));
+}
+
+TEST(LazyDemandPromotion, ThresholdPromotesOnlyDemandedPrivateFunctions) {
+  auto LM = loadPromotionFixture(3);
+  for (int32_t I = 0; I < 3; ++I) {
+    EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "entry_alias", I), 3 * I + 11);
+  }
+  ASSERT_TRUE(waitForBackgroundPublishes(*LM.Lazy, 5, 5000));
+  EXPECT_EQ(LM.Lazy->getDemandPromotionCount(), 3u);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 4u);
+  for (uint32_t Index : {2u, 3u, 4u}) {
+    EXPECT_EQ(LM.Lazy->getDemandCallCount(Index), 3u);
+    EXPECT_EQ(resolvedJitBody(LM.Mod->getCodeEntry(Index)->JITCodePtr),
+              LM.Lazy->getGreedyRACodePtr(Index));
+  }
+  for (int32_t I = -20; I < 20; ++I) {
+    EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "entry", I), 3 * I + 11);
+  }
+  EXPECT_EQ(LM.Lazy->getDemandPromotionCount(), 3u);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 4u);
+  EXPECT_TRUE(stubIsTrampoline(*LM.Mod, 5));
+  EXPECT_TRUE(stubIsTrampoline(*LM.Mod, 6));
+  EXPECT_EQ(LM.Lazy->getGreedyRACodePtr(1), nullptr); // init is called once
+}
+
+TEST(LazyDemandPromotion, DeniedBudgetEndsProfilingAndKeepsFastBody) {
+  for (unsigned Limit = 0; Limit < 3; ++Limit) {
+    auto LM = loadPromotionFixture(
+        3, Limit == 0 ? 0 : 32, Limit == 1 ? 0 : 65536, Limit == 2 ? 0 : 1000);
+    for (int32_t I = 0; I < 20; ++I) {
+      EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "entry", I), 3 * I + 11);
+    }
+    EXPECT_EQ(LM.Lazy->getDemandCallCount(2), 3u);
+    EXPECT_EQ(LM.Lazy->getDemandPromotionCount(), 0u);
+    EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 4u);
+    EXPECT_FALSE(stubIsTrampoline(*LM.Mod, 2));
+    EXPECT_EQ(LM.Lazy->getGreedyRACodePtr(2), nullptr);
+  }
+}
+
+TEST(LazyDemandPromotion, OneAdmissionCapAndShutdownWithPendingWork) {
+  for (unsigned Iteration = 0; Iteration < 10; ++Iteration) {
+    auto LM = loadPromotionFixture(1, 1);
+    EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "entry", 7), 32);
+    EXPECT_EQ(LM.Lazy->getDemandPromotionCount(), 1u);
+    EXPECT_LE(LM.Lazy->getDemandPromotionBytes(), 65536u);
+    // Destruction must join any admitted compiler before freeing its context.
+  }
+}
+
+TEST(LazyDemandPromotion, RejectsIncompatibleConfiguration) {
+  RuntimeConfig Cfg;
+  Cfg.Mode = RunMode::MultipassMode;
+  Cfg.EnableMultipassLazy = true;
+  Cfg.EnableLazyDemandPromotion = true;
+  EXPECT_TRUE(Cfg.validate());
+  Cfg.LazyPromotionCallThreshold = 0;
+  EXPECT_FALSE(Cfg.validate());
+  Cfg.LazyPromotionCallThreshold = 3;
+  Cfg.DisableMultipassMultithread = true;
+  EXPECT_FALSE(Cfg.validate());
+  Cfg.DisableMultipassMultithread = false;
+  Cfg.DisableMultipassGreedyRA = true;
+  EXPECT_FALSE(Cfg.validate());
+  Cfg.DisableMultipassGreedyRA = false;
+  Cfg.EnableMultipassLazy = false;
+  EXPECT_FALSE(Cfg.validate());
+}
+
+TEST(LazyDemandPromotion, OversizedFunctionsKeepTheOriginalFastPath) {
+  auto LM = loadPromotionFixture(1, 32, 65536, 1000, 1);
+  for (int32_t I = 0; I < 20; ++I) {
+    EXPECT_EQ(callI32(*LM.RT, *LM.Inst, "entry", I), 3 * I + 11);
+  }
+  EXPECT_EQ(LM.Lazy->getDemandPromotionCount(), 0u);
+  EXPECT_EQ(LM.Lazy->getDemandCallCount(2), 0u);
+  EXPECT_EQ(LM.Lazy->getForegroundCompileCount(), 4u);
+  EXPECT_FALSE(stubIsTrampoline(*LM.Mod, 2));
+}

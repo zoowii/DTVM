@@ -133,3 +133,31 @@ long interpreter kernels).
 - PolyBench wall CSV (older): [`../docs/POLYBENCH_REPRODUCE.md`](../docs/POLYBENCH_REPRODUCE.md)
 - fib / overflow 5-way (incl. Wasmer): [`../benchmarks/overflow/REPRODUCE_fib_overflow_5way.md`](../benchmarks/overflow/REPRODUCE_fib_overflow_5way.md)
 - Change proposals: [`../../../docs/changes/2026-11-01-paper-bench-harness/README.md`](../../../docs/changes/2026-11-01-paper-bench-harness/README.md), [`../../../docs/changes/2026-11-01-paper-bench-schema/README.md`](../../../docs/changes/2026-11-01-paper-bench-schema/README.md)
+
+## Private-function promotion experiment
+
+The strategy is experimental and disabled by default. Build DTVM with
+Multipass, GreedyRA and multithreading. Hydrate the archived Wasm inputs with
+Git LFS and install Binaryen (`wasm-dis`, `wasm-as`). Run:
+
+```bash
+python3 benchmarks/paper/harness/promotion_bench.py \
+  --dtvm /absolute/path/to/dtvm \
+  --wasmtime /absolute/path/to/wasmtime \
+  --cases atax bicg --counts 1 5 30 --controls echo md5 pi \
+  --threshold 8 --max-functions 32 --max-bytes 65536 \
+  --max-function-bytes 1024 --budget-ms 100 \
+  --repeats 15 --warmup 1 --cpu 0 --out /tmp/promotion-results
+```
+
+Omit `--wasmtime` for DTVM-only runs. The helper compares the same binary with
+promotion off/on in randomized interleaved rounds. Each sample is a fresh
+process; repeat exports invoke `_start` in the **same instance**. Timing includes
+compilation, execution and teardown. Wasmtime caching is disabled. The output
+contains commands, binary/input hashes, raw timings, exit status and output
+hashes; mismatched output or failed samples cause failure. Choose an available
+CPU explicitly. Do not enable statistics in timed measurements.
+
+The explicit 1024-byte profile above differs from the runtime's 4096-byte
+default. It improved atax/30 but regressed short controls and did not improve
+bicg. See [the measurements and limitations](../../../docs/changes/2026-11-03-budgeted-lazy-promotion/README.md).

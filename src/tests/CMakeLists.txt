@@ -390,7 +390,9 @@ if(ZEN_ENABLE_SPEC_TEST)
   add_test(NAME cAPITests COMMAND cAPITests)
 
   if(ZEN_BUILD_TARGET_X86_64)
-    add_executable(lazyJitStubTests lazy_jit_stub_tests.cpp)
+    add_executable(
+      lazyJitStubTests lazy_jit_stub_tests.cpp lazy_promotion_budget_tests.cpp
+    )
     target_include_directories(
       lazyJitStubTests PRIVATE ${googletest_SOURCE_DIR}/googletest/include
     )

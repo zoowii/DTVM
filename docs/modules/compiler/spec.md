@@ -103,6 +103,35 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
   after FastRA compilation; long-running private helpers can lose throughput.
   Eager multipass still compiles the whole module.
 
+#### Opt-in private-function demand promotion
+
+`EnableLazyDemandPromotion` is off by default. With Wasm lazy MT GreedyRA,
+eligible private functions keep using the existing ABI-preserving resolver
+until their configured call-entry threshold. A cached FastRA body is executed
+on each profiling hit; those hits do not recompile the function. Counts are
+module-shared, including calls from different instances, and stop once the
+stub leaves profiling. Start/exports and oversized functions retain the
+original policy. Single-internal-function modules still have no background
+pool and need no promotion.
+
+At threshold, atomically reserve the compile status and the module-lifetime
+function/total-Wasm-byte budget. Rejected functions publish their cached
+FastRA body and stop profiling. Admitted functions also publish FastRA while
+waiting for GreedyRA; background publication remains monotonic. Private
+promotion workers are serialized and check the cumulative elapsed compile
+budget again immediately before compiling. This is a soft admission deadline:
+one running function may overrun; admitted queued work is skipped after time
+is exhausted (`BudgetExhausted`, no canonical Greedy pointer). Reservations
+remain charged even if later skipped. Existing start/export compilation is
+outside this private-promotion budget.
+
+The per-function Wasm-byte ceiling is applied before profiling, so frequent,
+large helpers cannot consume the private compile budget first. This is a cost
+filter, not a measured per-function execution-time estimator. Policy thresholds
+and budgets may change timing/code quality, never Wasm values, traps, gas, host
+state or lifetime guarantees. Module destruction still joins running workers
+before releasing contexts. Default-off never creates the promotion arrays.
+
 ### Wasm linear-memory addressing
 
 Wasm32 effective address is `zext64(wrap32(base)) + memarg_offset`, then

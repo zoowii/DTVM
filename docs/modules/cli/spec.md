@@ -121,3 +121,23 @@ Parsing or initialization failures return `EXIT_FAILURE` uniformly; `evmc_status
 - [utils module](../utils/spec.md): Logging, address parsing, hex conversion, state persistence
 - [evm module](../evm/spec.md): EVM execution, `evmc_revision`, `DEFAULT_REVISION`
 - [host module](../host/spec.md): WASI, env, evmabimock host modules
+
+## Budgeted private-function promotion
+
+With `-m multipass --enable-multipass-lazy`, opt in using
+`--enable-lazy-demand-promotion`. GreedyRA and multithreading must remain enabled.
+
+| Option | Default | Meaning |
+|---|---:|---|
+| `--lazy-promotion-call-threshold` | 8 | Profiled private function entries before admission |
+| `--lazy-promotion-max-functions` | 32 | Hard module-lifetime reservation count |
+| `--lazy-promotion-max-bytes` | 65536 | Hard total reserved Wasm code bytes |
+| `--lazy-promotion-max-function-bytes` | 4096 | Skip profiling larger private bodies |
+| `--lazy-promotion-budget-ms` | 100 | Soft cumulative private compilation admission limit |
+
+Time is checked again in the worker; private compiles are serialized, but a
+running function is allowed to finish past the time limit. Start/export jobs
+are outside this budget. `--enable-statistics` reports admissions, reserved
+bytes, measured private compile time, and per-function sampled entry counts and
+Greedy status. Statistics runs must remain separate from benchmark wall samples.
+See [compiler](../compiler/spec.md) for profiling, publication and lifetime rules.

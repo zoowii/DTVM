@@ -117,3 +117,16 @@ runtime propagates errors via `common::Error` / `common::ErrorCode`; common runt
 | cli | Runtime, Module, Instance, Isolation, HostModule |
 | vm-interface | EVMModule, EVMInstance, managed isolation, callEVMMain |
 | tests | Execution environment and instances |
+
+## Optional lazy Wasm promotion configuration
+
+`RuntimeConfig::EnableLazyDemandPromotion` defaults to false. If enabled,
+validation requires Wasm multipass, lazy mode, multithreading, GreedyRA and a
+positive `LazyPromotionCallThreshold`. It does not enable EVM PGJ.
+
+Defaults: threshold 8 call entries; maximum 32 private admissions; total 65536
+Wasm bytes; maximum 4096 bytes per private function; 100 ms cumulative soft
+compile-time admission limit. Zero function/byte/time budgets refuse private
+admissions. Limits are module-lifetime limits, shared across instances.
+Admission counters include reservations later skipped by the worker-time gate.
+The scheduling/publication SSOT is [compiler](../compiler/spec.md).

@@ -39,6 +39,15 @@ struct RuntimeConfig {
   uint32_t NumMultipassThreads = 8;
   // Enable WASM multipass lazy compilation (segment-based lazy compile)
   bool EnableMultipassLazy = false;
+  // Opt-in profiling of private lazy-Wasm functions until a call threshold.
+  bool EnableLazyDemandPromotion = false;
+  uint32_t LazyPromotionCallThreshold = 8;
+  uint32_t LazyPromotionMaxFunctions = 32;
+  uint64_t LazyPromotionMaxBytes = 65536;
+  uint32_t LazyPromotionMaxFunctionBytes = 4096;
+  // Soft cumulative background compile-time limit; admitted work is not
+  // cancelled.
+  uint32_t LazyPromotionBudgetMs = 100;
   // Enable profile-guided JIT:
   // contracts start in interpreter mode; runtime profiling (sliding window
   // of recent calls) determines which contracts are hot enough to trigger
@@ -63,6 +72,18 @@ struct RuntimeConfig {
       DisableMultipassMultithread = true;
     }
 #endif // ZEN_ENABLE_MULTIPASS_JIT
+
+#ifdef ZEN_ENABLE_MULTIPASS_JIT
+    if (EnableLazyDemandPromotion &&
+        (Format != common::InputFormat::WASM ||
+         Mode != common::RunMode::MultipassMode || !EnableMultipassLazy ||
+         DisableMultipassMultithread || DisableMultipassGreedyRA ||
+         LazyPromotionCallThreshold == 0)) {
+      ZEN_LOG_FATAL("lazy demand promotion requires Wasm lazy multipass, "
+                    "multithread GreedyRA, and a positive call threshold");
+      return false;
+    }
+#endif
 
     switch (Mode) {
 #ifndef ZEN_ENABLE_SINGLEPASS_JIT

@@ -168,6 +168,24 @@ GTEST_API_ int main(int argc, char *argv[]) {
       ->excludes(DMMOption);
   CLIParser.add_flag("--enable-multipass-lazy", Config.EnableMultipassLazy,
                      "Enable multipass lazy mode(on request compile)");
+  CLIParser.add_flag("--enable-lazy-demand-promotion",
+                     Config.EnableLazyDemandPromotion,
+                     "Enable budgeted private-function promotion");
+  CLIParser.add_option("--lazy-promotion-call-threshold",
+                       Config.LazyPromotionCallThreshold,
+                       "Private function calls before promotion");
+  CLIParser.add_option("--lazy-promotion-max-functions",
+                       Config.LazyPromotionMaxFunctions,
+                       "Private promotion count cap");
+  CLIParser.add_option("--lazy-promotion-max-bytes",
+                       Config.LazyPromotionMaxBytes,
+                       "Private promotion Wasm-byte cap");
+  CLIParser.add_option("--lazy-promotion-max-function-bytes",
+                       Config.LazyPromotionMaxFunctionBytes,
+                       "Private function size ceiling");
+  CLIParser.add_option("--lazy-promotion-budget-ms",
+                       Config.LazyPromotionBudgetMs,
+                       "Soft cumulative private compile-time cap");
   CLIParser.add_flag("--enable-profile-guided-jit",
                      Config.EnableProfileGuidedJIT,
                      "Enable profile-guided JIT mode");

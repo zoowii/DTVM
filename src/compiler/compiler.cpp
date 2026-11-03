@@ -590,6 +590,34 @@ LazyJITCompiler::LazyJITCompiler(Module *WasmMod)
       CompileStatuses[I] = CompileStatus::None;
       GreedyRACodePtrs[I] = nullptr;
     }
+    if (Config.EnableLazyDemandPromotion) {
+      PromotionBudget = std::make_unique<LazyPromotionBudget>(
+          Config.LazyPromotionMaxFunctions, Config.LazyPromotionMaxBytes,
+          uint64_t(Config.LazyPromotionBudgetMs) * 1000000);
+      PromotionEligible.assign(NumInternalFunctions, 1);
+      DemandCallCounts =
+          std::make_unique<std::atomic<uint32_t>[]>(NumInternalFunctions);
+      FastRACodePtrs =
+          std::make_unique<std::atomic<uint8_t *>[]>(NumInternalFunctions);
+      for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+        DemandCallCounts[I] = 0;
+        FastRACodePtrs[I] = nullptr;
+        if (WasmMod->getCodeEntry(I + WasmMod->getNumImportFunctions())
+                ->CodeSize > Config.LazyPromotionMaxFunctionBytes) {
+          PromotionEligible[I] = 0;
+        }
+      }
+      const uint32_t Imports = WasmMod->getNumImportFunctions();
+      for (uint32_t Index : WasmMod->getExportedFuncIdxs()) {
+        if (Index >= Imports) {
+          PromotionEligible[Index - Imports] = 0;
+        }
+      }
+      const uint32_t Start = WasmMod->getStartFuncIdx();
+      if (Start != -1u && Start >= Imports) {
+        PromotionEligible[Start - Imports] = 0;
+      }
+    }
   }
 }
 
@@ -597,18 +625,54 @@ LazyJITCompiler::~LazyJITCompiler() {
   if (ThreadPool) {
     ThreadPool->interrupt();
   }
+  if (PromotionBudget && Config.EnableStatistics) {
+    ZEN_LOG_INFO(
+        "Lazy demand promotion: admitted=%u, bytes=%llu, compile_ms=%.3f",
+        PromotionBudget->getFunctions(),
+        static_cast<unsigned long long>(PromotionBudget->getBytes()),
+        PromotionBudget->getTimeNs() / 1000000.0);
+  }
+  if (PromotionBudget && Config.EnableStatistics) {
+    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
+      if (PromotionEligible[I] && DemandCallCounts[I].load() != 0) {
+        ZEN_LOG_INFO("Lazy demand function: internal=%u, profiled_entries=%u, "
+                     "wasm_bytes=%u, greedy=%u",
+                     I, DemandCallCounts[I].load(),
+                     WasmMod->getCodeEntry(I + WasmMod->getNumImportFunctions())
+                         ->CodeSize,
+                     GreedyRACodePtrs[I].load() != nullptr ? 1u : 0u);
+      }
+    }
+  }
   MainContext->ThreadMemPool.deleteObject(Mod);
   delete MainContext;
 }
 
-void LazyJITCompiler::dispatchCompileTask(uint32_t FuncIdx) {
-  if (CompileStatuses[FuncIdx] != CompileStatus::None) {
+void LazyJITCompiler::dispatchCompileTask(uint32_t FuncIdx,
+                                          bool DemandPromotion) {
+  CompileStatus Expected = CompileStatus::None;
+  if (!CompileStatuses[FuncIdx].compare_exchange_strong(
+          Expected, CompileStatus::Pending)) {
     return;
   }
-  CompileStatuses[FuncIdx] = CompileStatus::Pending;
-  ThreadPool->pushTask([&, FuncIdx](WasmFrontendContext *Ctx) {
-    compileFunctionInBackgroud(*Ctx, FuncIdx);
-  });
+  if (DemandPromotion &&
+      !PromotionBudget->tryReserve(
+          WasmMod->getCodeEntry(FuncIdx + WasmMod->getNumImportFunctions())
+              ->CodeSize)) {
+    CompileStatuses[FuncIdx] = CompileStatus::None;
+    return;
+  }
+  ThreadPool->pushTask(
+      [this, FuncIdx, DemandPromotion](WasmFrontendContext *Ctx) {
+        if (DemandPromotion) {
+          if (!PromotionBudget->runIfTimeAvailable(
+                  [&] { compileFunctionInBackgroud(*Ctx, FuncIdx); })) {
+            CompileStatuses[FuncIdx] = CompileStatus::BudgetExhausted;
+          }
+        } else {
+          compileFunctionInBackgroud(*Ctx, FuncIdx);
+        }
+      });
   ZEN_LOG_DEBUG("push function %d compile task into thread pool", FuncIdx);
 }
 
@@ -779,6 +843,12 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
   if (CompileStatuses[FuncIdx] == CompileStatus::Done) {
     return GreedyRACodePtrs[FuncIdx];
   }
+  if (PromotionBudget && PromotionEligible[FuncIdx]) {
+    if (uint8_t *Fast =
+            FastRACodePtrs[FuncIdx].load(std::memory_order_acquire)) {
+      return recordDemandCall(FuncIdx, FuncStubCodePtr, Fast);
+    }
+  }
   ZEN_LOG_DEBUG("compile function %d on request", FuncIdx);
   // Attempt/start count: entered FastRA on-request compile, before Done
   // re-check / CAS.
@@ -798,12 +868,31 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
   if (CompileStatuses[FuncIdx] == CompileStatus::Done) {
     return GreedyRACodePtrs[FuncIdx];
   }
+  if (PromotionBudget && PromotionEligible[FuncIdx]) {
+    FastRACodePtrs[FuncIdx].store(JITFuncCodePtr, std::memory_order_release);
+    return recordDemandCall(FuncIdx, FuncStubCodePtr, JITFuncCodePtr);
+  }
   JITStubBuilder::tryUpdateStubJmpTargetIfTrampoline(FuncStubCodePtr,
                                                      JITFuncCodePtr);
   if (CompileStatuses[FuncIdx] == CompileStatus::Done) {
     return GreedyRACodePtrs[FuncIdx];
   }
   return JITFuncCodePtr;
+}
+
+uint8_t *LazyJITCompiler::recordDemandCall(uint32_t FuncIdx, uint8_t *Stub,
+                                           uint8_t *FastBody) {
+  const uint32_t Hits =
+      DemandCallCounts[FuncIdx].fetch_add(1, std::memory_order_relaxed) + 1;
+  if (Hits >= Config.LazyPromotionCallThreshold) {
+    dispatchCompileTask(FuncIdx, true);
+    // End profiling even on budget denial. Never overwrite GreedyRA.
+    JITStubBuilder::tryUpdateStubJmpTargetIfTrampoline(Stub, FastBody);
+  }
+  if (CompileStatuses[FuncIdx] == CompileStatus::Done) {
+    return GreedyRACodePtrs[FuncIdx];
+  }
+  return FastBody;
 }
 
 std::pair<std::unique_ptr<MModule>, std::vector<void *>>

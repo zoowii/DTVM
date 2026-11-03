@@ -5,6 +5,7 @@
 #define ZEN_COMPILER_COMPILER_H
 
 #include "compiler/common/common_defs.h"
+#include "compiler/lazy_promotion_budget.h"
 #include "compiler/stub/stub_builder.h"
 
 #include <atomic>
@@ -62,7 +63,7 @@ public:
 
   ~LazyJITCompiler() override;
 
-  void dispatchCompileTask(uint32_t FuncIdx);
+  void dispatchCompileTask(uint32_t FuncIdx, bool DemandPromotion = false);
 
   void dispatchCompileTasksDepthFirst(WasmFrontendContext &Ctx);
 
@@ -112,10 +113,25 @@ public:
     return GreedyRACodePtrs[FuncIdx].load(std::memory_order_acquire);
   }
 
+  uint32_t getDemandPromotionCount() const {
+    return PromotionBudget ? PromotionBudget->getFunctions() : 0;
+  }
+  uint64_t getDemandPromotionBytes() const {
+    return PromotionBudget ? PromotionBudget->getBytes() : 0;
+  }
+  uint32_t getDemandCallCount(uint32_t FuncIdx) const {
+    return DemandCallCounts && FuncIdx < NumInternalFunctions
+               ? DemandCallCounts[FuncIdx].load(std::memory_order_acquire)
+               : 0;
+  }
+
 private:
+  uint8_t *recordDemandCall(uint32_t FuncIdx, uint8_t *Stub, uint8_t *FastBody);
+
   enum class CompileStatus : uint8_t {
     None,
     Pending,
+    BudgetExhausted,
     InProgress,
     /// Background GreedyRA is the canonical body in GreedyRACodePtrs. After
     /// Done, foreground FastRA must not patch the stub (monotonic publish).
@@ -136,6 +152,10 @@ private:
   std::unique_ptr<std::atomic<CompileStatus>[]> CompileStatuses;
   // must be declared before ThreadPool
   std::unique_ptr<std::atomic<uint8_t *>[]> GreedyRACodePtrs;
+  std::unique_ptr<LazyPromotionBudget> PromotionBudget;
+  std::vector<uint8_t> PromotionEligible;
+  std::unique_ptr<std::atomic<uint32_t>[]> DemandCallCounts;
+  std::unique_ptr<std::atomic<uint8_t *>[]> FastRACodePtrs;
   std::unique_ptr<common::ThreadPool<WasmFrontendContext>> ThreadPool;
   std::atomic<uint32_t> ForegroundCompileCount{0};
   std::atomic<uint32_t> BackgroundCompileCount{0};
