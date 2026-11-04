@@ -8,6 +8,6 @@ index 4968329..4488514 100644
    }
 -  hoistNonEntryFPConsts(Func);
 +  // Experiment: leave FP constants at their original uses.
- 
+
  #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
    llvm::dbgs() << "\n########## MIR Dump After MIR Peephole ##########\n\n";

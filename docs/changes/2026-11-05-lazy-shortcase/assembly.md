@@ -28,60 +28,60 @@ dynamic load counts or measured execution cycles.
       26:	44 89 85 f8 fe ff ff 	mov    DWORD PTR [rbp-0x108],r8d
       2d:	44 89 8d fc fe ff ff 	mov    DWORD PTR [rbp-0x104],r9d
       34:	48 b8 00 00 00 00 00 	movabs rax,0x7ff0000000000000
-      3b:	00 f0 7f 
+      3b:	00 f0 7f
       3e:	66 48 0f 6e c0       	movq   xmm0,rax
       43:	f2 0f 11 85 00 ff ff 	movsd  QWORD PTR [rbp-0x100],xmm0
-      4a:	ff 
+      4a:	ff
       4b:	48 b8 00 00 00 00 00 	movabs rax,0x4030000000000000
-      52:	00 30 40 
+      52:	00 30 40
       55:	66 48 0f 6e c0       	movq   xmm0,rax
       5a:	f2 0f 11 85 08 ff ff 	movsd  QWORD PTR [rbp-0xf8],xmm0
-      61:	ff 
+      61:	ff
       62:	48 b8 00 00 00 00 00 	movabs rax,0x41e0000000000000
-      69:	00 e0 41 
+      69:	00 e0 41
       6c:	66 48 0f 6e c0       	movq   xmm0,rax
       71:	f2 0f 11 85 10 ff ff 	movsd  QWORD PTR [rbp-0xf0],xmm0
-      78:	ff 
+      78:	ff
       79:	48 b8 00 00 00 00 00 	movabs rax,0x41b0000000000000
-      80:	00 b0 41 
+      80:	00 b0 41
       83:	66 48 0f 6e c0       	movq   xmm0,rax
       88:	f2 0f 11 85 18 ff ff 	movsd  QWORD PTR [rbp-0xe8],xmm0
-      8f:	ff 
+      8f:	ff
       90:	48 b8 00 00 00 00 00 	movabs rax,0x41f0000000000000
-      97:	00 f0 41 
+      97:	00 f0 41
       9a:	66 48 0f 6e c0       	movq   xmm0,rax
       9f:	f2 0f 11 85 20 ff ff 	movsd  QWORD PTR [rbp-0xe0],xmm0
-      a6:	ff 
+      a6:	ff
       a7:	48 b8 00 00 00 00 65 	movabs rax,0x41cdcd6500000000
-      ae:	cd cd 41 
+      ae:	cd cd 41
       b1:	66 48 0f 6e c0       	movq   xmm0,rax
       b6:	f2 0f 11 85 28 ff ff 	movsd  QWORD PTR [rbp-0xd8],xmm0
-      bd:	ff 
+      bd:	ff
       be:	48 b8 00 00 00 00 00 	movabs rax,0x4340000000000000
-      c5:	00 40 43 
+      c5:	00 40 43
       c8:	66 48 0f 6e c0       	movq   xmm0,rax
       cd:	f2 0f 11 85 30 ff ff 	movsd  QWORD PTR [rbp-0xd0],xmm0
-      d4:	ff 
+      d4:	ff
       d5:	48 b8 01 00 00 00 00 	movabs rax,0x4340000000000001
-      dc:	00 40 43 
+      dc:	00 40 43
       df:	66 48 0f 6e c0       	movq   xmm0,rax
       e4:	f2 0f 11 85 38 ff ff 	movsd  QWORD PTR [rbp-0xc8],xmm0
-      eb:	ff 
+      eb:	ff
       ec:	48 b8 00 00 00 00 00 	movabs rax,0x3fe0000000000000
-      f3:	00 e0 3f 
+      f3:	00 e0 3f
       f6:	66 48 0f 6e c0       	movq   xmm0,rax
       fb:	f2 0f 11 85 40 ff ff 	movsd  QWORD PTR [rbp-0xc0],xmm0
-     102:	ff 
+     102:	ff
      103:	48 b8 00 00 00 00 00 	movabs rax,0x3ff0000000000000
-     10a:	00 f0 3f 
+     10a:	00 f0 3f
      10d:	66 48 0f 6e c0       	movq   xmm0,rax
      112:	f2 0f 11 85 48 ff ff 	movsd  QWORD PTR [rbp-0xb8],xmm0
-     119:	ff 
+     119:	ff
      11a:	48 b8 00 00 00 00 00 	movabs rax,0x3ff8000000000000
-     121:	00 f8 3f 
+     121:	00 f8 3f
      124:	66 48 0f 6e c0       	movq   xmm0,rax
      129:	f2 0f 11 85 50 ff ff 	movsd  QWORD PTR [rbp-0xb0],xmm0
-     130:	ff 
+     130:	ff
      131:	31 c0                	xor    eax,eax
      133:	31 c0                	xor    eax,eax
      135:	31 c0                	xor    eax,eax
@@ -135,15 +135,15 @@ dynamic load counts or measured execution cycles.
     3836:	0f 87 17 53 00 00    	ja     8b53 <wasm[0]::function[31]+0x5333>
     383c:	48 81 ec 60 01 00 00 	sub    rsp,0x160
     3843:	48 89 9c 24 30 01 00 	mov    QWORD PTR [rsp+0x130],rbx
-    384a:	00 
+    384a:	00
     384b:	4c 89 a4 24 38 01 00 	mov    QWORD PTR [rsp+0x138],r12
-    3852:	00 
+    3852:	00
     3853:	4c 89 ac 24 40 01 00 	mov    QWORD PTR [rsp+0x140],r13
-    385a:	00 
+    385a:	00
     385b:	4c 89 b4 24 48 01 00 	mov    QWORD PTR [rsp+0x148],r14
-    3862:	00 
+    3862:	00
     3863:	4c 89 bc 24 50 01 00 	mov    QWORD PTR [rsp+0x150],r15
-    386a:	00 
+    386a:	00
     386b:	4c 89 4c 24 18       	mov    QWORD PTR [rsp+0x18],r9
     3870:	49 89 c9             	mov    r9,rcx
     3873:	4c 8b 75 10          	mov    r14,QWORD PTR [rbp+0x10]
@@ -152,40 +152,40 @@ dynamic load counts or measured execution cycles.
     3883:	4c 89 e8             	mov    rax,r13
     3886:	2d 70 03 00 00       	sub    eax,0x370
     388b:	4c 89 ac 24 20 01 00 	mov    QWORD PTR [rsp+0x120],r13
-    3892:	00 
+    3892:	00
     3893:	89 87 c0 01 00 00    	mov    DWORD PTR [rdi+0x1c0],eax
     3899:	45 33 f6             	xor    r14d,r14d
     389c:	48 8b 77 38          	mov    rsi,QWORD PTR [rdi+0x38]
     38a0:	48 89 3c 24          	mov    QWORD PTR [rsp],rdi
     38a4:	48 89 b4 24 18 01 00 	mov    QWORD PTR [rsp+0x118],rsi
-    38ab:	00 
+    38ab:	00
     38ac:	bb 01 00 00 00       	mov    ebx,0x1
     38b1:	48 89 9c 24 10 01 00 	mov    QWORD PTR [rsp+0x110],rbx
-    38b8:	00 
+    38b8:	00
     38b9:	44 8b e2             	mov    r12d,edx
     38bc:	48 89 54 24 08       	mov    QWORD PTR [rsp+0x8],rdx
     38c1:	4c 89 a4 24 08 01 00 	mov    QWORD PTR [rsp+0x108],r12
-    38c8:	00 
+    38c8:	00
     38c9:	41 8b c0             	mov    eax,r8d
     38cc:	4c 89 44 24 10       	mov    QWORD PTR [rsp+0x10],r8
     38d1:	48 89 84 24 00 01 00 	mov    QWORD PTR [rsp+0x100],rax
-    38d8:	00 
+    38d8:	00
     38d9:	4c 89 f1             	mov    rcx,r14
     38dc:	4c 89 b4 24 a8 00 00 	mov    QWORD PTR [rsp+0xa8],r14
-    38e3:	00 
+    38e3:	00
     38e4:	4c 89 b4 24 b0 00 00 	mov    QWORD PTR [rsp+0xb0],r14
-    38eb:	00 
+    38eb:	00
     38ec:	ba ff ff ff 7f       	mov    edx,0x7fffffff
     38f1:	2b d1                	sub    edx,ecx
     38f3:	44 3b f2             	cmp    r14d,edx
     38f6:	0f 8e 0d 00 00 00    	jle    3909 <wasm[0]::function[31]+0xe9>
     38fc:	4c 8b 9c 24 18 01 00 	mov    r11,QWORD PTR [rsp+0x118]
-    3903:	00 
+    3903:	00
     3904:	e9 e6 51 00 00       	jmp    8aef <wasm[0]::function[31]+0x52cf>
     3909:	4c 89 cb             	mov    rbx,r9
     390c:	8b d3                	mov    edx,ebx
     390e:	48 8b b4 24 18 01 00 	mov    rsi,QWORD PTR [rsp+0x118]
-    3915:	00 
+    3915:	00
     3916:	48 0f b6 14 16       	movzx  rdx,BYTE PTR [rsi+rdx*1]
     391b:	85 d2                	test   edx,edx
     391d:	0f 84 0c 4f 00 00    	je     882f <wasm[0]::function[31]+0x500f>

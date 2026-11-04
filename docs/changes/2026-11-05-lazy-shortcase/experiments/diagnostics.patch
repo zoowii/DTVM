@@ -5,7 +5,7 @@ index f3c3811..619e29a 100644
 @@ -34,6 +34,15 @@ using namespace zen::common;
  using namespace zen::runtime;
  using namespace zen::utils;
- 
+
 +#include <chrono>
 +#include <cstdio>
 +#include <cstdlib>
@@ -20,16 +20,16 @@ index f3c3811..619e29a 100644
      RT->getStatistics().report();
 @@ -160,6 +169,7 @@ static bool runEVMBenchmark(const std::string &Filename,
  #endif // ZEN_ENABLE_EVM
- 
+
  int main(int argc, char *argv[]) {
 +  ShortLifetime ShortTimer;
  #ifdef ZEN_ENABLE_PROFILER
    ProfilerStart("dtvm.prof");
  #endif
 @@ -525,7 +535,9 @@ int main(int argc, char *argv[]) {
- 
+
    /// ================ Create ZetaEngine runtime ================
- 
+
 +  shortPhase("before-runtime");
    std::unique_ptr<Runtime> RT = Runtime::newRuntime(Config);
 +  shortPhase("after-runtime");
@@ -38,7 +38,7 @@ index f3c3811..619e29a 100644
      return exitMain(EXIT_FAILURE);
 @@ -567,7 +579,9 @@ int main(int argc, char *argv[]) {
    /// ================ Load user's module ================
- 
+
    const auto &ActualEntryHint = !EntryHint.empty() ? EntryHint : FuncName;
 +  shortPhase("before-load");
    MayBe<Module *> ModRet = RT->loadModule(Filename, ActualEntryHint);
@@ -47,9 +47,9 @@ index f3c3811..619e29a 100644
      const Error &Err = ModRet.getError();
      ZEN_ASSERT(!Err.isEmpty());
 @@ -587,7 +601,9 @@ int main(int argc, char *argv[]) {
- 
+
    /// ================ Create instance ================
- 
+
 +  shortPhase("before-instance");
    MayBe<Instance *> InstRet = Iso->createInstance(*Mod, GasLimit);
 +  shortPhase("after-instance");
@@ -59,18 +59,18 @@ index f3c3811..619e29a 100644
 @@ -607,6 +623,7 @@ int main(int argc, char *argv[]) {
    Inst->setCustomData((void *)EVMAbiMockCtx.get());
  #endif // ZEN_ENABLE_EVMABI_TEST
- 
+
 +  shortPhase("before-call");
    /// ================ Call function ================
- 
+
    std::vector<TypedValue> Results;
 @@ -634,6 +651,7 @@ int main(int argc, char *argv[]) {
      }
    }
- 
+
 +  shortPhase("after-call");
    /// ========== Extra compilations and executions for benchmarking ==========
- 
+
    if (NumExtraCompilations + NumExtraExecutions > 0) {
 diff --git a/src/compiler/compiler.cpp b/src/compiler/compiler.cpp
 index 8cb0bec..e222b6f 100644
@@ -79,7 +79,7 @@ index 8cb0bec..e222b6f 100644
 @@ -36,6 +36,18 @@
  #include "utils/perf.h"
  #endif
- 
+
 +#include <chrono>
 +#include <cstdio>
 +#include <cstdlib>
@@ -93,20 +93,20 @@ index 8cb0bec..e222b6f 100644
 +bool shortTrace() { static const bool E = std::getenv("DTVM_TRACE_DIR"); return E; }
 +}
  using namespace COMPILER;
- 
+
  // mprotect need protect by chunks(0x1000) in occulum
 @@ -71,6 +83,7 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
      }
    }
- 
+
 +  const uint64_t TraceLowerStart = shortTrace() ? shortNs() : 0;
    MIRPeephole Peep;
    Peep.runOnMFunction(MFunc);
- 
+
 @@ -94,6 +107,7 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
- 
+
    uint32_t MFuncIdx = MFunc.getFuncIdx();
- 
+
 +  const uint64_t TraceRAStart = shortTrace() ? shortNs() : 0;
    if (DisableGreedyRA) {
      ZEN_LOG_DEBUG("using fast ra for function %d", MFuncIdx);
@@ -114,13 +114,13 @@ index 8cb0bec..e222b6f 100644
 @@ -133,6 +147,7 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
  #endif // ZEN_ENABLE_DEBUG_GREEDY_RA
    }
- 
+
 +  if (shortTrace()) std::fprintf(stderr, "SHORT_RA %u %u %llu %llu\n", MFuncIdx, DisableGreedyRA, (unsigned long long)(TraceRAStart-TraceLowerStart), (unsigned long long)(shortNs()-TraceRAStart));
  #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
    llvm::dbgs() << "\n########## CgIR Dump After Register Allocation "
                    "##########\n\n";
 @@ -378,6 +393,7 @@ void JITCompilerBase::emitObjectBuffer(CompileContext *Ctx) {
- 
+
  void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
                                        uint32_t FuncIdx, bool DisableGreedyRA) {
 +  const uint64_t TraceBegin = shortTrace() ? shortNs() : 0;
@@ -130,7 +130,7 @@ index 8cb0bec..e222b6f 100644
 @@ -388,6 +404,7 @@ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
      Ctx.initialize();
    }
- 
+
 +  const uint64_t TraceInit = shortTrace() ? shortNs() : 0;
    uint32_t RealFuncIdx = FuncIdx + WasmMod->getNumImportFunctions();
    TypeEntry *FuncType = WasmMod->getFunctionType(RealFuncIdx);
@@ -164,4 +164,4 @@ index 8cb0bec..e222b6f 100644
 +  }
    return JITFuncCodePtr;
  }
- 
+

@@ -37,7 +37,7 @@ for c in cases:
    elapsed=(time.perf_counter_ns()-t0)/1e6;after=resource.getrusage(resource.RUSAGE_CHILDREN)
    row={'case':c['id'],'suite':c['suite'],'round':rnd,'variant':n,'mode':mode,'wall_ms':elapsed,'cpu_ms':1000*((after.ru_utime+after.ru_stime)-(usage.ru_utime+usage.ru_stime)),'exit':status,'cmd':full,'stdout_sha256':hashlib.sha256(stdout.encode()).hexdigest(),'stderr_sha256':hashlib.sha256(stderr.encode()).hexdigest()}
    (out/f"{c['id']}.{n}.{mode}.stdout").write_text(stdout);(out/f"{c['id']}.{n}.{mode}.stderr").write_text(stderr)
-   
+
    if c.get('output_files'):
     row['output_files']={name:sha(h.case_cwd(c)/name) if (h.case_cwd(c)/name).is_file() else None for name in c['output_files']}
    f.write(json.dumps(row)+'\n');records.append(row)

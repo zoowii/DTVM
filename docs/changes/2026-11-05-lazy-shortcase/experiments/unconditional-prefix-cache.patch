@@ -3,7 +3,7 @@ index 4968329..0af7e56 100644
 --- a/src/compiler/mir/pass/peephole.cpp
 +++ b/src/compiler/mir/pass/peephole.cpp
 @@ -19,6 +19,8 @@ using namespace COMPILER;
- 
+
  void MIRPeephole::runOnMFunction(MFunction &Func) {
    F = &Func;
 +  LastAssignments.assign(Func.getNumVariables(), nullptr);
@@ -12,7 +12,7 @@ index 4968329..0af7e56 100644
      rewriteBlock(*BB);
    }
 @@ -32,6 +34,10 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
- 
+
  void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
    CurBB = &BB;
 +  for (uint32_t Var : AssignedVars) {
@@ -57,7 +57,7 @@ index 4968329..0af7e56 100644
 +  const DassignInstruction *DA = LastAssignments[VarIdx];
 +  return DA && matchIntConst(DA->getOperand<0>(), Val);
  }
- 
+
  bool MIRPeephole::matchPositivePow2Const(const MInstruction *Inst,
 diff --git a/src/compiler/mir/pass/peephole.h b/src/compiler/mir/pass/peephole.h
 index e8f12e4..cffd0c8 100644
@@ -68,9 +68,9 @@ index e8f12e4..cffd0c8 100644
  #include "compiler/mir/instructions.h"
  #include "llvm/ADT/APInt.h"
 +#include "llvm/ADT/SmallVector.h"
- 
+
  namespace COMPILER {
- 
+
 @@ -20,6 +21,11 @@ private:
    MFunction *F = nullptr;
    MBasicBlock *CurBB = nullptr;
@@ -80,6 +80,6 @@ index e8f12e4..cffd0c8 100644
 +  // resets.
 +  llvm::SmallVector<const DassignInstruction *, 16> LastAssignments;
 +  llvm::SmallVector<uint32_t, 16> AssignedVars;
- 
+
    void rewriteBlock(MBasicBlock &BB);
    MInstruction *rewriteExpr(MInstruction *Inst);
