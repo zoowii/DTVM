@@ -1,0 +1,13 @@
+diff --git a/src/compiler/mir/pass/peephole.cpp b/src/compiler/mir/pass/peephole.cpp
+index 4968329..4488514 100644
+--- a/src/compiler/mir/pass/peephole.cpp
++++ b/src/compiler/mir/pass/peephole.cpp
+@@ -22,7 +22,7 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
+   for (MBasicBlock *BB : Func) {
+     rewriteBlock(*BB);
+   }
+-  hoistNonEntryFPConsts(Func);
++  // Experiment: leave FP constants at their original uses.
+ 
+ #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
+   llvm::dbgs() << "\n########## MIR Dump After MIR Peephole ##########\n\n";

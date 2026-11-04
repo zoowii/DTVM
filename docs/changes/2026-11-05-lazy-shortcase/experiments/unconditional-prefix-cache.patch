@@ -1,0 +1,85 @@
+diff --git a/src/compiler/mir/pass/peephole.cpp b/src/compiler/mir/pass/peephole.cpp
+index 4968329..0af7e56 100644
+--- a/src/compiler/mir/pass/peephole.cpp
++++ b/src/compiler/mir/pass/peephole.cpp
+@@ -19,6 +19,8 @@ using namespace COMPILER;
+ 
+ void MIRPeephole::runOnMFunction(MFunction &Func) {
+   F = &Func;
++  LastAssignments.assign(Func.getNumVariables(), nullptr);
++  AssignedVars.clear();
+   for (MBasicBlock *BB : Func) {
+     rewriteBlock(*BB);
+   }
+@@ -32,6 +34,10 @@ void MIRPeephole::runOnMFunction(MFunction &Func) {
+ 
+ void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
+   CurBB = &BB;
++  for (uint32_t Var : AssignedVars) {
++    LastAssignments[Var] = nullptr;
++  }
++  AssignedVars.clear();
+   // Snapshot on the host heap. A CompileVector here shares the LLVM
+   // bump slab with IR and can read ASan red zones on growth.
+   llvm::SmallVector<MInstruction *, 16> Stmts;
+@@ -55,6 +61,14 @@ void MIRPeephole::rewriteBlock(MBasicBlock &BB) {
+         Inst->setOperand(I, NewOp);
+       }
+     }
++    // Update after rewriting operands: x = x + 1 must see the old x.
++    if (auto *DA = llvm::dyn_cast<DassignInstruction>(Inst)) {
++      const uint32_t Var = DA->getVarIdx();
++      if (LastAssignments[Var] == nullptr) {
++        AssignedVars.push_back(Var);
++      }
++      LastAssignments[Var] = DA;
++    }
+     if (auto *BrIf = llvm::dyn_cast<BrIfInstruction>(Inst)) {
+       if (foldConstBrIf(BB, *BrIf)) {
+         InBlock.erase(BrIf);
+@@ -807,18 +821,9 @@ bool MIRPeephole::matchAssignedIntConst(const MInstruction *Inst,
+     return false;
+   }
+   const uint32_t VarIdx = Dr->getVarIdx();
+-  const MInstruction *LastAssign = nullptr;
+-  for (MInstruction *Stmt : *CurBB) {
+-    if (Stmt == CurStmt) {
+-      break;
+-    }
+-    if (const auto *DA = llvm::dyn_cast<DassignInstruction>(Stmt)) {
+-      if (DA->getVarIdx() == VarIdx) {
+-        LastAssign = DA->getOperand<0>();
+-      }
+-    }
+-  }
+-  return matchIntConst(LastAssign, Val);
++  ZEN_ASSERT(VarIdx < LastAssignments.size());
++  const DassignInstruction *DA = LastAssignments[VarIdx];
++  return DA && matchIntConst(DA->getOperand<0>(), Val);
+ }
+ 
+ bool MIRPeephole::matchPositivePow2Const(const MInstruction *Inst,
+diff --git a/src/compiler/mir/pass/peephole.h b/src/compiler/mir/pass/peephole.h
+index e8f12e4..cffd0c8 100644
+--- a/src/compiler/mir/pass/peephole.h
++++ b/src/compiler/mir/pass/peephole.h
+@@ -5,6 +5,7 @@
+ #include "compiler/mir/function.h"
+ #include "compiler/mir/instructions.h"
+ #include "llvm/ADT/APInt.h"
++#include "llvm/ADT/SmallVector.h"
+ 
+ namespace COMPILER {
+ 
+@@ -20,6 +21,11 @@ private:
+   MFunction *F = nullptr;
+   MBasicBlock *CurBB = nullptr;
+   MInstruction *CurStmt = nullptr;
++  // Last completed direct assignment in the current block. Clear only touched
++  // slots between blocks so lookup is O(1) without O(variables * blocks)
++  // resets.
++  llvm::SmallVector<const DassignInstruction *, 16> LastAssignments;
++  llvm::SmallVector<uint32_t, 16> AssignedVars;
+ 
+   void rewriteBlock(MBasicBlock &BB);
+   MInstruction *rewriteExpr(MInstruction *Inst);

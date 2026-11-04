@@ -1,0 +1,167 @@
+diff --git a/src/cli/dtvm.cpp b/src/cli/dtvm.cpp
+index f3c3811..619e29a 100644
+--- a/src/cli/dtvm.cpp
++++ b/src/cli/dtvm.cpp
+@@ -34,6 +34,15 @@ using namespace zen::common;
+ using namespace zen::runtime;
+ using namespace zen::utils;
+ 
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++namespace {
++void shortPhase(const char *Label) {
++  if (std::getenv("DTVM_TRACE_DIR")) std::fprintf(stderr, "SHORT_PHASE %s %llu\n", Label, (unsigned long long)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
++}
++struct ShortLifetime { ShortLifetime() { shortPhase("main-entry"); } ~ShortLifetime() { shortPhase("after-destruction"); } };
++}
+ int exitMain(int ExitCode, Runtime *RT = nullptr) {
+   if (RT) {
+     RT->getStatistics().report();
+@@ -160,6 +169,7 @@ static bool runEVMBenchmark(const std::string &Filename,
+ #endif // ZEN_ENABLE_EVM
+ 
+ int main(int argc, char *argv[]) {
++  ShortLifetime ShortTimer;
+ #ifdef ZEN_ENABLE_PROFILER
+   ProfilerStart("dtvm.prof");
+ #endif
+@@ -525,7 +535,9 @@ int main(int argc, char *argv[]) {
+ 
+   /// ================ Create ZetaEngine runtime ================
+ 
++  shortPhase("before-runtime");
+   std::unique_ptr<Runtime> RT = Runtime::newRuntime(Config);
++  shortPhase("after-runtime");
+   if (!RT) {
+     ZEN_LOG_ERROR("failed to create runtime");
+     return exitMain(EXIT_FAILURE);
+@@ -567,7 +579,9 @@ int main(int argc, char *argv[]) {
+   /// ================ Load user's module ================
+ 
+   const auto &ActualEntryHint = !EntryHint.empty() ? EntryHint : FuncName;
++  shortPhase("before-load");
+   MayBe<Module *> ModRet = RT->loadModule(Filename, ActualEntryHint);
++  shortPhase("after-load");
+   if (!ModRet) {
+     const Error &Err = ModRet.getError();
+     ZEN_ASSERT(!Err.isEmpty());
+@@ -587,7 +601,9 @@ int main(int argc, char *argv[]) {
+ 
+   /// ================ Create instance ================
+ 
++  shortPhase("before-instance");
+   MayBe<Instance *> InstRet = Iso->createInstance(*Mod, GasLimit);
++  shortPhase("after-instance");
+   if (!InstRet) {
+     const Error &Err = InstRet.getError();
+     ZEN_ASSERT(!Err.isEmpty());
+@@ -607,6 +623,7 @@ int main(int argc, char *argv[]) {
+   Inst->setCustomData((void *)EVMAbiMockCtx.get());
+ #endif // ZEN_ENABLE_EVMABI_TEST
+ 
++  shortPhase("before-call");
+   /// ================ Call function ================
+ 
+   std::vector<TypedValue> Results;
+@@ -634,6 +651,7 @@ int main(int argc, char *argv[]) {
+     }
+   }
+ 
++  shortPhase("after-call");
+   /// ========== Extra compilations and executions for benchmarking ==========
+ 
+   if (NumExtraCompilations + NumExtraExecutions > 0) {
+diff --git a/src/compiler/compiler.cpp b/src/compiler/compiler.cpp
+index 8cb0bec..e222b6f 100644
+--- a/src/compiler/compiler.cpp
++++ b/src/compiler/compiler.cpp
+@@ -36,6 +36,18 @@
+ #include "utils/perf.h"
+ #endif
+ 
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++#include <fstream>
++#include <unistd.h>
++namespace {
++uint64_t shortNs() {
++  return std::chrono::duration_cast<std::chrono::nanoseconds>(
++      std::chrono::steady_clock::now().time_since_epoch()).count();
++}
++bool shortTrace() { static const bool E = std::getenv("DTVM_TRACE_DIR"); return E; }
++}
+ using namespace COMPILER;
+ 
+ // mprotect need protect by chunks(0x1000) in occulum
+@@ -71,6 +83,7 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
+     }
+   }
+ 
++  const uint64_t TraceLowerStart = shortTrace() ? shortNs() : 0;
+   MIRPeephole Peep;
+   Peep.runOnMFunction(MFunc);
+ 
+@@ -94,6 +107,7 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
+ 
+   uint32_t MFuncIdx = MFunc.getFuncIdx();
+ 
++  const uint64_t TraceRAStart = shortTrace() ? shortNs() : 0;
+   if (DisableGreedyRA) {
+     ZEN_LOG_DEBUG("using fast ra for function %d", MFuncIdx);
+     FastRA RA(MF);
+@@ -133,6 +147,7 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
+ #endif // ZEN_ENABLE_DEBUG_GREEDY_RA
+   }
+ 
++  if (shortTrace()) std::fprintf(stderr, "SHORT_RA %u %u %llu %llu\n", MFuncIdx, DisableGreedyRA, (unsigned long long)(TraceRAStart-TraceLowerStart), (unsigned long long)(shortNs()-TraceRAStart));
+ #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
+   llvm::dbgs() << "\n########## CgIR Dump After Register Allocation "
+                   "##########\n\n";
+@@ -378,6 +393,7 @@ void JITCompilerBase::emitObjectBuffer(CompileContext *Ctx) {
+ 
+ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
+                                       uint32_t FuncIdx, bool DisableGreedyRA) {
++  const uint64_t TraceBegin = shortTrace() ? shortNs() : 0;
+   if (Ctx.Inited) {
+     // Release all memory allocated by previous function compilation
+     Ctx.MemPool = CompileMemPool();
+@@ -388,6 +404,7 @@ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
+     Ctx.initialize();
+   }
+ 
++  const uint64_t TraceInit = shortTrace() ? shortNs() : 0;
+   uint32_t RealFuncIdx = FuncIdx + WasmMod->getNumImportFunctions();
+   TypeEntry *FuncType = WasmMod->getFunctionType(RealFuncIdx);
+   ZEN_ASSERT(FuncType);
+@@ -401,6 +418,7 @@ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
+   MIRBuilder.compile(&Ctx); // pass the ctx argument only for compatibility
+   runtime::Runtime *RT = WasmMod->getRuntime();
+   const runtime::RuntimeConfig &Config = RT->getConfig();
++  if (shortTrace()) std::fprintf(stderr, "SHORT_FRONT %u %u %llu %llu\n", FuncIdx, DisableGreedyRA, (unsigned long long)(TraceInit-TraceBegin), (unsigned long long)(shortNs()-TraceInit));
+   compileMIRToCgIR(Mod, MFunc, CgFunc, DisableGreedyRA);
+   Ctx.getMCLowering().runOnCgFunction(CgFunc);
+ }
+@@ -714,7 +732,9 @@ void LazyJITCompiler::precompile() {
+ uint8_t *LazyJITCompiler::compileFunction(WasmFrontendContext &Ctx,
+                                           uint32_t FuncIdx,
+                                           bool DisableGreedyRA) {
++  const uint64_t TraceStart = shortTrace() ? shortNs() : 0;
+   compileWasmToMC(Ctx, *Mod, FuncIdx, DisableGreedyRA);
++  const uint64_t TraceObject = shortTrace() ? shortNs() : 0;
+   emitObjectBuffer(&Ctx);
+   uint8_t *JITCode = const_cast<uint8_t *>(Ctx.CodeMPool->getMemStart());
+   for (const auto &Reloc : Ctx.ExternRelocs) {
+@@ -732,6 +752,11 @@ uint8_t *LazyJITCompiler::compileFunction(WasmFrontendContext &Ctx,
+   uint8_t *JITFuncCodePtr = Ctx.CodePtr;
+   platform::mprotect(JITFuncCodePtr, TO_MPROTECT_CODE_SIZE(Ctx.CodeSize),
+                      PROT_READ | PROT_EXEC);
++  if (shortTrace()) {
++    std::fprintf(stderr, "SHORT_COMPILE %u %u %llu %llu %llu %p\n", FuncIdx, DisableGreedyRA, (unsigned long long)(TraceObject-TraceStart), (unsigned long long)(shortNs()-TraceObject), (unsigned long long)Ctx.CodeSize, JITFuncCodePtr);
++    const std::string File = std::string(std::getenv("DTVM_TRACE_DIR")) + "/func-" + std::to_string(getpid()) + "-" + std::to_string(FuncIdx) + "-" + std::to_string(DisableGreedyRA) + ".bin";
++    std::ofstream Out(File, std::ios::binary); Out.write(reinterpret_cast<char *>(JITFuncCodePtr), Ctx.CodeSize);
++  }
+   return JITFuncCodePtr;
+ }
+ 

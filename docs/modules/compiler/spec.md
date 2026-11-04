@@ -144,7 +144,14 @@ OOB). Load/store Scale stays 1. See
   overflow ops, or `EVM_UDIV128_BY64`; those must stay). Wasm `handleIDiv`
   assigns integer literals to temps; `foldAlgebra` recovers a same-block
   `dassign` of a constant through `dread` for **every integer BINARY**
-  (not only `udiv`/`urem`) so `rem_u`/`div_u` by a
+  (not only `udiv`/`urem`). Blocks with at least 32 statements index the last
+  completed direct assignment per variable rather than repeatedly rescanning
+  their prefix; short blocks retain prefix scans. The index resets at block
+  and function boundaries, records a self-assignment only after rewriting its
+  operands, and tracks nonconstant overwrites too. It does not propagate
+  constants between blocks or chase assignment chains. Touched-slot clearing
+  avoids an O(variables × blocks) reset. This preserves existing folds, so
+  `rem_u`/`div_u` by a
   power of two still become `and`/`ushr`. Folding a constant `br_if` must drop the
   untaken CFG edge **and** any phi incoming on the still-live target that
   came from this block. After the pass, `DeadMBasicBlockElim` may drop
