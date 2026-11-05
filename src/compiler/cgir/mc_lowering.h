@@ -32,8 +32,18 @@ public:
       ZEN_UNREACHABLE();
     }
     Streamer = std::move(*StreamerOrErr);
+    reinitialize();
+  }
+
+  // Initialize sections on a fresh/reset context after prior streamer reset.
+  void reinitialize() {
+    MF = nullptr;
+#if defined(ZEN_ENABLE_LINUX_PERF) && defined(ZEN_ENABLE_EVM)
+    LastBBSymbol = nullptr;
+#endif
     TM.getObjFileLowering()->Initialize(Context, TM);
     Streamer->initSections(false, *STI);
+    StreamerIsReset = false;
 #if defined(ZEN_ENABLE_LINUX_PERF) && defined(ZEN_ENABLE_EVM)
     // Because actual dwarf source is evm bytecode, set to ./evm-bytecode
     // as a placeholder whether or not this file exists.
@@ -44,8 +54,23 @@ public:
 
   void finalize() {
     Streamer->finish();
-    Streamer->reset();
+    reset();
   }
+
+  // Also discard an unfinished object if a previous compile did not finalize.
+  // This must happen before MCContext::reset invalidates symbols/fragments.
+  void reset() {
+    if (!StreamerIsReset) {
+      Streamer->reset();
+      StreamerIsReset = true;
+    }
+    MF = nullptr;
+#if defined(ZEN_ENABLE_LINUX_PERF) && defined(ZEN_ENABLE_EVM)
+    LastBBSymbol = nullptr;
+#endif
+  }
+
+  bool isReset() const { return StreamerIsReset; }
 
   void runOnCgFunction(CgFunction &MF) {
     this->MF = &MF;
@@ -200,6 +225,7 @@ protected:
   llvm::raw_svector_ostream OS;
   std::unique_ptr<llvm::MCStreamer> Streamer;
   const llvm::MCSubtargetInfo *STI = nullptr;
+  bool StreamerIsReset = false;
 
   // Following fields are used for single function lowering
   CgFunction *MF = nullptr;

@@ -1,0 +1,70 @@
+{
+  "base_commit": "f4f7cef",
+  "seed": 20261115,
+  "repeats": 15,
+  "cpu": 0,
+  "boundary": "fresh-process pre-spawn through exit; warm page cache; cache disabled for Wasmtime; no diagnostics",
+  "binaries": {
+    "base-F": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-base",
+      "sha256": "d5e34ee98c2ca68414b530de7a8a75bccc76e494f11a031775da73c16eb2bab2",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "safe-F": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+      "sha256": "d0fd0156a9ffc8630019e5efe63931816933c779ba57105b8f396f3e09f20254",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "bounded-F": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-bounded",
+      "sha256": "914dccaf9e51619c91d22568ae84ac3cbbab5a78e91f6d72cbe0ef2f6e055c09",
+      "mode": "lazy-F-ST",
+      "extra": []
+    }
+  },
+  "inputs": {
+    "hot5000": "cda745af6491a3f7fa30467657dde6b426c073c410582adf28b96a82ce396a1c"
+  },
+  "commands": {
+    "hot5000": {
+      "base-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot5000.wasm"
+      ],
+      "safe-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot5000.wasm"
+      ],
+      "bounded-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-bounded",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot5000.wasm"
+      ]
+    }
+  }
+}

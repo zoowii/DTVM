@@ -1,0 +1,3 @@
+{
+  "patch": "--- a/src/compiler/compiler.cpp\n+++ b/src/compiler/compiler.cpp\n@@ -96,6 +96,7 @@\n \n   if (DisableGreedyRA) {\n     ZEN_LOG_DEBUG(\"using fast ra for function %d\", MFuncIdx);\n+    CgDeadCgInstructionElim DCE(MF);\n     FastRA RA(MF);\n   } else {\n #ifdef ZEN_ENABLE_DEBUG_GREEDY_RA\n"
+}

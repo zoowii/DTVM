@@ -1,0 +1,196 @@
+{
+  "base_commit": "f4f7cef",
+  "seed": 20261114,
+  "repeats": 15,
+  "cpu": 0,
+  "boundary": "fresh-process pre-spawn through exit; warm page cache; cache disabled for Wasmtime; no diagnostics",
+  "binaries": {
+    "base-F": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-base",
+      "sha256": "d5e34ee98c2ca68414b530de7a8a75bccc76e494f11a031775da73c16eb2bab2",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "safe-F": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+      "sha256": "d0fd0156a9ffc8630019e5efe63931816933c779ba57105b8f396f3e09f20254",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "bounded-F": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-bounded",
+      "sha256": "914dccaf9e51619c91d22568ae84ac3cbbab5a78e91f6d72cbe0ef2f6e055c09",
+      "mode": "lazy-F-ST",
+      "extra": []
+    }
+  },
+  "inputs": {
+    "base64cli": "22dd5d48e40959c8fa25f5968aaf3d5af9430e848d9a582b7a0b6ba2aaf9a438",
+    "tpl": "3abe85b37603894ee92a636f8ab54a7e0a4f3fd03cafad937602f8edca4e680f",
+    "hot1000": "07738652fb07b8a42016c8667e4e7a55bff6752ccfda865cbb7fcd3855d463e6",
+    "hot10000": "1d9fc8b986e439086d5134783c2979719d08e3dd99f246abbfb94f834d2e14d9"
+  },
+  "commands": {
+    "base64cli": {
+      "base-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "safe-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "bounded-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-bounded",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ]
+    },
+    "tpl": {
+      "base-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "safe-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "bounded-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-bounded",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ]
+    },
+    "hot1000": {
+      "base-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "safe-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "bounded-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-bounded",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ]
+    },
+    "hot10000": {
+      "base-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ],
+      "safe-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse-safe",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ],
+      "bounded-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-bounded",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ]
+    }
+  }
+}

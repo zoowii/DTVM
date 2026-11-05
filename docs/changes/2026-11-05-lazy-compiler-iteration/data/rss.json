@@ -1,0 +1,482 @@
+[
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": -1,
+    "maxrss_kib": 28304,
+    "wall_ms": 35.336358,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": -1,
+    "maxrss_kib": 25912,
+    "wall_ms": 32.741609,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 0,
+    "maxrss_kib": 28232,
+    "wall_ms": 28.35549,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 0,
+    "maxrss_kib": 28376,
+    "wall_ms": 31.188089,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 1,
+    "maxrss_kib": 28184,
+    "wall_ms": 34.686916,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 1,
+    "maxrss_kib": 28076,
+    "wall_ms": 34.579113,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 2,
+    "maxrss_kib": 28208,
+    "wall_ms": 32.696012,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 2,
+    "maxrss_kib": 28852,
+    "wall_ms": 37.972288,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 3,
+    "maxrss_kib": 28272,
+    "wall_ms": 33.300433,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 3,
+    "maxrss_kib": 28192,
+    "wall_ms": 31.466305,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 4,
+    "maxrss_kib": 28504,
+    "wall_ms": 31.440706,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 4,
+    "maxrss_kib": 25912,
+    "wall_ms": 34.678649,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 5,
+    "maxrss_kib": 25912,
+    "wall_ms": 33.657434,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 5,
+    "maxrss_kib": 28728,
+    "wall_ms": 35.433212,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 6,
+    "maxrss_kib": 28276,
+    "wall_ms": 30.645556,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 6,
+    "maxrss_kib": 28336,
+    "wall_ms": 31.345291,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 7,
+    "maxrss_kib": 28844,
+    "wall_ms": 37.289141,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 7,
+    "maxrss_kib": 28276,
+    "wall_ms": 32.044071,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "base",
+    "round": 8,
+    "maxrss_kib": 28256,
+    "wall_ms": 30.585662,
+    "exit": 0
+  },
+  {
+    "case": "echo",
+    "variant": "reuse-safe",
+    "round": 8,
+    "maxrss_kib": 28540,
+    "wall_ms": 31.052671,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": -1,
+    "maxrss_kib": 49116,
+    "wall_ms": 330.19187,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": -1,
+    "maxrss_kib": 48788,
+    "wall_ms": 358.54438,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 0,
+    "maxrss_kib": 48660,
+    "wall_ms": 406.52897,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 0,
+    "maxrss_kib": 48856,
+    "wall_ms": 395.974374,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 1,
+    "maxrss_kib": 48816,
+    "wall_ms": 377.216014,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 1,
+    "maxrss_kib": 48868,
+    "wall_ms": 379.835363,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 2,
+    "maxrss_kib": 49288,
+    "wall_ms": 456.949224,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 2,
+    "maxrss_kib": 49036,
+    "wall_ms": 450.558986,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 3,
+    "maxrss_kib": 48824,
+    "wall_ms": 424.039647,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 3,
+    "maxrss_kib": 48296,
+    "wall_ms": 415.417644,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 4,
+    "maxrss_kib": 48732,
+    "wall_ms": 382.414,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 4,
+    "maxrss_kib": 48768,
+    "wall_ms": 417.635433,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 5,
+    "maxrss_kib": 46444,
+    "wall_ms": 377.284228,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 5,
+    "maxrss_kib": 45936,
+    "wall_ms": 377.373584,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 6,
+    "maxrss_kib": 49072,
+    "wall_ms": 441.163892,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 6,
+    "maxrss_kib": 49280,
+    "wall_ms": 443.175639,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 7,
+    "maxrss_kib": 49192,
+    "wall_ms": 347.89134,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 7,
+    "maxrss_kib": 49140,
+    "wall_ms": 359.241633,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "reuse-safe",
+    "round": 8,
+    "maxrss_kib": 48952,
+    "wall_ms": 374.495373,
+    "exit": 0
+  },
+  {
+    "case": "tpl",
+    "variant": "base",
+    "round": 8,
+    "maxrss_kib": 46456,
+    "wall_ms": 339.3423,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": -1,
+    "maxrss_kib": 41056,
+    "wall_ms": 134.1163,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": -1,
+    "maxrss_kib": 41056,
+    "wall_ms": 139.370554,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 0,
+    "maxrss_kib": 41732,
+    "wall_ms": 119.200277,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 0,
+    "maxrss_kib": 41132,
+    "wall_ms": 113.875518,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 1,
+    "maxrss_kib": 41284,
+    "wall_ms": 122.876701,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 1,
+    "maxrss_kib": 41472,
+    "wall_ms": 149.416745,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 2,
+    "maxrss_kib": 38752,
+    "wall_ms": 128.652548,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 2,
+    "maxrss_kib": 41404,
+    "wall_ms": 118.936734,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 3,
+    "maxrss_kib": 41356,
+    "wall_ms": 115.613941,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 3,
+    "maxrss_kib": 41852,
+    "wall_ms": 119.192564,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 4,
+    "maxrss_kib": 41128,
+    "wall_ms": 126.304702,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 4,
+    "maxrss_kib": 41156,
+    "wall_ms": 124.669362,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 5,
+    "maxrss_kib": 41524,
+    "wall_ms": 128.23034,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 5,
+    "maxrss_kib": 41060,
+    "wall_ms": 116.603414,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 6,
+    "maxrss_kib": 41240,
+    "wall_ms": 130.174485,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 6,
+    "maxrss_kib": 41204,
+    "wall_ms": 118.463832,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 7,
+    "maxrss_kib": 41600,
+    "wall_ms": 134.82141,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 7,
+    "maxrss_kib": 41500,
+    "wall_ms": 124.508414,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "reuse-safe",
+    "round": 8,
+    "maxrss_kib": 41184,
+    "wall_ms": 124.280494,
+    "exit": 0
+  },
+  {
+    "case": "hot1000",
+    "variant": "base",
+    "round": 8,
+    "maxrss_kib": 41160,
+    "wall_ms": 127.154995,
+    "exit": 0
+  }
+]

@@ -1,0 +1,154 @@
+{
+  "confirm-r21": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "atax": true,
+      "base64cli": true,
+      "code-stock": true,
+      "cowsay": true,
+      "echo": true,
+      "hot1000": true,
+      "md5": true,
+      "mvt": true,
+      "pi": true,
+      "tpl": true
+    },
+    "same_stderr_across_variants": {
+      "atax": true,
+      "base64cli": true,
+      "code-stock": true,
+      "cowsay": true,
+      "echo": true,
+      "hot1000": true,
+      "md5": true,
+      "mvt": true,
+      "pi": true,
+      "tpl": true
+    }
+  },
+  "serial-confirm-r15": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "base64cli": true,
+      "hot1000": true,
+      "hot10000": true,
+      "tpl": true
+    },
+    "same_stderr_across_variants": {
+      "base64cli": true,
+      "hot1000": true,
+      "hot10000": true,
+      "tpl": true
+    }
+  },
+  "heldout-r15": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "hot5000": true
+    },
+    "same_stderr_across_variants": {
+      "hot5000": true
+    }
+  },
+  "smoke": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "base64cli": true,
+      "echo": true,
+      "md5": true
+    },
+    "same_stderr_across_variants": {
+      "base64cli": true,
+      "echo": true,
+      "md5": true
+    }
+  },
+  "final-mt-r21": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "base64cli": true,
+      "cowsay": true,
+      "echo": true,
+      "md5": true,
+      "pi": true,
+      "tpl": true
+    },
+    "same_stderr_across_variants": {
+      "base64cli": true,
+      "cowsay": true,
+      "echo": true,
+      "md5": true,
+      "pi": true,
+      "tpl": true
+    }
+  },
+  "short-confirm-r31": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "code-stock": true,
+      "echo": true,
+      "md5": true,
+      "pi": true
+    },
+    "same_stderr_across_variants": {
+      "code-stock": true,
+      "echo": true,
+      "md5": true,
+      "pi": true
+    }
+  },
+  "grid-r7": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "atax": true,
+      "base64cli": true,
+      "code-stock": true,
+      "cowsay": true,
+      "echo": true,
+      "fib_iter_dev": false,
+      "hot100": true,
+      "hot1000": true,
+      "md5": true,
+      "mvt": true,
+      "pi": true,
+      "tpl": true
+    },
+    "same_stderr_across_variants": {
+      "atax": true,
+      "base64cli": true,
+      "code-stock": true,
+      "cowsay": true,
+      "echo": true,
+      "fib_iter_dev": false,
+      "hot100": true,
+      "hot1000": true,
+      "md5": true,
+      "mvt": true,
+      "pi": true,
+      "tpl": true
+    }
+  },
+  "bounded-r15": {
+    "all_exit_zero": true,
+    "stable_stdout_stderr_per_variant": true,
+    "same_stdout_across_variants": {
+      "base64cli": true,
+      "hot1000": true,
+      "hot10000": true,
+      "tpl": true
+    },
+    "same_stderr_across_variants": {
+      "base64cli": true,
+      "hot1000": true,
+      "hot10000": true,
+      "tpl": true
+    }
+  }
+}

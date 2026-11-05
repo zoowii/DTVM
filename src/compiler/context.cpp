@@ -167,15 +167,21 @@ void CompileContext::finalize() {
 void CompileContext::reinitialize() {
   ZEN_ASSERT(MCL);
   ZEN_ASSERT(MCCtx);
-  ThreadMemPool.deleteObject(MCL);
-  ThreadMemPool.deleteObject(MCCtx);
-
-  // Ensure ObjBuffer is empty for upcoming compilation
+  // Completed objects have already reset their streamer in finalize().
   ZEN_ASSERT(ObjBuffer.empty());
-
-  // All sections in object files are created and stored in MCContext, so we
-  // need to create a new MCContext
-  initializeMC();
+  // Large objects can retain costly high-water symbol/fragment tables. Native
+  // text length is a conservative reuse bound, not a semantic compilation cap.
+  constexpr uint64_t MaxReusableCodeSize = 64 * 1024;
+  if (!MCL->isReset() || CodeSize > MaxReusableCodeSize) {
+    ThreadMemPool.deleteObject(MCL);
+    ThreadMemPool.deleteObject(MCCtx);
+    initializeMC();
+    return;
+  }
+  MCL->reset();
+  MCCtx->reset();
+  MCCtx->setObjectFileInfo(TM->getObjFileLowering());
+  MCL->reinitialize();
 }
 
 void CompileContext::initializeTargetMachine() {

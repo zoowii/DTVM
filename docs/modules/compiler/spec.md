@@ -81,6 +81,15 @@ The compiler module is responsible for DTVM's multi-pass JIT compilation pipelin
 - When `CompileContext::Inited == true`, `MemPool`, `CodePtr`, `FuncOffsetMap`, etc. are in a valid state
 - `EVMFrontendContext` must have `Bytecode`, `BytecodeSize`, `GasMeteringEnabled`, `GasChunkInfo` (if chunk metering is enabled) set before `compile()`
 
+For sequential lazy objects in the same worker context, completed MC objects
+with native text at most 64 KiB may reuse their MCContext and streamer. Reset
+streamer state before resetting MCContext; reattach object-file information and
+initialize fresh sections before emission. Never retain per-function MC symbols
+or lowering pointers across objects. An unfinished object or a larger previous
+object rebuilds both MC objects. The 64 KiB bound controls reuse only and does
+not limit compiled function size. This lifecycle does not change code publication,
+relocation, trap checks or guest execution semantics.
+
 ### LazyJIT stub publish monotonicity
 
 In multithread LazyJIT, each function stub's `jmp` target is published monotonically:

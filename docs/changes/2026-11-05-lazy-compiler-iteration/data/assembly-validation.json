@@ -1,0 +1,31 @@
+{
+  "diagnostic_only": true,
+  "workload": "hot1000",
+  "mode": "lazy-F-ST",
+  "captures_per_variant": 1002,
+  "byte_identical_unmodified_helper_captures": 1000,
+  "normalization": "Zero only 8-byte absolute address operands of checked 48 b8 MOVABS instructions; compare all remaining bytes including padding.",
+  "objects": [
+    {
+      "capture_sequence": 0,
+      "masked_offsets": [
+        45
+      ],
+      "normalized_sha256": {
+        "base": "8da20b26207b4d59a9e5d99c3586c73515188c936866a4df47dad22c510be92c",
+        "bounded": "8da20b26207b4d59a9e5d99c3586c73515188c936866a4df47dad22c510be92c"
+      }
+    },
+    {
+      "capture_sequence": 1,
+      "masked_offsets": [
+        31942,
+        31958
+      ],
+      "normalized_sha256": {
+        "base": "9d827debe2d0e2f3c92dc0bd5c0d57e836ab547e921aa7c8bb45dffe169fe571",
+        "bounded": "9d827debe2d0e2f3c92dc0bd5c0d57e836ab547e921aa7c8bb45dffe169fe571"
+      }
+    }
+  ]
+}

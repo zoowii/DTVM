@@ -1,0 +1,611 @@
+{
+  "base_commit": "f4f7cef",
+  "seed": 20261110,
+  "repeats": 7,
+  "cpu": 0,
+  "boundary": "fresh-process pre-spawn through exit; warm page cache; cache disabled for Wasmtime; no diagnostics",
+  "binaries": {
+    "base": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-base",
+      "sha256": "d5e34ee98c2ca68414b530de7a8a75bccc76e494f11a031775da73c16eb2bab2",
+      "mode": "lazy-G-MT",
+      "extra": []
+    },
+    "dce": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-dce",
+      "sha256": "897d7023a8cd44c1b3678814d44a7602ae4a811afc103b3dacedd5314cb1270f",
+      "mode": "lazy-G-MT",
+      "extra": []
+    },
+    "reuse": {
+      "path": "/workspace/DTVM/work/iteration/dtvm-reuse",
+      "sha256": "3dbf623b587cf00b5adf382d7a74cda9265c580b823d434ed1f3c39357fca521",
+      "mode": "lazy-G-MT",
+      "extra": []
+    },
+    "wt45": {
+      "path": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "mode": null,
+      "extra": []
+    }
+  },
+  "inputs": {
+    "atax": "796cdecca44721f058f182e5e4994649f45a5b2f394f449d6bb63b6415aadd66",
+    "mvt": "83d248c3ccc35a595ac5777851e9537a182d3c2d3ae75aeb1d074d531c937719",
+    "fib_iter_dev": "0c34d82e9f3e5a3f76cf9c57ba0e7dc99263201f0c615ceccc705b9969306266",
+    "base64cli": "22dd5d48e40959c8fa25f5968aaf3d5af9430e848d9a582b7a0b6ba2aaf9a438",
+    "code-stock": "d7d05eab7c7753e8b3cfa8f71cce93ae05c09e3b79d16c40509d4dd813aeac27",
+    "cowsay": "0cf9a18923570a0e76eb5793522dc122f01cfda26db468fe9c3f9b1a1424550a",
+    "echo": "2854e8f4d8f62028d0799f2740ec960c390515443923f85d0846dc7902a02d25",
+    "md5": "21552b0d4c3d74cf464bc350d03f095ebb5f8f8c499329aca8d66af598ca15aa",
+    "pi": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265",
+    "tpl": "3abe85b37603894ee92a636f8ab54a7e0a4f3fd03cafad937602f8edca4e680f",
+    "hot100": "1a1b9b0854490081036538815cca7284b51d5269fe1beb85ba3c91747367c378",
+    "hot1000": "07738652fb07b8a42016c8667e4e7a55bff6752ccfda865cbb7fcd3855d463e6"
+  },
+  "commands": {
+    "atax": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/atax.wasm"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/atax.wasm"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/atax.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/atax.wasm"
+      ]
+    },
+    "mvt": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/mvt.wasm"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/mvt.wasm"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/mvt.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/mvt.wasm"
+      ]
+    },
+    "fib_iter_dev": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "-f",
+        "test_fib_iter",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/overflow/perf_test_fib_iter_invoke.wasm",
+        "--args",
+        "1000000",
+        "30"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "-f",
+        "test_fib_iter",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/overflow/perf_test_fib_iter_invoke.wasm",
+        "--args",
+        "1000000",
+        "30"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "-f",
+        "test_fib_iter",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/overflow/perf_test_fib_iter_invoke.wasm",
+        "--args",
+        "1000000",
+        "30"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "--invoke",
+        "test_fib_iter",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/overflow/perf_test_fib_iter_invoke.wasm",
+        "1000000",
+        "30"
+      ]
+    },
+    "base64cli": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "encode",
+        "helloworld"
+      ]
+    },
+    "code-stock": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ]
+    },
+    "cowsay": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "--args",
+        "hello"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "--args",
+        "hello"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "--args",
+        "hello"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "hello"
+      ]
+    },
+    "echo": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "1234567890"
+      ]
+    },
+    "md5": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "helloworld"
+      ]
+    },
+    "pi": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "1"
+      ]
+    },
+    "tpl": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ]
+    },
+    "hot100": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot100.wasm"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot100.wasm"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot100.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/shortcase/hot100.wasm"
+      ]
+    },
+    "hot1000": {
+      "base": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-base",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "dce": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-dce",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "reuse": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/iteration/dtvm-reuse",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ]
+    }
+  }
+}

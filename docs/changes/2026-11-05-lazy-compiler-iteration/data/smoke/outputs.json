@@ -1,0 +1,20 @@
+{
+  "base64cli.base.stderr": "",
+  "base64cli.base.stdout": "aGVsbG93b3JsZA==\n",
+  "base64cli.dce.stderr": "",
+  "base64cli.dce.stdout": "aGVsbG93b3JsZA==\n",
+  "base64cli.reuse.stderr": "",
+  "base64cli.reuse.stdout": "aGVsbG93b3JsZA==\n",
+  "echo.base.stderr": "",
+  "echo.base.stdout": "1234567890\n",
+  "echo.dce.stderr": "",
+  "echo.dce.stdout": "1234567890\n",
+  "echo.reuse.stderr": "",
+  "echo.reuse.stdout": "1234567890\n",
+  "md5.base.stderr": "",
+  "md5.base.stdout": "fc5e038d38a57032085441e7fe7010b0\n",
+  "md5.dce.stderr": "",
+  "md5.dce.stdout": "fc5e038d38a57032085441e7fe7010b0\n",
+  "md5.reuse.stderr": "",
+  "md5.reuse.stdout": "fc5e038d38a57032085441e7fe7010b0\n"
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "hot5000",
+    "wasm": "/workspace/DTVM/work/iteration/hot5000.wasm",
+    "kind": "wasi-main",
+    "suite": "synthetic",
+    "fairness": "same-wasm"
+  }
+]
