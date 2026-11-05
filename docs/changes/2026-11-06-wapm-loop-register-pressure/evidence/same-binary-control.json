@@ -1,0 +1,72 @@
+{
+  "base64cli": {
+    "pure_loop_vs_same_binary_control_percent": -1.2962149607573914,
+    "CI95_percent": [
+      -2.6971151515711167,
+      6.911238864572633
+    ]
+  },
+  "cowsay": {
+    "pure_loop_vs_same_binary_control_percent": -2.1985321278166325,
+    "CI95_percent": [
+      -4.942640663755348,
+      0.5817072039251636
+    ]
+  },
+  "echo": {
+    "pure_loop_vs_same_binary_control_percent": -0.16611004226209092,
+    "CI95_percent": [
+      -5.64796885317368,
+      9.046889942295365
+    ]
+  },
+  "fib_iter_dev": {
+    "pure_loop_vs_same_binary_control_percent": -32.08415986702073,
+    "CI95_percent": [
+      -37.2270380981638,
+      -27.019543330023478
+    ]
+  },
+  "fortune": {
+    "pure_loop_vs_same_binary_control_percent": -1.386303898180885,
+    "CI95_percent": [
+      -4.354845081372172,
+      2.6279136008420245
+    ]
+  },
+  "md5": {
+    "pure_loop_vs_same_binary_control_percent": 1.8654854613538774,
+    "CI95_percent": [
+      -2.418568382235986,
+      3.443360150462893
+    ]
+  },
+  "pi": {
+    "pure_loop_vs_same_binary_control_percent": 1.3986857380781537,
+    "CI95_percent": [
+      -7.464902784522387,
+      5.731963550227093
+    ]
+  },
+  "pi100": {
+    "pure_loop_vs_same_binary_control_percent": 2.7271796976288343,
+    "CI95_percent": [
+      -7.857174744959594,
+      8.22389503079246
+    ]
+  },
+  "pi1000": {
+    "pure_loop_vs_same_binary_control_percent": -14.891483440457643,
+    "CI95_percent": [
+      -17.588038500229587,
+      -12.873865024503717
+    ]
+  },
+  "tpl": {
+    "pure_loop_vs_same_binary_control_percent": -2.499426332490484,
+    "CI95_percent": [
+      -5.262107382208292,
+      4.873650908821925
+    ]
+  }
+}

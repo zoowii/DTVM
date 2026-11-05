@@ -1,0 +1,58 @@
+{
+  "main-fast": {
+    "CFG_reachable_instructions": 1085,
+    "frame_memory_operand_instructions": 439,
+    "calls": 17,
+    "setcc": 15,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  },
+  "fmod-fast": {
+    "CFG_reachable_instructions": 259,
+    "frame_memory_operand_instructions": 95,
+    "calls": 0,
+    "setcc": 4,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  },
+  "fmod-greedy": {
+    "CFG_reachable_instructions": 159,
+    "frame_memory_operand_instructions": 1,
+    "calls": 0,
+    "setcc": 4,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  },
+  "log-fast": {
+    "CFG_reachable_instructions": 217,
+    "frame_memory_operand_instructions": 62,
+    "calls": 0,
+    "setcc": 0,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  },
+  "main-wt45": {
+    "CFG_reachable_instructions": 758,
+    "frame_memory_operand_instructions": 124,
+    "calls": 15,
+    "setcc": 12,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  },
+  "fmod-wt45": {
+    "CFG_reachable_instructions": 149,
+    "frame_memory_operand_instructions": 0,
+    "calls": 0,
+    "setcc": 0,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  },
+  "log-wt45": {
+    "CFG_reachable_instructions": 88,
+    "frame_memory_operand_instructions": 0,
+    "calls": 0,
+    "setcc": 0,
+    "unresolved_jump_edges": [],
+    "note": "Static graph follows both conditional edges, stops at ret/ud2, and excludes unreferenced literal pools/padding. Not dynamic instruction/spill counts. WT AOT vs DTVM postlink diagnostic."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "seed": 2026110604,
+  "rounds": 7,
+  "warmup": -1,
+  "diagnostic_only": true,
+  "case": "pi(1000) derived clock-instrumented module; not canonical input",
+  "input_sha256": "9b726a867b0bb058a4b5a11b97d5ce8a62dfc0804930bdc4091a8f6654374603",
+  "cpu": 0,
+  "binaries": {
+    "main": {
+      "sha256": "0b08d14e3a9e672f08be81eac9a735a497e8e27ef6058c0f7472307e7783422b",
+      "research_greedy_ids": null
+    },
+    "fmod-greedy": {
+      "sha256": "bbfe11edf4ff6c58529d3040ea1521e573904227e4c647eb13a5acd343d97612",
+      "research_greedy_ids": "51"
+    },
+    "main-fmod-greedy": {
+      "sha256": "bbfe11edf4ff6c58529d3040ea1521e573904227e4c647eb13a5acd343d97612",
+      "research_greedy_ids": "2,51"
+    },
+    "wt45": {
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "research_greedy_ids": null
+    }
+  }
+}

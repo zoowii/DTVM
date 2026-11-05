@@ -1,0 +1,98 @@
+{
+  "screen-r5": {
+    "processes": 360,
+    "measured": 300,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "dice": 1,
+      "base64cli": 1,
+      "suggest": 1,
+      "uuid": 18,
+      "fortune": 18,
+      "qr2text": 1,
+      "pi100": 1,
+      "chkfont": 1,
+      "code-stock": 1,
+      "erdtree": 1,
+      "figlet": 1,
+      "tpl": 1,
+      "pi1000": 1,
+      "echo": 1,
+      "amirali": 1,
+      "pi": 1,
+      "cowsay": 1,
+      "pkg1": 1,
+      "md5": 1,
+      "viu": 1
+    }
+  },
+  "causal-r7": {
+    "processes": 192,
+    "measured": 168,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "pi": 1,
+      "pi1000": 1,
+      "pi100": 1
+    }
+  },
+  "selfcmp-r9": {
+    "processes": 180,
+    "measured": 162,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "pi": 1,
+      "pi100": 1,
+      "base64cli": 1,
+      "md5": 1,
+      "pi1000": 1,
+      "echo": 1
+    }
+  },
+  "confirm-r21": {
+    "processes": 220,
+    "measured": 210,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "pi": 1,
+      "pi1000": 1
+    }
+  },
+  "pure-loop-r15": {
+    "processes": 640,
+    "measured": 600,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "pi": 1,
+      "pi100": 1,
+      "cowsay": 1,
+      "base64cli": 1,
+      "md5": 1,
+      "fortune": 62,
+      "fib_iter_dev": 2,
+      "tpl": 1,
+      "pi1000": 1,
+      "echo": 1
+    }
+  },
+  "final-r15": {
+    "processes": 320,
+    "measured": 300,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "pi": 1,
+      "base64cli": 1,
+      "fib_iter_dev": 2,
+      "pi1000": 1,
+      "echo": 1
+    }
+  },
+  "phases-r7": {
+    "processes": 32,
+    "measured": 28,
+    "complete_unique_cells_and_zero_exits": true,
+    "distinct_stdout_hashes_by_case": {
+      "pi1000": 1
+    }
+  }
+}

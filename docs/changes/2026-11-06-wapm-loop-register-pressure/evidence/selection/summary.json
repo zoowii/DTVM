@@ -1,0 +1,46 @@
+[
+  {
+    "case": "fib_iter_dev",
+    "selected": [
+      {
+        "internal_function_index": 1,
+        "bytecode_size_without_locals": 223,
+        "MIR_blocks": 21
+      }
+    ]
+  },
+  {
+    "case": "base64cli",
+    "selected": []
+  },
+  {
+    "case": "cowsay",
+    "selected": []
+  },
+  {
+    "case": "echo",
+    "selected": []
+  },
+  {
+    "case": "fortune",
+    "selected": []
+  },
+  {
+    "case": "md5",
+    "selected": []
+  },
+  {
+    "case": "pi",
+    "selected": [
+      {
+        "internal_function_index": 51,
+        "bytecode_size_without_locals": 519,
+        "MIR_blocks": 44
+      }
+    ]
+  },
+  {
+    "case": "tpl",
+    "selected": []
+  }
+]

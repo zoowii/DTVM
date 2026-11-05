@@ -1,0 +1,22 @@
+{
+  "candidate_patch": "evidence/source/pure-loop.patch.json",
+  "production_changes": false,
+  "candidate_enabled": true,
+  "CTest": "7/7 pass",
+  "WAST": {
+    "eager_greedy": "97/97",
+    "explicit_fast": "97/97",
+    "lazy_default_MT": "97/97"
+  },
+  "MIR_codegen": "98/98 included in CTest",
+  "unvalidated": [
+    "ASan",
+    "EVM",
+    "SGX"
+  ],
+  "experimental_failures_retained": [
+    "v1 overrode explicit FastRA choice; guarded candidate fixes it",
+    "guard fixtures generated before canonical spec patch; regenerated before final passing runs"
+  ],
+  "output_checks": "Deterministic hashes match; fib engine text normalized to integer832040; fortune/UUID not asserted equal"
+}

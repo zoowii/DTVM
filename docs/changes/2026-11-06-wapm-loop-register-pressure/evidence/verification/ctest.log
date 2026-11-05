@@ -1,0 +1,62 @@
+Internal ctest changing into directory: /workspace/DTVM/work/build-policy-tests
+Test project /workspace/DTVM/work/build-policy-tests
+    Start 1: specUnitTests
+1/7 Test #1: specUnitTests ....................   Passed    0.18 sec
+    Start 2: mempoolTests
+2/7 Test #2: mempoolTests .....................   Passed    0.00 sec
+    Start 3: cAPITests
+3/7 Test #3: cAPITests ........................   Passed    0.01 sec
+    Start 4: lazyJitStubTests
+4/7 Test #4: lazyJitStubTests .................   Passed    0.01 sec
+    Start 5: mirPeepholeTests
+5/7 Test #5: mirPeepholeTests .................   Passed    2.83 sec
+    Start 6: statisticsTests
+6/7 Test #6: statisticsTests ..................   Passed    0.01 sec
+    Start 7: lazyJitGreedyOndemandTests
+7/7 Test #7: lazyJitGreedyOndemandTests .......***Failed    0.07 sec
+Running main() from /workspace/.dtvm-env/fetchcontent/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 7 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 7 tests from LazyJitGreedyOndemand
+[ RUN      ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp:229: Failure
+Expected: (Fast.Shape.RbpStores) > (Greedy.Shape.RbpStores), actual: 0 vs 0
+prefix heuristic FastRA rbp-stores=0 Greedy rbp-stores=0 FastRA sub=0 Greedy sub=0
+[  FAILED  ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop (2 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp:266: Failure
+Expected: (LazyShape.RbpStores) != (Fast.Shape.RbpStores), actual: 0 vs 0
+litmus is weak if FastRA and Greedy prefix counts match
+[  FAILED  ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool (52 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp:303: Failure
+Expected: (LazyShape.RbpStores) > (Greedy.Shape.RbpStores), actual: 0 vs 0
+[  FAILED  ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync (2 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtTwoFnStillTiers
+[       OK ] LazyJitGreedyOndemand.LazyMtTwoFnStillTiers (1 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyStOneFnStillGreedy
+[       OK ] LazyJitGreedyOndemand.LazyStOneFnStillGreedy (1 ms)
+[ RUN      ] LazyJitGreedyOndemand.BackgroundSeedsExcludeDirectAndIndirectCallees
+[       OK ] LazyJitGreedyOndemand.BackgroundSeedsExcludeDirectAndIndirectCallees (2 ms)
+[ RUN      ] LazyJitGreedyOndemand.EntrySeedFixtureKeepsEagerAndSerialBehavior
+[       OK ] LazyJitGreedyOndemand.EntrySeedFixtureKeepsEagerAndSerialBehavior (2 ms)
+[----------] 7 tests from LazyJitGreedyOndemand (65 ms total)
+
+[----------] Global test environment tear-down
+[==========] 7 tests from 1 test suite ran. (65 ms total)
+[  PASSED  ] 4 tests.
+[  FAILED  ] 3 tests, listed below:
+[  FAILED  ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop
+[  FAILED  ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool
+[  FAILED  ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync
+
+ 3 FAILED TESTS
+
+
+86% tests passed, 1 tests failed out of 7
+
+Total Test time (real) =   3.12 sec
+
+The following tests FAILED:
+	  7 - lazyJitGreedyOndemandTests (Failed)
+Errors while running CTest

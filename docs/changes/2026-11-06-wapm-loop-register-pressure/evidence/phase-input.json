@@ -1,0 +1,15 @@
+{
+  "diagnostic_only": true,
+  "source": "work/shortcase/pi.wat",
+  "source_sha256": "5ec43c12f17d1cb3f314af8fad71ca76bf0e923a695466f162d3124a702414b8",
+  "output_sha256": "9b726a867b0bb058a4b5a11b97d5ce8a62dfc0804930bdc4091a8f6654374603",
+  "scratch_range": [
+    16,
+    52
+  ],
+  "boundaries": [
+    "outer prime contribution: modular arithmetic and fmod",
+    "find next prime: square root and divisibility loop"
+  ],
+  "note": "Clock calls per outer iteration; helper compilation included in initial intervals. Excludes parsing, initial log and printing. Never pool with canonical end-to-end timings."
+}
