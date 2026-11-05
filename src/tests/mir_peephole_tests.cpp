@@ -1971,3 +1971,35 @@ TEST(MIRPeepholeLitmus, ReusedPassDoesNotReuseAssignmentFromPreviousFunction) {
   EXPECT_TRUE(Ret->getOperand<0>()->getKind() == MInstruction::BINARY)
       << dumpFunc(B.F);
 }
+
+TEST(MIRPeepholeWasm, FastRARegmaskPreservesLongIntegerAndFloatCallChains) {
+  std::ifstream In(REGMASK_STRESS_WASM_PATH, std::ios::binary);
+  ASSERT_TRUE(In);
+  std::vector<uint8_t> Bytes((std::istreambuf_iterator<char>(In)),
+                             std::istreambuf_iterator<char>());
+  for (bool Lazy : {false, true}) {
+    RuntimeConfig Cfg;
+    Cfg.Mode = RunMode::MultipassMode;
+#ifdef ZEN_ENABLE_BUILTIN_WASI
+    Cfg.DisableWASI = true;
+#endif
+    Cfg.DisableMultipassMultithread = true;
+    Cfg.DisableMultipassGreedyRA = true;
+    Cfg.EnableMultipassLazy = Lazy;
+    auto RT = Runtime::newRuntime(Cfg);
+    ASSERT_NE(RT, nullptr);
+    auto Mod = RT->loadModule("regmask-stress", Bytes.data(), Bytes.size());
+    ASSERT_TRUE(Mod);
+    auto *Iso = RT->createManagedIsolation();
+    auto Inst = Iso->createInstance(**Mod);
+    ASSERT_TRUE(Inst);
+    for (unsigned Repeat = 0; Repeat < 2; ++Repeat) {
+      EXPECT_EQ(callI32NoArg(*RT, **Inst, "i32_calls"), 512);
+      std::vector<TypedValue> Results;
+      ASSERT_TRUE(RT->callWasmFunction(**Inst, "f64_calls", {}, Results));
+      ASSERT_FALSE((*Inst)->hasError());
+      ASSERT_EQ(Results.size(), 1u);
+      EXPECT_DOUBLE_EQ(Results[0].Value.F64, 640.0);
+    }
+  }
+}

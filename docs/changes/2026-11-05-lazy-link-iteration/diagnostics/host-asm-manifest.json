@@ -1,0 +1,24 @@
+{
+  "previous": {
+    "binary_sha256": "914dccaf9e51619c91d22568ae84ac3cbbab5a78e91f6d72cbe0ef2f6e055c09",
+    "symbol": "_ZN8COMPILER6FastRA4Impl21allocateCgInstructionERNS_13CgInstructionE",
+    "command": [
+      "objdump",
+      "-d",
+      "-C",
+      "--disassemble=_ZN8COMPILER6FastRA4Impl21allocateCgInstructionERNS_13CgInstructionE",
+      "work/link-iteration/dtvm-previous"
+    ]
+  },
+  "regmask": {
+    "binary_sha256": "613de61caee1e7df6466bb2c7d6f4f986f7822275f31143bc4ca0957ab9df4b3",
+    "symbol": "_ZN8COMPILER6FastRA4Impl21allocateCgInstructionERNS_13CgInstructionE",
+    "command": [
+      "objdump",
+      "-d",
+      "-C",
+      "--disassemble=_ZN8COMPILER6FastRA4Impl21allocateCgInstructionERNS_13CgInstructionE",
+      "work/link-iteration/dtvm-candidate"
+    ]
+  }
+}

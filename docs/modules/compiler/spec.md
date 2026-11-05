@@ -90,6 +90,14 @@ object rebuilds both MC objects. The 64 KiB bound controls reuse only and does
 not limit compiled function size. This lifecycle does not change code publication,
 relocation, trap checks or guest execution semantics.
 
+FastRA call-regmask displacement scans the virtual live set for small sets.
+When that set exceeds the number of physical register units, discover assigned
+values through the unit-state map instead. Ignore spilled values with no physical
+assignment, deduplicate multi-unit aliases, and process assignments in their
+original dense-live-set order. Displacement must not insert or erase live-set
+entries while the discovered pointers are used. This changes host search cost,
+not allocation decisions, spill order or guest call-clobber semantics.
+
 ### LazyJIT stub publish monotonicity
 
 In multithread LazyJIT, each function stub's `jmp` target is published monotonically:

@@ -1,0 +1,41 @@
+{
+  "previous": {
+    "binary": {
+      "path": "/workspace/DTVM/work/link-iteration/dtvm-previous",
+      "sha256": "914dccaf9e51619c91d22568ae84ac3cbbab5a78e91f6d72cbe0ef2f6e055c09",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "case": "hot10000",
+    "mode": "lazy-F-ST",
+    "sample_period_ns": 1000000,
+    "profiler": "scripts/sample_ip.c",
+    "timing_use": "diagnostic only; separate from formal timings"
+  },
+  "cache": {
+    "binary": {
+      "path": "/workspace/DTVM/work/link-iteration/dtvm-candidate",
+      "sha256": "d030d35a28c7c37a3069eb78a990d4d2ad141ee8859c834785ebe407db736b22",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "case": "hot10000",
+    "mode": "lazy-F-ST",
+    "sample_period_ns": 1000000,
+    "profiler": "scripts/sample_ip.c",
+    "timing_use": "diagnostic only; separate from formal timings"
+  },
+  "regmask": {
+    "binary": {
+      "path": "/workspace/DTVM/work/link-iteration/dtvm-candidate",
+      "sha256": "613de61caee1e7df6466bb2c7d6f4f986f7822275f31143bc4ca0957ab9df4b3",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "case": "hot10000",
+    "mode": "lazy-F-ST",
+    "sample_period_ns": 1000000,
+    "profiler": "scripts/sample_ip.c",
+    "timing_use": "diagnostic only; separate from formal timings"
+  }
+}

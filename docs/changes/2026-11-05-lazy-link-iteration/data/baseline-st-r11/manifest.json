@@ -1,0 +1,132 @@
+{
+  "upstream_main_commit": "f4b85073d2cc9df4fe5eeeb460fdcc3f093ef371",
+  "previous_experiment_commit": "c197464",
+  "seed": 20261118,
+  "repeats": 11,
+  "cpu": 0,
+  "boundary": "fresh-process pre-spawn through exit; warm page cache; cache disabled for Wasmtime; no diagnostics",
+  "binaries": {
+    "main-F": {
+      "path": "/workspace/DTVM/work/link-iteration/dtvm-main",
+      "sha256": "31a89be553c2384dbe602d8e3adeeec08d0f8c10714b83b425a68b79217492bc",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "previous-F": {
+      "path": "/workspace/DTVM/work/link-iteration/dtvm-previous",
+      "sha256": "914dccaf9e51619c91d22568ae84ac3cbbab5a78e91f6d72cbe0ef2f6e055c09",
+      "mode": "lazy-F-ST",
+      "extra": []
+    },
+    "wt45": {
+      "path": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "mode": null,
+      "extra": []
+    },
+    "wt49": {
+      "path": "/workspace/DTVM/work/wasmtime49/wasmtime-v49.0.5-x86_64-linux/wasmtime",
+      "sha256": "04c48a2507d614209dfbaa45397e842a5c79f64fe75e5bd4d3b95cdf667fec5d",
+      "mode": null,
+      "extra": []
+    }
+  },
+  "inputs": {
+    "hot1000": "07738652fb07b8a42016c8667e4e7a55bff6752ccfda865cbb7fcd3855d463e6",
+    "hot10000": "1d9fc8b986e439086d5134783c2979719d08e3dd99f246abbfb94f834d2e14d9"
+  },
+  "commands": {
+    "hot1000": {
+      "main-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/link-iteration/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "previous-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/link-iteration/dtvm-previous",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "wt49": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wasmtime49/wasmtime-v49.0.5-x86_64-linux/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ]
+    },
+    "hot10000": {
+      "main-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/link-iteration/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ],
+      "previous-F": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/link-iteration/dtvm-previous",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "--disable-multipass-greedyra",
+        "--disable-multipass-multithread",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ],
+      "wt49": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wasmtime49/wasmtime-v49.0.5-x86_64-linux/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/iteration/hot10000.wasm"
+      ]
+    }
+  }
+}

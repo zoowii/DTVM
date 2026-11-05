@@ -1,0 +1,132 @@
+{
+  "sample_period_ns": 1000000,
+  "total": 607,
+  "lost": 0,
+  "self_samples": [
+    {
+      "function": "[outside main executable]",
+      "samples": 155,
+      "percent": 25.53542009884679
+    },
+    {
+      "function": "COMPILER::FastRA::Impl::allocateCgInstruction(COMPILER::CgInstruction&)",
+      "samples": 48,
+      "percent": 7.907742998352553
+    },
+    {
+      "function": "COMPILER::FastRA::Impl::defineVirtReg(COMPILER::CgInstruction&, unsigned int, llvm::Register, bool)",
+      "samples": 28,
+      "percent": 4.612850082372323
+    },
+    {
+      "function": "COMPILER::FastRA::Impl::useVirtReg(COMPILER::CgInstruction&, COMPILER::CgOperand&, llvm::Register)",
+      "samples": 25,
+      "percent": 4.118616144975288
+    },
+    {
+      "function": "COMPILER::FastRA::Impl::allocVirtReg(COMPILER::CgInstruction&, COMPILER::FastRA::Impl::LiveReg&, llvm::Register, bool)",
+      "samples": 24,
+      "percent": 3.9538714991762767
+    },
+    {
+      "function": "llvm::StringMapImpl::LookupBucketFor(llvm::StringRef)",
+      "samples": 14,
+      "percent": 2.3064250411861615
+    },
+    {
+      "function": "COMPILER::CgInstruction::removeRegOperandsFromUseLists(COMPILER::CgRegisterInfo&)",
+      "samples": 11,
+      "percent": 1.812191103789127
+    },
+    {
+      "function": "COMPILER::PrologEpilogInserter::runOnCgFunction(COMPILER::CgFunction&)",
+      "samples": 11,
+      "percent": 1.812191103789127
+    },
+    {
+      "function": "bool llvm::DenseMapBase<llvm::DenseMap<llvm::StringRef, llvm::detail::DenseSetEmpty, llvm::DenseMapInfo<llvm::StringRef, void>, llvm::detail::DenseSetPair<llvm::StringRef> >, llvm::StringRef, llvm::detail::DenseSetEmpty, llvm::DenseMapInfo<llvm::StringRef, void>, llvm::detail::DenseSetPair<llvm::StringRef> >::LookupBucketFor<llvm::StringRef>(llvm::StringRef const&, llvm::detail::DenseSetPair<llvm::StringRef> const*&) const",
+      "samples": 11,
+      "percent": 1.812191103789127
+    },
+    {
+      "function": "llvm::hashing::detail::hash_short(char const*, unsigned long, unsigned long)",
+      "samples": 9,
+      "percent": 1.4827018121911038
+    },
+    {
+      "function": "COMPILER::PrologEpilogInserter::Impl::replaceFrameIndices(COMPILER::CgFunction&)",
+      "samples": 8,
+      "percent": 1.3179571663920921
+    },
+    {
+      "function": "COMPILER::CgInstruction::CgInstruction(llvm::MCInstrDesc const&, llvm::ArrayRef<COMPILER::CgOperand>, bool, COMPILER::CompileContext&)",
+      "samples": 7,
+      "percent": 1.1532125205930808
+    },
+    {
+      "function": "llvm::MCContext::ELFSectionKey::operator<(llvm::MCContext::ELFSectionKey const&) const",
+      "samples": 7,
+      "percent": 1.1532125205930808
+    },
+    {
+      "function": "std::_Rb_tree<llvm::MCContext::ELFEntrySizeKey, std::pair<llvm::MCContext::ELFEntrySizeKey const, unsigned int>, std::_Select1st<std::pair<llvm::MCContext::ELFEntrySizeKey const, unsigned int> >, std::less<llvm::MCContext::ELFEntrySizeKey>, std::allocator<std::pair<llvm::MCContext::ELFEntrySizeKey const, unsigned int> > >::_M_get_insert_unique_pos(llvm::MCContext::ELFEntrySizeKey const&)",
+      "samples": 7,
+      "percent": 1.1532125205930808
+    },
+    {
+      "function": "COMPILER::CgLowering<COMPILER::X86CgLowering>::lowerExpr(COMPILER::MInstruction const&)",
+      "samples": 6,
+      "percent": 0.9884678747940692
+    },
+    {
+      "function": "COMPILER::X86CgPeephole::peepholeOptimize(COMPILER::CgBasicBlock&, llvm::ilist_iterator<llvm::ilist_detail::node_options<COMPILER::CgInstruction, false, false, void>, false, false>&)",
+      "samples": 6,
+      "percent": 0.9884678747940692
+    },
+    {
+      "function": "COMPILER::X86MCInstLower::lower(COMPILER::CgInstruction*, llvm::MCInst&)",
+      "samples": 6,
+      "percent": 0.9884678747940692
+    },
+    {
+      "function": "llvm::MCContext::getELFSection(llvm::Twine const&, unsigned int, unsigned int, unsigned int, llvm::MCSymbolELF const*, bool, unsigned int, llvm::MCSymbolELF const*)",
+      "samples": 6,
+      "percent": 0.9884678747940692
+    },
+    {
+      "function": "COMPILER::LazyJITCompiler::compileFunctionOnRequest(unsigned char*)",
+      "samples": 6,
+      "percent": 0.9884678747940692
+    },
+    {
+      "function": "COMPILER::ExpandPostRAPseudos::runOnCgFunction(COMPILER::CgFunction&)",
+      "samples": 5,
+      "percent": 0.8237232289950577
+    },
+    {
+      "function": "COMPILER::MCLowering<COMPILER::X86MCLowering>::emitFunctionBody()",
+      "samples": 5,
+      "percent": 0.8237232289950577
+    },
+    {
+      "function": "llvm::MCELFStreamer::emitInstToData(llvm::MCInst const&, llvm::MCSubtargetInfo const&)",
+      "samples": 5,
+      "percent": 0.8237232289950577
+    },
+    {
+      "function": "llvm::MCContext::createELFSectionImpl(llvm::StringRef, unsigned int, unsigned int, llvm::SectionKind, unsigned int, llvm::MCSymbolELF const*, bool, unsigned int, llvm::MCSymbolELF const*)",
+      "samples": 5,
+      "percent": 0.8237232289950577
+    },
+    {
+      "function": "llvm::raw_ostream::write(char const*, unsigned long)",
+      "samples": 5,
+      "percent": 0.8237232289950577
+    },
+    {
+      "function": "std::pair<std::_Rb_tree_iterator<std::pair<llvm::MCContext::ELFSectionKey const, llvm::MCSectionELF*> >, bool> std::_Rb_tree<llvm::MCContext::ELFSectionKey, std::pair<llvm::MCContext::ELFSectionKey const, llvm::MCSectionELF*>, std::_Select1st<std::pair<llvm::MCContext::ELFSectionKey const, llvm::MCSectionELF*> >, std::less<llvm::MCContext::ELFSectionKey>, std::allocator<std::pair<llvm::MCContext::ELFSectionKey const, llvm::MCSectionELF*> > >::_M_emplace_unique<std::pair<llvm::MCContext::ELFSectionKey, decltype(nullptr)> >(std::pair<llvm::MCContext::ELFSectionKey, decltype(nullptr)>&&)",
+      "samples": 5,
+      "percent": 0.8237232289950577
+    }
+  ]
+}

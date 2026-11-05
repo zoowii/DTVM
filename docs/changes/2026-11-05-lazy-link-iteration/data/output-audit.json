@@ -1,0 +1,87 @@
+{
+  "total": 3084,
+  "warmups": 177,
+  "measured": 2907,
+  "phases": {
+    "baseline-st-r11": {
+      "processes": 96,
+      "warmups": 8,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": null
+    },
+    "regmask-heldout-r15": {
+      "processes": 80,
+      "warmups": 5,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": null
+    },
+    "dead-counts-st-r11": {
+      "processes": 120,
+      "warmups": 10,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": null
+    },
+    "regmask-st-r15": {
+      "processes": 160,
+      "warmups": 10,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": null
+    },
+    "cache-heldout-r15": {
+      "processes": 80,
+      "warmups": 5,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": null
+    },
+    "dead-counts-mt-r15": {
+      "processes": 560,
+      "warmups": 35,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": "fib_iter_dev typed hex vs decimal and Wasmtime invoke warning"
+    },
+    "cache-st-r15": {
+      "processes": 160,
+      "warmups": 10,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": null
+    },
+    "baseline-mt-r11": {
+      "processes": 288,
+      "warmups": 24,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": "fib_iter_dev typed hex vs decimal and Wasmtime invoke warning"
+    },
+    "regmask-mt-r21": {
+      "processes": 770,
+      "warmups": 35,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": "fib_iter_dev typed hex vs decimal and Wasmtime invoke warning"
+    },
+    "cache-mt-r21": {
+      "processes": 770,
+      "warmups": 35,
+      "all_exit_zero": true,
+      "all_output_hashes_verified": true,
+      "stable_per_variant": true,
+      "cross_variant_exception": "fib_iter_dev typed hex vs decimal and Wasmtime invoke warning"
+    }
+  }
+}
