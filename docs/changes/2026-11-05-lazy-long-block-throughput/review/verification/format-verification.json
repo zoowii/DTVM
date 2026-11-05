@@ -1,0 +1,9 @@
+{
+  "script": "./tools/format.sh check",
+  "exit_code": 0,
+  "clang_format": "15.0.6 (matches CI Dockerfile)",
+  "cmake_format": "0.6.13",
+  "fixture_before_sha256": "4af01005ced1ebce8ec487f1ac8e8d7c33da54ec8f2a762bc31aae6fb262e4f5",
+  "fixture_after_sha256": "4af01005ced1ebce8ec487f1ac8e8d7c33da54ec8f2a762bc31aae6fb262e4f5",
+  "fixture_unchanged_after_cmake_format": true
+}

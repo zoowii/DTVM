@@ -1,0 +1,7 @@
+{
+  "base_commit": "6a6ede1ffc7b9444b74b9e3556bf382c9993fbdf",
+  "compiler_patch_sha256": "0e775ba49a99b2fbf8eeb20a967dfa9fa3123f69e03165fb26735d2ec476489f",
+  "before_binary_sha256": "49d067bdc04d86c8e33d9f80a5f7446e992f5eadc233a2ff5e56c9c3b7c641d8",
+  "after_binary_sha256": "0b08d14e3a9e672f08be81eac9a735a497e8e27ef6058c0f7472307e7783422b",
+  "test_only_final_change": "mixed fixture now uses distinct weights 3,5,7,11; entire 98-test MIR target rerun after strengthening; production compiler unchanged"
+}

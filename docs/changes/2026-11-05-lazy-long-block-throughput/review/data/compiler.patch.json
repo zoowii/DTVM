@@ -1,0 +1,3 @@
+{
+  "patch": "diff --git a/src/compiler/cgir/pass/fast_ra.cpp b/src/compiler/cgir/pass/fast_ra.cpp\nindex c1efb41..d46427c 100644\n--- a/src/compiler/cgir/pass/fast_ra.cpp\n+++ b/src/compiler/cgir/pass/fast_ra.cpp\n@@ -91,7 +91,10 @@ public:\n \n   SmallVector<CgInstruction *, 32> coalesced;\n \n-  using LiveRegMap = SparseSet<LiveReg>;\n+  // The default 8-bit sparse index probes the dense set in strides of 256.\n+  // Use full-width indices so large-block clobber discovery stays bounded by\n+  // physical units rather than reintroducing a virtual-live-set scan.\n+  using LiveRegMap = SparseSet<LiveReg, identity<unsigned>, uint32_t>;\n   LiveRegMap LiveVirtRegs;\n \n   BitVector MayLiveAcrossBlocks;\n"
+}

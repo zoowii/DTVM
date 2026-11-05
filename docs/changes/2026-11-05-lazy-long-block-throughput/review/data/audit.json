@@ -1,0 +1,21 @@
+{
+  "total": 490,
+  "measured": 465,
+  "warmups": 25,
+  "phases": {
+    "st-r15": {
+      "processes": 160,
+      "warmups": 10,
+      "all_exit_zero": true,
+      "all_outputs_matching": true,
+      "round_variant_completeness_verified": true
+    },
+    "mt-r21": {
+      "processes": 330,
+      "warmups": 15,
+      "all_exit_zero": true,
+      "all_outputs_matching": true,
+      "round_variant_completeness_verified": true
+    }
+  }
+}

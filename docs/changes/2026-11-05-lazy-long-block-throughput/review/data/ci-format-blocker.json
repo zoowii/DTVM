@@ -1,0 +1,17 @@
+{
+  "commit": "6a6ede1ffc7b9444b74b9e3556bf382c9993fbdf",
+  "pr": 640,
+  "job_url": "https://github.com/DTVMStack/DTVM/actions/runs/42059779069/job/127357895413",
+  "root_failure": "Code Format Check: cmake-format",
+  "errors": [
+    "2026-11-05T15:56:44.1268244Z ##[group]Run ./tools/format.sh check",
+    "2026-11-05T15:56:45.6825923Z ERROR __main__.py:618: Check failed: src/tests/CMakeLists.txt",
+    "2026-11-05T15:56:45.7046585Z ##[error]Process completed with exit code 123."
+  ],
+  "performance_jobs": {
+    "run_id": 42059779073,
+    "baseline_build": "skipped",
+    "current_benchmark": "skipped",
+    "conclusion": "The no-summary regression comment is not a measured regression result."
+  }
+}
