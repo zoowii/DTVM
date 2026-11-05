@@ -1,0 +1,151 @@
+{
+  "upstream_main_commit": "f4b85073d2cc9df4fe5eeeb460fdcc3f093ef371",
+  "previous_experiment_commit": "28ad2de",
+  "candidate_source": "f4b8507 + only MIR index and bounded FastRA regmask scan; no MC reuse",
+  "seed": 20261130,
+  "repeats": 15,
+  "cpu": 0,
+  "boundary": "fresh-process pre-spawn through exit; warm page cache; cache disabled for Wasmtime; no diagnostics",
+  "binaries": {
+    "main": {
+      "path": "/workspace/DTVM/work/link-iteration/dtvm-main",
+      "sha256": "31a89be553c2384dbe602d8e3adeeec08d0f8c10714b83b425a68b79217492bc",
+      "mode": "lazy-G-MT",
+      "extra": []
+    },
+    "previous": {
+      "path": "/workspace/DTVM/work/pr-complete/dtvm-previous",
+      "sha256": "613de61caee1e7df6466bb2c7d6f4f986f7822275f31143bc4ca0957ab9df4b3",
+      "mode": "lazy-G-MT",
+      "extra": []
+    },
+    "candidate": {
+      "path": "/workspace/DTVM/work/pr-complete/dtvm-candidate",
+      "sha256": "49d067bdc04d86c8e33d9f80a5f7446e992f5eadc233a2ff5e56c9c3b7c641d8",
+      "mode": "lazy-G-MT",
+      "extra": []
+    },
+    "wt45": {
+      "path": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "mode": null,
+      "extra": []
+    },
+    "wt49": {
+      "path": "/workspace/DTVM/work/wasmtime49/wasmtime-v49.0.5-x86_64-linux/wasmtime",
+      "sha256": "04c48a2507d614209dfbaa45397e842a5c79f64fe75e5bd4d3b95cdf667fec5d",
+      "mode": null,
+      "extra": []
+    }
+  },
+  "inputs": {
+    "hot1000": "07738652fb07b8a42016c8667e4e7a55bff6752ccfda865cbb7fcd3855d463e6",
+    "call10000": "c110ede4b3bd3b4a916c8bb55ccead21f11ae6d41d247e5beb70c36e86ebf2f5"
+  },
+  "commands": {
+    "hot1000": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/link-iteration/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "previous": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr-complete/dtvm-previous",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr-complete/dtvm-candidate",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ],
+      "wt49": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wasmtime49/wasmtime-v49.0.5-x86_64-linux/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/shortcase/hot1000.wasm"
+      ]
+    },
+    "call10000": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/link-iteration/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/pr-complete/call10000.wasm"
+      ],
+      "previous": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr-complete/dtvm-previous",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/pr-complete/call10000.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr-complete/dtvm-candidate",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/work/pr-complete/call10000.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/pr-complete/call10000.wasm"
+      ],
+      "wt49": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wasmtime49/wasmtime-v49.0.5-x86_64-linux/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/work/pr-complete/call10000.wasm"
+      ]
+    }
+  }
+}

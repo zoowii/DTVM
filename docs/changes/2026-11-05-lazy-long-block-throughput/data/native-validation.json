@@ -1,0 +1,64 @@
+{
+  "case": "call10000",
+  "diagnostic_only": true,
+  "mode_dtvm": "lazy-F-ST",
+  "buffers": [
+    {
+      "sequence": 0,
+      "bytes": 99,
+      "masked_address_offsets": [
+        45
+      ],
+      "matching_sha256": "8da20b26207b4d59a9e5d99c3586c73515188c936866a4df47dad22c510be92c"
+    },
+    {
+      "sequence": 1,
+      "bytes": 323584,
+      "masked_address_offsets": [
+        319942,
+        319958
+      ],
+      "matching_sha256": "c3d3f4d9372fe32881a64cb0d69023d46c51f5faec60136afb450c2077e471ee"
+    },
+    {
+      "sequence": 2,
+      "bytes": 4096,
+      "masked_address_offsets": [],
+      "matching_sha256": "082a27b0563a818129505f555b14ed282870228feb93b44e0f3a7513a976905e"
+    }
+  ],
+  "metrics": {
+    "dtvm": {
+      "native_function_bytes": 319977,
+      "instructions": 70032,
+      "direct_or_indirect_call_instructions": 10002,
+      "static_frame_memory_operand_instructions": 30010,
+      "rsp_subtractions": [
+        "4:\t48 81 ec 60 9c 00 00 \tsub    $0x9c60,%rsp"
+      ],
+      "note": "Static counts; not dynamic memory accesses. DTVM post-link JIT, Wasmtime unrelocated AOT diagnostic."
+    },
+    "wt45": {
+      "native_function_bytes": 291002,
+      "instructions": 60037,
+      "direct_or_indirect_call_instructions": 10000,
+      "static_frame_memory_operand_instructions": 20001,
+      "rsp_subtractions": [
+        "4f:\t48 81 ec 00 10 00 00 \tsub    $0x1000,%rsp",
+        "6d:\t48 81 ec 90 38 01 00 \tsub    $0x13890,%rsp"
+      ],
+      "note": "Static counts; not dynamic memory accesses. DTVM post-link JIT, Wasmtime unrelocated AOT diagnostic."
+    },
+    "wt49": {
+      "native_function_bytes": 291002,
+      "instructions": 60037,
+      "direct_or_indirect_call_instructions": 10000,
+      "static_frame_memory_operand_instructions": 20001,
+      "rsp_subtractions": [
+        "4f:\t48 81 ec 00 10 00 00 \tsub    $0x1000,%rsp",
+        "6d:\t48 81 ec 90 38 01 00 \tsub    $0x13890,%rsp"
+      ],
+      "note": "Static counts; not dynamic memory accesses. DTVM post-link JIT, Wasmtime unrelocated AOT diagnostic."
+    }
+  }
+}

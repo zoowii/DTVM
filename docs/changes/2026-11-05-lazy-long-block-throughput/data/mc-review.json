@@ -1,0 +1,20 @@
+{
+  "llvm_reference_tag": "llvmorg-15.0.7",
+  "elf_initializer_getELFSection_call_sites": 55,
+  "scope": "static source review; not a timing measurement",
+  "references": {
+    "MCAssembler": "https://github.com/llvm/llvm-project/blob/llvmorg-15.0.7/llvm/lib/MC/MCAssembler.cpp",
+    "MCContext": "https://github.com/llvm/llvm-project/blob/llvmorg-15.0.7/llvm/lib/MC/MCContext.cpp",
+    "MCObjectFileInfo": "https://github.com/llvm/llvm-project/blob/llvmorg-15.0.7/llvm/lib/MC/MCObjectFileInfo.cpp",
+    "MCObjectStreamer": "https://github.com/llvm/llvm-project/blob/llvmorg-15.0.7/llvm/lib/MC/MCObjectStreamer.cpp",
+    "MCStreamer": "https://github.com/llvm/llvm-project/blob/llvmorg-15.0.7/llvm/lib/MC/MCStreamer.cpp"
+  },
+  "source_hashes": {
+    "MCAssembler": "1f80a3d295bfa9cb27efad3f39ba8c5e0e57835e42cc1fe257790139a95e7b11",
+    "MCContext": "e95e2e482968c429d440e6a17ca6f3e4d0e10f8b0b2bb4de5fa438b5f063c53f",
+    "MCObjectFileInfo": "514e100ff502a11dff2dfbd5a4805782543d6a918c62ec6a37a0f00dc40569ea",
+    "MCObjectStreamer": "bdef7c38cd242bb9ad957a6f399b230ef386c461783cff5f1e699c9197cbb688",
+    "MCStreamer": "db3d6a95a7d68b23ad325922c6c9b2ba79b93eb9f9e91290b063638eb2aa6000"
+  },
+  "decision": "Retain LLVM context reset lifecycle; MC assembler reset leaves section registration flags and cannot alone isolate successive objects. The MCObjectFileInfo API initializes all format metadata together. Partial-context reuse needs a separate lifecycle design."
+}

@@ -1,0 +1,35 @@
+{
+  "total": 2100,
+  "measured": 1995,
+  "warmups": 105,
+  "phases": {
+    "clean-st-r21": {
+      "processes": 440,
+      "warmups": 20,
+      "exit_zero": true,
+      "all_captured_output_hashes_verified": true,
+      "stable_and_matching_outputs": true
+    },
+    "expanded-mt-r11": {
+      "processes": 720,
+      "warmups": 60,
+      "exit_zero": true,
+      "all_captured_output_hashes_verified": true,
+      "stable_and_matching_outputs": true
+    },
+    "default-mt-r15": {
+      "processes": 160,
+      "warmups": 10,
+      "exit_zero": true,
+      "all_captured_output_hashes_verified": true,
+      "stable_and_matching_outputs": true
+    },
+    "short-confirm-r51": {
+      "processes": 780,
+      "warmups": 15,
+      "exit_zero": true,
+      "all_captured_output_hashes_verified": true,
+      "stable_and_matching_outputs": true
+    }
+  }
+}

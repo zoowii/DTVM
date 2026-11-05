@@ -1,0 +1,51 @@
+[
+  {
+    "id": "hot1",
+    "wasm": "/workspace/DTVM/work/shortcase/hot1.wasm",
+    "kind": "wasi-main",
+    "fairness": "same-wasm",
+    "suite": "synthetic"
+  },
+  {
+    "id": "cold100",
+    "wasm": "/workspace/DTVM/work/shortcase/cold100.wasm",
+    "kind": "wasi-main",
+    "fairness": "same-wasm",
+    "suite": "synthetic"
+  },
+  {
+    "id": "hot100",
+    "wasm": "/workspace/DTVM/work/shortcase/hot100.wasm",
+    "kind": "wasi-main",
+    "fairness": "same-wasm",
+    "suite": "synthetic"
+  },
+  {
+    "id": "hot1000",
+    "wasm": "/workspace/DTVM/work/shortcase/hot1000.wasm",
+    "kind": "wasi-main",
+    "fairness": "same-wasm",
+    "suite": "synthetic"
+  },
+  {
+    "id": "hot10000",
+    "wasm": "/workspace/DTVM/work/iteration/hot10000.wasm",
+    "kind": "wasi-main",
+    "suite": "synthetic",
+    "fairness": "same-wasm"
+  },
+  {
+    "id": "hot5000",
+    "wasm": "/workspace/DTVM/work/iteration/hot5000.wasm",
+    "kind": "wasi-main",
+    "suite": "synthetic",
+    "fairness": "same-wasm"
+  },
+  {
+    "id": "call10000",
+    "wasm": "/workspace/DTVM/work/pr-complete/call10000.wasm",
+    "kind": "wasi-main",
+    "suite": "synthetic",
+    "fairness": "same-wasm"
+  }
+]

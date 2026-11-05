@@ -1,0 +1,245 @@
+{
+  "amirali": {
+    "main": {
+      "exit": 0,
+      "stdout": "Amirali Esfandiari\n\nYoung backend developer & Even younger SRE\n\nEmail: amiralinull@gmail.com\nWebsite: amirali.dev\nGithub: github.com/amirali\nLiknedin: linkedin.com/in/amirali-esfandiari\nTwitter: twitter.com/eilarima\n\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "Amirali Esfandiari\n\nYoung backend developer & Even younger SRE\n\nEmail: amiralinull@gmail.com\nWebsite: amirali.dev\nGithub: github.com/amirali\nLiknedin: linkedin.com/in/amirali-esfandiari\nTwitter: twitter.com/eilarima\n\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "Amirali Esfandiari\n\nYoung backend developer & Even younger SRE\n\nEmail: amiralinull@gmail.com\nWebsite: amirali.dev\nGithub: github.com/amirali\nLiknedin: linkedin.com/in/amirali-esfandiari\nTwitter: twitter.com/eilarima\n\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "Amirali Esfandiari\n\nYoung backend developer & Even younger SRE\n\nEmail: amiralinull@gmail.com\nWebsite: amirali.dev\nGithub: github.com/amirali\nLiknedin: linkedin.com/in/amirali-esfandiari\nTwitter: twitter.com/eilarima\n\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "Amirali Esfandiari\n\nYoung backend developer & Even younger SRE\n\nEmail: amiralinull@gmail.com\nWebsite: amirali.dev\nGithub: github.com/amirali\nLiknedin: linkedin.com/in/amirali-esfandiari\nTwitter: twitter.com/eilarima\n\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+      "stderr": ""
+    }
+  },
+  "chkfont": {
+    "main": {
+      "exit": 0,
+      "stdout": "fonts/small.flf: Errors: 0, Warnings: 0\n-------------------------------------------------------------------------------\n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "fonts/small.flf: Errors: 0, Warnings: 0\n-------------------------------------------------------------------------------\n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "fonts/small.flf: Errors: 0, Warnings: 0\n-------------------------------------------------------------------------------\n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "fonts/small.flf: Errors: 0, Warnings: 0\n-------------------------------------------------------------------------------\n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "fonts/small.flf: Errors: 0, Warnings: 0\n-------------------------------------------------------------------------------\n",
+      "stderr": ""
+    }
+  },
+  "code-stock": {
+    "main": {
+      "exit": 0,
+      "stdout": "Hello, world!\n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "Hello, world!\n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "Hello, world!\n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "Hello, world!\n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "Hello, world!\n",
+      "stderr": ""
+    }
+  },
+  "dice": {
+    "main": {
+      "exit": 0,
+      "stdout": "welcome to dice roller ( type 'help' for commands )\n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "welcome to dice roller ( type 'help' for commands )\n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "welcome to dice roller ( type 'help' for commands )\n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "welcome to dice roller ( type 'help' for commands )\n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "welcome to dice roller ( type 'help' for commands )\n",
+      "stderr": ""
+    }
+  },
+  "figlet": {
+    "main": {
+      "exit": 0,
+      "stdout": " _          _ _       \n| |__   ___| | | ___  \n| '_ \\ / _ \\ | |/ _ \\ \n| | | |  __/ | | (_) |\n|_| |_|\\___|_|_|\\___/ \n                      \n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": " _          _ _       \n| |__   ___| | | ___  \n| '_ \\ / _ \\ | |/ _ \\ \n| | | |  __/ | | (_) |\n|_| |_|\\___|_|_|\\___/ \n                      \n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": " _          _ _       \n| |__   ___| | | ___  \n| '_ \\ / _ \\ | |/ _ \\ \n| | | |  __/ | | (_) |\n|_| |_|\\___|_|_|\\___/ \n                      \n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": " _          _ _       \n| |__   ___| | | ___  \n| '_ \\ / _ \\ | |/ _ \\ \n| | | |  __/ | | (_) |\n|_| |_|\\___|_|_|\\___/ \n                      \n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": " _          _ _       \n| |__   ___| | | ___  \n| '_ \\ / _ \\ | |/ _ \\ \n| | | |  __/ | | (_) |\n|_| |_|\\___|_|_|\\___/ \n                      \n",
+      "stderr": ""
+    }
+  },
+  "irb": {
+    "main": {
+      "exit": 0,
+      "stdout": "Switch to inspect mode.\nirb(main):001:0> 3+4\n=> 7\nirb(main):002:0> \n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "Switch to inspect mode.\nirb(main):001:0> 3+4\n=> 7\nirb(main):002:0> \n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "Switch to inspect mode.\nirb(main):001:0> 3+4\n=> 7\nirb(main):002:0> \n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "Switch to inspect mode.\nirb(main):001:0> 3+4\n=> 7\nirb(main):002:0> \n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "Switch to inspect mode.\nirb(main):001:0> 3+4\n=> 7\nirb(main):002:0> \n",
+      "stderr": ""
+    }
+  },
+  "pkg1": {
+    "main": {
+      "exit": 0,
+      "stdout": "Nothing here :)\n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "Nothing here :)\n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "Nothing here :)\n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "Nothing here :)\n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "Nothing here :)\n",
+      "stderr": ""
+    }
+  },
+  "qr2text": {
+    "main": {
+      "exit": 0,
+      "stdout": "                                 \n                                 \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2580\u2588  \u2584\u2584\u2580\u2588 \u2588\u2580\u2580\u2580\u2580\u2580\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588 \u2580\u2580\u2588\u2588\u2588 \u2588\u2580\u2580 \u2588 \u2588\u2588\u2588 \u2588    \n    \u2588 \u2580\u2580\u2580 \u2588 \u2584\u2588  \u2580\u2580\u2580\u2588  \u2588 \u2580\u2580\u2580 \u2588    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580 \u2580\u2584\u2588 \u2588\u2584\u2588 \u2580\u2580\u2580\u2580\u2580\u2580\u2580    \n    \u2588 \u2588   \u2580\u2580 \u2588\u2580\u2580 \u2588\u2588 \u2580 \u2584\u2588 \u2584\u2580\u2584\u2588    \n    \u2588\u2584 \u2584 \u2588\u2580\u2588\u2584\u2588\u2580\u2588 \u2584 \u2588\u2584\u2588\u2580\u2584 \u2588\u2580 \u2580    \n     \u2580\u2588\u2580\u2588\u2584\u2580 \u2584\u2584\u2580 \u2588\u2580 \u2584\u2588\u2584\u2588\u2584   \u2584\u2588    \n    \u2580\u2580\u2584 \u2580\u2580\u2580 \u2588\u2584\u2588\u2584\u2588\u2580\u2588\u2580 \u2580\u2580\u2584\u2584\u2588\u2580 \u2580    \n    \u2580\u2580\u2580 \u2580 \u2580\u2580\u2584\u2580\u2584  \u2588\u2588 \u2588\u2580\u2580\u2580\u2588  \u2580\u2584    \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2588\u2584\u2580 \u2584 \u2584\u2588 \u2580 \u2588  \u2584\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588   \u2580\u2580\u2588\u2580 \u2580\u2588\u2588\u2580\u2580\u2588 \u2584      \n    \u2588 \u2580\u2580\u2580 \u2588 \u2580\u2584 \u2584\u2588\u2580\u2588 \u2584\u2588\u2584\u2588\u2588\u2580 \u2580\u2580    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580\u2580   \u2580\u2580\u2580\u2580 \u2580  \u2580  \u2580    \n                                 \n                                 \n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "                                 \n                                 \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2580\u2588  \u2584\u2584\u2580\u2588 \u2588\u2580\u2580\u2580\u2580\u2580\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588 \u2580\u2580\u2588\u2588\u2588 \u2588\u2580\u2580 \u2588 \u2588\u2588\u2588 \u2588    \n    \u2588 \u2580\u2580\u2580 \u2588 \u2584\u2588  \u2580\u2580\u2580\u2588  \u2588 \u2580\u2580\u2580 \u2588    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580 \u2580\u2584\u2588 \u2588\u2584\u2588 \u2580\u2580\u2580\u2580\u2580\u2580\u2580    \n    \u2588 \u2588   \u2580\u2580 \u2588\u2580\u2580 \u2588\u2588 \u2580 \u2584\u2588 \u2584\u2580\u2584\u2588    \n    \u2588\u2584 \u2584 \u2588\u2580\u2588\u2584\u2588\u2580\u2588 \u2584 \u2588\u2584\u2588\u2580\u2584 \u2588\u2580 \u2580    \n     \u2580\u2588\u2580\u2588\u2584\u2580 \u2584\u2584\u2580 \u2588\u2580 \u2584\u2588\u2584\u2588\u2584   \u2584\u2588    \n    \u2580\u2580\u2584 \u2580\u2580\u2580 \u2588\u2584\u2588\u2584\u2588\u2580\u2588\u2580 \u2580\u2580\u2584\u2584\u2588\u2580 \u2580    \n    \u2580\u2580\u2580 \u2580 \u2580\u2580\u2584\u2580\u2584  \u2588\u2588 \u2588\u2580\u2580\u2580\u2588  \u2580\u2584    \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2588\u2584\u2580 \u2584 \u2584\u2588 \u2580 \u2588  \u2584\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588   \u2580\u2580\u2588\u2580 \u2580\u2588\u2588\u2580\u2580\u2588 \u2584      \n    \u2588 \u2580\u2580\u2580 \u2588 \u2580\u2584 \u2584\u2588\u2580\u2588 \u2584\u2588\u2584\u2588\u2588\u2580 \u2580\u2580    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580\u2580   \u2580\u2580\u2580\u2580 \u2580  \u2580  \u2580    \n                                 \n                                 \n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "                                 \n                                 \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2580\u2588  \u2584\u2584\u2580\u2588 \u2588\u2580\u2580\u2580\u2580\u2580\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588 \u2580\u2580\u2588\u2588\u2588 \u2588\u2580\u2580 \u2588 \u2588\u2588\u2588 \u2588    \n    \u2588 \u2580\u2580\u2580 \u2588 \u2584\u2588  \u2580\u2580\u2580\u2588  \u2588 \u2580\u2580\u2580 \u2588    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580 \u2580\u2584\u2588 \u2588\u2584\u2588 \u2580\u2580\u2580\u2580\u2580\u2580\u2580    \n    \u2588 \u2588   \u2580\u2580 \u2588\u2580\u2580 \u2588\u2588 \u2580 \u2584\u2588 \u2584\u2580\u2584\u2588    \n    \u2588\u2584 \u2584 \u2588\u2580\u2588\u2584\u2588\u2580\u2588 \u2584 \u2588\u2584\u2588\u2580\u2584 \u2588\u2580 \u2580    \n     \u2580\u2588\u2580\u2588\u2584\u2580 \u2584\u2584\u2580 \u2588\u2580 \u2584\u2588\u2584\u2588\u2584   \u2584\u2588    \n    \u2580\u2580\u2584 \u2580\u2580\u2580 \u2588\u2584\u2588\u2584\u2588\u2580\u2588\u2580 \u2580\u2580\u2584\u2584\u2588\u2580 \u2580    \n    \u2580\u2580\u2580 \u2580 \u2580\u2580\u2584\u2580\u2584  \u2588\u2588 \u2588\u2580\u2580\u2580\u2588  \u2580\u2584    \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2588\u2584\u2580 \u2584 \u2584\u2588 \u2580 \u2588  \u2584\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588   \u2580\u2580\u2588\u2580 \u2580\u2588\u2588\u2580\u2580\u2588 \u2584      \n    \u2588 \u2580\u2580\u2580 \u2588 \u2580\u2584 \u2584\u2588\u2580\u2588 \u2584\u2588\u2584\u2588\u2588\u2580 \u2580\u2580    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580\u2580   \u2580\u2580\u2580\u2580 \u2580  \u2580  \u2580    \n                                 \n                                 \n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "                                 \n                                 \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2580\u2588  \u2584\u2584\u2580\u2588 \u2588\u2580\u2580\u2580\u2580\u2580\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588 \u2580\u2580\u2588\u2588\u2588 \u2588\u2580\u2580 \u2588 \u2588\u2588\u2588 \u2588    \n    \u2588 \u2580\u2580\u2580 \u2588 \u2584\u2588  \u2580\u2580\u2580\u2588  \u2588 \u2580\u2580\u2580 \u2588    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580 \u2580\u2584\u2588 \u2588\u2584\u2588 \u2580\u2580\u2580\u2580\u2580\u2580\u2580    \n    \u2588 \u2588   \u2580\u2580 \u2588\u2580\u2580 \u2588\u2588 \u2580 \u2584\u2588 \u2584\u2580\u2584\u2588    \n    \u2588\u2584 \u2584 \u2588\u2580\u2588\u2584\u2588\u2580\u2588 \u2584 \u2588\u2584\u2588\u2580\u2584 \u2588\u2580 \u2580    \n     \u2580\u2588\u2580\u2588\u2584\u2580 \u2584\u2584\u2580 \u2588\u2580 \u2584\u2588\u2584\u2588\u2584   \u2584\u2588    \n    \u2580\u2580\u2584 \u2580\u2580\u2580 \u2588\u2584\u2588\u2584\u2588\u2580\u2588\u2580 \u2580\u2580\u2584\u2584\u2588\u2580 \u2580    \n    \u2580\u2580\u2580 \u2580 \u2580\u2580\u2584\u2580\u2584  \u2588\u2588 \u2588\u2580\u2580\u2580\u2588  \u2580\u2584    \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2588\u2584\u2580 \u2584 \u2584\u2588 \u2580 \u2588  \u2584\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588   \u2580\u2580\u2588\u2580 \u2580\u2588\u2588\u2580\u2580\u2588 \u2584      \n    \u2588 \u2580\u2580\u2580 \u2588 \u2580\u2584 \u2584\u2588\u2580\u2588 \u2584\u2588\u2584\u2588\u2588\u2580 \u2580\u2580    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580\u2580   \u2580\u2580\u2580\u2580 \u2580  \u2580  \u2580    \n                                 \n                                 \n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "                                 \n                                 \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2580\u2588  \u2584\u2584\u2580\u2588 \u2588\u2580\u2580\u2580\u2580\u2580\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588 \u2580\u2580\u2588\u2588\u2588 \u2588\u2580\u2580 \u2588 \u2588\u2588\u2588 \u2588    \n    \u2588 \u2580\u2580\u2580 \u2588 \u2584\u2588  \u2580\u2580\u2580\u2588  \u2588 \u2580\u2580\u2580 \u2588    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580 \u2580\u2584\u2588 \u2588\u2584\u2588 \u2580\u2580\u2580\u2580\u2580\u2580\u2580    \n    \u2588 \u2588   \u2580\u2580 \u2588\u2580\u2580 \u2588\u2588 \u2580 \u2584\u2588 \u2584\u2580\u2584\u2588    \n    \u2588\u2584 \u2584 \u2588\u2580\u2588\u2584\u2588\u2580\u2588 \u2584 \u2588\u2584\u2588\u2580\u2584 \u2588\u2580 \u2580    \n     \u2580\u2588\u2580\u2588\u2584\u2580 \u2584\u2584\u2580 \u2588\u2580 \u2584\u2588\u2584\u2588\u2584   \u2584\u2588    \n    \u2580\u2580\u2584 \u2580\u2580\u2580 \u2588\u2584\u2588\u2584\u2588\u2580\u2588\u2580 \u2580\u2580\u2584\u2584\u2588\u2580 \u2580    \n    \u2580\u2580\u2580 \u2580 \u2580\u2580\u2584\u2580\u2584  \u2588\u2588 \u2588\u2580\u2580\u2580\u2588  \u2580\u2584    \n    \u2588\u2580\u2580\u2580\u2580\u2580\u2588 \u2580\u2588\u2584\u2580 \u2584 \u2584\u2588 \u2580 \u2588  \u2584\u2588    \n    \u2588 \u2588\u2588\u2588 \u2588   \u2580\u2580\u2588\u2580 \u2580\u2588\u2588\u2580\u2580\u2588 \u2584      \n    \u2588 \u2580\u2580\u2580 \u2588 \u2580\u2584 \u2584\u2588\u2580\u2588 \u2584\u2588\u2584\u2588\u2588\u2580 \u2580\u2580    \n    \u2580\u2580\u2580\u2580\u2580\u2580\u2580 \u2580\u2580   \u2580\u2580\u2580\u2580 \u2580  \u2580  \u2580    \n                                 \n                                 \n",
+      "stderr": ""
+    }
+  },
+  "suggest": {
+    "main": {
+      "exit": 0,
+      "stdout": "The `instakk` input is similar to `install`.\n",
+      "stderr": ""
+    },
+    "previous": {
+      "exit": 0,
+      "stdout": "The `instakk` input is similar to `install`.\n",
+      "stderr": ""
+    },
+    "candidate": {
+      "exit": 0,
+      "stdout": "The `instakk` input is similar to `install`.\n",
+      "stderr": ""
+    },
+    "wt45": {
+      "exit": 0,
+      "stdout": "The `instakk` input is similar to `install`.\n",
+      "stderr": ""
+    },
+    "wt49": {
+      "exit": 0,
+      "stdout": "The `instakk` input is similar to `install`.\n",
+      "stderr": ""
+    }
+  }
+}
