@@ -1,0 +1,27 @@
+Running main() from /workspace/.dtvm-env/fetchcontent/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 9 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 9 tests from LazyJitGreedyOndemand
+[ RUN      ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop
+[       OK ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop (7 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool
+[       OK ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool (54 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync
+[       OK ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync (3 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtTwoFnStillTiers
+[       OK ] LazyJitGreedyOndemand.LazyMtTwoFnStillTiers (2 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyStOneFnStillGreedy
+[       OK ] LazyJitGreedyOndemand.LazyStOneFnStillGreedy (1 ms)
+[ RUN      ] LazyJitGreedyOndemand.BackgroundSeedsExcludeDirectAndIndirectCallees
+[       OK ] LazyJitGreedyOndemand.BackgroundSeedsExcludeDirectAndIndirectCallees (2 ms)
+[ RUN      ] LazyJitGreedyOndemand.EntrySeedFixtureKeepsEagerAndSerialBehavior
+[       OK ] LazyJitGreedyOndemand.EntrySeedFixtureKeepsEagerAndSerialBehavior (3 ms)
+[ RUN      ] LazyJitGreedyOndemand.NumericNestsChooseGreedyOnFirstDemandOnly
+[       OK ] LazyJitGreedyOndemand.NumericNestsChooseGreedyOnFirstDemandOnly (4 ms)
+[ RUN      ] LazyJitGreedyOndemand.NumericNestKeepsExplicitFastEagerAndSerialChoices
+[       OK ] LazyJitGreedyOndemand.NumericNestKeepsExplicitFastEagerAndSerialChoices (7 ms)
+[----------] 9 tests from LazyJitGreedyOndemand (88 ms total)
+
+[----------] Global test environment tear-down
+[==========] 9 tests from 1 test suite ran. (88 ms total)
+[  PASSED  ] 9 tests.

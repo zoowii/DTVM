@@ -1,0 +1,94 @@
+{
+  "gemm": {
+    "fast": [
+      {
+        "start": "0x394",
+        "end": "0x3e8",
+        "instructions": 24,
+        "frame_memory_operands": 8
+      }
+    ],
+    "candidate": [
+      {
+        "start": "0x2c4",
+        "end": "0x2fd",
+        "instructions": 14,
+        "frame_memory_operands": 0
+      }
+    ],
+    "dfs": [
+      {
+        "start": "0x2c4",
+        "end": "0x2fd",
+        "instructions": 14,
+        "frame_memory_operands": 0
+      }
+    ],
+    "wt45": [
+      {
+        "start": "0x28d",
+        "end": "0x2d8",
+        "instructions": 14,
+        "frame_memory_operands": 0
+      }
+    ]
+  },
+  "2mm": {
+    "fast": [
+      {
+        "start": "0x494",
+        "end": "0x4ef",
+        "instructions": 25,
+        "frame_memory_operands": 10
+      },
+      {
+        "start": "0x593",
+        "end": "0x5e5",
+        "instructions": 23,
+        "frame_memory_operands": 9
+      }
+    ],
+    "candidate": [
+      {
+        "start": "0x37f",
+        "end": "0x3b5",
+        "instructions": 12,
+        "frame_memory_operands": 0
+      },
+      {
+        "start": "0x40f",
+        "end": "0x441",
+        "instructions": 11,
+        "frame_memory_operands": 0
+      }
+    ],
+    "dfs": [
+      {
+        "start": "0x37f",
+        "end": "0x3b5",
+        "instructions": 12,
+        "frame_memory_operands": 0
+      },
+      {
+        "start": "0x40f",
+        "end": "0x441",
+        "instructions": 11,
+        "frame_memory_operands": 0
+      }
+    ],
+    "wt45": [
+      {
+        "start": "0x31c",
+        "end": "0x363",
+        "instructions": 14,
+        "frame_memory_operands": 0
+      },
+      {
+        "start": "0x3df",
+        "end": "0x41e",
+        "instructions": 13,
+        "frame_memory_operands": 0
+      }
+    ]
+  }
+}

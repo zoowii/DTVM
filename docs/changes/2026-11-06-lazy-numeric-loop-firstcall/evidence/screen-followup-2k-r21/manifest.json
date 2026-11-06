@@ -1,0 +1,113 @@
+{
+  "main_commit": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
+  "seed": 2026110633,
+  "rounds": 21,
+  "excluded_warmup": -1,
+  "boundary": "fresh process through exit, CPU0 incl workers, warm page cache, WT45 cache disabled, no diagnostics",
+  "variants": {
+    "main": {
+      "binary": "/workspace/DTVM/work/wapm-followup/dtvm-main",
+      "sha256": "0b08d14e3a9e672f08be81eac9a735a497e8e27ef6058c0f7472307e7783422b",
+      "mode": "lazy-G-MT",
+      "env": {}
+    },
+    "candidate": {
+      "binary": "/workspace/DTVM/work/poly632/dtvm-2k-final",
+      "sha256": "90750437aceb15c1a242f870c6779fecc35eb1e2a15cabae4ad09400623927e4",
+      "mode": "lazy-G-MT",
+      "env": {}
+    },
+    "wt45": {
+      "binary": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "mode": null,
+      "env": {}
+    }
+  },
+  "commands": {
+    "pi": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/poly632/dtvm-2k-final",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "1"
+      ]
+    },
+    "suggest": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+        "--args",
+        "instakk",
+        "update",
+        "install"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/poly632/dtvm-2k-final",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+        "--args",
+        "instakk",
+        "update",
+        "install"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+        "instakk",
+        "update",
+        "install"
+      ]
+    }
+  },
+  "inputs": {
+    "pi": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265",
+    "suggest": "73b1387fba8d20f42ddced687edfada988fdc2b140e7077e33aed7b80d1303a2"
+  }
+}

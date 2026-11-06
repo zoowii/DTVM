@@ -1,0 +1,70 @@
+{
+  "gemm": {
+    "fast": {
+      "bytes": 1624,
+      "instructions": 434,
+      "rbp_memory_operands": 175,
+      "rsp_memory_operands": 1,
+      "fp_mul": 3,
+      "fp_add": 1
+    },
+    "candidate": {
+      "bytes": 1303,
+      "instructions": 317,
+      "rbp_memory_operands": 38,
+      "rsp_memory_operands": 1,
+      "fp_mul": 3,
+      "fp_add": 1
+    },
+    "dfs": {
+      "bytes": 1303,
+      "instructions": 317,
+      "rbp_memory_operands": 38,
+      "rsp_memory_operands": 1,
+      "fp_mul": 3,
+      "fp_add": 1
+    },
+    "wt45": {
+      "bytes": 1448,
+      "instructions": 310,
+      "rbp_memory_operands": 1,
+      "rsp_memory_operands": 75,
+      "fp_mul": 3,
+      "fp_add": 1
+    }
+  },
+  "2mm": {
+    "fast": {
+      "bytes": 2177,
+      "instructions": 574,
+      "rbp_memory_operands": 240,
+      "rsp_memory_operands": 1,
+      "fp_mul": 4,
+      "fp_add": 2
+    },
+    "candidate": {
+      "bytes": 1676,
+      "instructions": 406,
+      "rbp_memory_operands": 47,
+      "rsp_memory_operands": 1,
+      "fp_mul": 4,
+      "fp_add": 2
+    },
+    "dfs": {
+      "bytes": 1676,
+      "instructions": 406,
+      "rbp_memory_operands": 47,
+      "rsp_memory_operands": 1,
+      "fp_mul": 4,
+      "fp_add": 2
+    },
+    "wt45": {
+      "bytes": 1880,
+      "instructions": 399,
+      "rbp_memory_operands": 1,
+      "rsp_memory_operands": 91,
+      "fp_mul": 4,
+      "fp_add": 2
+    }
+  }
+}
