@@ -1,0 +1,72 @@
+{
+  "diagnostic_only": true,
+  "canonical_source_sha256": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265",
+  "derived_sha256": "c74c7533decb8524f1977356e2a309e3d14e12a27306322b9d0cd57182590bb7",
+  "counts": "fmod entries and selected long-division loop body entries; not runtime or performance samples",
+  "rows": [
+    {
+      "argument": 1,
+      "engine": "main",
+      "calls": 6400,
+      "long_division_loop_iterations": 22598,
+      "stdout": "Decimal digits of pi at position 1: 141592653\n",
+      "exit": 0
+    },
+    {
+      "argument": 1,
+      "engine": "wt45",
+      "calls": 6400,
+      "long_division_loop_iterations": 22598,
+      "stdout": "Decimal digits of pi at position 1: 141592653\n",
+      "exit": 0
+    },
+    {
+      "argument": 10,
+      "engine": "main",
+      "calls": 12644,
+      "long_division_loop_iterations": 50462,
+      "stdout": "Decimal digits of pi at position 10: 589793238\n",
+      "exit": 0
+    },
+    {
+      "argument": 10,
+      "engine": "wt45",
+      "calls": 12644,
+      "long_division_loop_iterations": 50462,
+      "stdout": "Decimal digits of pi at position 10: 589793238\n",
+      "exit": 0
+    },
+    {
+      "argument": 100,
+      "engine": "main",
+      "calls": 154942,
+      "long_division_loop_iterations": 922742,
+      "stdout": "Decimal digits of pi at position 100: 982148086\n",
+      "exit": 0
+    },
+    {
+      "argument": 100,
+      "engine": "wt45",
+      "calls": 154942,
+      "long_division_loop_iterations": 922742,
+      "stdout": "Decimal digits of pi at position 100: 982148086\n",
+      "exit": 0
+    },
+    {
+      "argument": 1000,
+      "engine": "main",
+      "calls": 8127239,
+      "long_division_loop_iterations": 74029872,
+      "stdout": "Decimal digits of pi at position 1000: 938095257\n",
+      "exit": 0
+    },
+    {
+      "argument": 1000,
+      "engine": "wt45",
+      "calls": 8127239,
+      "long_division_loop_iterations": 74029872,
+      "stdout": "Decimal digits of pi at position 1000: 938095257\n",
+      "exit": 0
+    }
+  ]
+}

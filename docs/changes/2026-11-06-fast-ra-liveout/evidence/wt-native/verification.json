@@ -1,0 +1,7 @@
+{
+  "function_global_index": 62,
+  "bytes": 688,
+  "actual_perfmap_JIT_equals_default_AOT": true,
+  "sha256": "9050549f67f8771946b45375678a74d30a9c96ec66bb461eeda8bccfbfe358d2",
+  "capture": "Read own process executable mapping through /proc/self/mem while module alive. process_vm_readv unavailable (ENOSYS). Diagnostic only."
+}

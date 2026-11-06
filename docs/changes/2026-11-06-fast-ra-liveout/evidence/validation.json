@@ -1,0 +1,37 @@
+{
+  "pilot-r9": {
+    "processes": 300,
+    "measured": 270,
+    "complete_unique_cells": true,
+    "all_zero_exit": true,
+    "outputs_match": "byte-for-byte except fib normalized integer832040"
+  },
+  "forward-r9": {
+    "processes": 360,
+    "measured": 324,
+    "complete_unique_cells": true,
+    "all_zero_exit": true,
+    "outputs_match": "byte-for-byte except fib normalized integer832040"
+  },
+  "chains-r9": {
+    "processes": 300,
+    "measured": 270,
+    "complete_unique_cells": true,
+    "all_zero_exit": true,
+    "outputs_match": "byte-for-byte except fib normalized integer832040"
+  },
+  "flags-r21": {
+    "processes": 660,
+    "measured": 630,
+    "complete_unique_cells": true,
+    "all_zero_exit": true,
+    "outputs_match": "byte-for-byte except fib normalized integer832040"
+  },
+  "confirm-r31": {
+    "processes": 480,
+    "measured": 465,
+    "complete_unique_cells": true,
+    "all_zero_exit": true,
+    "outputs_match": "byte-for-byte except fib normalized integer832040"
+  }
+}

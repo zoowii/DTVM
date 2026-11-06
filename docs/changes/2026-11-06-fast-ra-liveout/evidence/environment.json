@@ -1,0 +1,25 @@
+{
+  "main_commit": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
+  "uname": {
+    "system": "Linux",
+    "node": "6256e2a0ab70",
+    "release": "6.18.57",
+    "version": "#1 SMP Tue Oct 20 21:56:04 UTC 2026",
+    "machine": "x86_64",
+    "processor": ""
+  },
+  "cmake_flags": [
+    "CMAKE_BUILD_TYPE:STRING=Release",
+    "CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++",
+    "LLVM_DIR:UNINITIALIZED=/workspace/.dtvm-env/root/usr/lib/llvm-15/lib/cmake/llvm",
+    "ZEN_ENABLE_ASAN:BOOL=OFF",
+    "ZEN_ENABLE_CHECKED_ARITHMETIC:BOOL=ON",
+    "ZEN_ENABLE_EVM:BOOL=OFF",
+    "ZEN_ENABLE_MULTIPASS_JIT:BOOL=ON",
+    "ZEN_ENABLE_SINGLEPASS_JIT:BOOL=ON",
+    "ZEN_ENABLE_SPEC_TEST:BOOL=OFF"
+  ],
+  "cpu_model": "model name\t: AMD EPYC 9V74 80-Core Processor",
+  "cgroup_cpu_max": "200000 100000",
+  "memory_max": "8589934592"
+}

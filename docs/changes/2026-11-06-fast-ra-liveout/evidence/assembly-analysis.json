@@ -1,0 +1,44 @@
+{
+  "main": {
+    "bytes": 893,
+    "instructions": 259,
+    "frame_memory_operand_instructions": 95,
+    "test_instructions": 10,
+    "note": "Static diagnostic counts for same canonical pi function; not dynamic events"
+  },
+  "exact": {
+    "bytes": 876,
+    "instructions": 254,
+    "frame_memory_operand_instructions": 90,
+    "test_instructions": 10,
+    "note": "Static diagnostic counts for same canonical pi function; not dynamic events"
+  },
+  "forward": {
+    "bytes": 889,
+    "instructions": 258,
+    "frame_memory_operand_instructions": 94,
+    "test_instructions": 10,
+    "note": "Static diagnostic counts for same canonical pi function; not dynamic events"
+  },
+  "both": {
+    "bytes": 872,
+    "instructions": 253,
+    "frame_memory_operand_instructions": 89,
+    "test_instructions": 10,
+    "note": "Static diagnostic counts for same canonical pi function; not dynamic events"
+  },
+  "chains": {
+    "bytes": 855,
+    "instructions": 252,
+    "frame_memory_operand_instructions": 84,
+    "test_instructions": 10,
+    "note": "Static diagnostic counts for same canonical pi function; not dynamic events"
+  },
+  "flags": {
+    "bytes": 891,
+    "instructions": 258,
+    "frame_memory_operand_instructions": 95,
+    "test_instructions": 9,
+    "note": "Static diagnostic counts for same canonical pi function; not dynamic events"
+  }
+}

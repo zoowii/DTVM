@@ -1,0 +1,250 @@
+{
+  "main_commit": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
+  "seed": 2026110612,
+  "rounds": 31,
+  "excluded_warmup_round": -1,
+  "boundary": "fresh process pre-spawn through exit; CPU0; warm page cache; Wasmtime cache disabled; diagnostics disabled",
+  "hypothesis": "Per-function register allocator intervention, not a production policy or hotness algorithm",
+  "variants": {
+    "main": {
+      "binary": "/workspace/DTVM/work/wapm-followup/dtvm-main",
+      "sha256": "0b08d14e3a9e672f08be81eac9a735a497e8e27ef6058c0f7472307e7783422b",
+      "research_greedy_function_ids": null,
+      "research_pure_loop_rule": false,
+      "research_exact_liveout": false,
+      "research_forward_spills": false,
+      "research_chains": false,
+      "research_reuse_flags": false
+    },
+    "flags-control": {
+      "binary": "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+      "sha256": "241b1657d380ac87fcb2c9ec1ce69134f6b36c3089e456a41b9771b0d969b786",
+      "research_greedy_function_ids": null,
+      "research_pure_loop_rule": false,
+      "research_exact_liveout": false,
+      "research_forward_spills": false,
+      "research_chains": false,
+      "research_reuse_flags": false
+    },
+    "flags": {
+      "binary": "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+      "sha256": "241b1657d380ac87fcb2c9ec1ce69134f6b36c3089e456a41b9771b0d969b786",
+      "research_greedy_function_ids": null,
+      "research_pure_loop_rule": false,
+      "research_exact_liveout": false,
+      "research_forward_spills": false,
+      "research_chains": false,
+      "research_reuse_flags": true
+    },
+    "guard-loop": {
+      "binary": "/workspace/DTVM/work/wapm-followup/dtvm-pure-loop-guard",
+      "sha256": "0249860fc6e76b230dd045374efbe5716a66c438d2f621d4bd77bf4f9e44b46c",
+      "research_greedy_function_ids": null,
+      "research_pure_loop_rule": true,
+      "research_exact_liveout": false,
+      "research_forward_spills": false,
+      "research_chains": false,
+      "research_reuse_flags": false
+    },
+    "wt45": {
+      "binary": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "research_greedy_function_ids": null,
+      "research_pure_loop_rule": false,
+      "research_exact_liveout": false,
+      "research_forward_spills": false,
+      "research_chains": false,
+      "research_reuse_flags": false
+    }
+  },
+  "commands": {
+    "echo": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "flags-control": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "flags": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "guard-loop": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-pure-loop-guard",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "--args",
+        "1234567890"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+        "1234567890"
+      ]
+    },
+    "md5": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "flags-control": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "flags": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "guard-loop": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-pure-loop-guard",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "--args",
+        "helloworld"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+        "helloworld"
+      ]
+    },
+    "pi1000": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "flags-control": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "flags": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/fast-ra-liveout/dtvm-flags",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "guard-loop": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-pure-loop-guard",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "1000"
+      ]
+    }
+  },
+  "inputs": {
+    "echo": "2854e8f4d8f62028d0799f2740ec960c390515443923f85d0846dc7902a02d25",
+    "md5": "21552b0d4c3d74cf464bc350d03f095ebb5f8f8c499329aca8d66af598ca15aa",
+    "pi1000": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "diagnostic_only": true,
+  "period_cpu_us": 1000,
+  "seed": 2026110611,
+  "runs": 5,
+  "input_sha256": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265",
+  "cpu": 0,
+  "note": "ITIMER_PROF process CPU sampling. DTVM function ranges from trace; WT perfmap. Excludes all formal timing claims.",
+  "binaries": {
+    "main": {
+      "sha256": "541388d53e128c651e72b9c9a90aab828f92bd5193431da61063f0a63e0ec133",
+      "flags": {}
+    },
+    "chains": {
+      "sha256": "47903ccb483193fc8160ac066ddb28adba42406de586dc11a5a8d3654c7f89d9",
+      "flags": {
+        "DTVM_RESEARCH_FAST_RA_CHAINS": "1"
+      }
+    },
+    "private-greedy": {
+      "sha256": "bbfe11edf4ff6c58529d3040ea1521e573904227e4c647eb13a5acd343d97612",
+      "flags": {
+        "DTVM_RESEARCH_GREEDY_FUNCTIONS": "51"
+      }
+    },
+    "wt45": {
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "flags": {}
+    }
+  },
+  "sampler_source_sha256": "435763abefc62958644c4a14c6aacb309421412a136f1d534a24c9c37291cffe",
+  "sampler_library_sha256": "ed3eb7291d2a824fb952c37b88f7d76abe60bb6babd8503d2eb8421abe4ca241"
+}

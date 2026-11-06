@@ -1,0 +1,262 @@
+{
+  "main": {
+    "matched_samples": 590,
+    "top": [
+      {
+        "offset": 526,
+        "samples": 84,
+        "instruction": "20e:\t48 89 c1             \tmov    %rax,%rcx"
+      },
+      {
+        "offset": 559,
+        "samples": 81,
+        "instruction": "22f:\t8b 45 dc             \tmov    -0x24(%rbp),%eax"
+      },
+      {
+        "offset": 515,
+        "samples": 64,
+        "instruction": "203:\t83 e0 01             \tand    $0x1,%eax"
+      },
+      {
+        "offset": 619,
+        "samples": 37,
+        "instruction": "26b:\t85 c0                \ttest   %eax,%eax"
+      },
+      {
+        "offset": 680,
+        "samples": 29,
+        "instruction": "2a8:\t8b 4d dc             \tmov    -0x24(%rbp),%ecx"
+      },
+      {
+        "offset": 718,
+        "samples": 29,
+        "instruction": "2ce:\t48 8b 4d d0          \tmov    -0x30(%rbp),%rcx"
+      },
+      {
+        "offset": 601,
+        "samples": 27,
+        "instruction": "259:\t89 55 ec             \tmov    %edx,-0x14(%rbp)"
+      },
+      {
+        "offset": 661,
+        "samples": 27,
+        "instruction": "295:\t48 b9 ff ff ff ff ff \tmovabs $0xfffffffffffff,%rcx"
+      },
+      {
+        "offset": 570,
+        "samples": 23,
+        "instruction": "23a:\t48 c1 e2 01          \tshl    $0x1,%rdx"
+      },
+      {
+        "offset": 562,
+        "samples": 16,
+        "instruction": "232:\t48 8b 75 f0          \tmov    -0x10(%rbp),%rsi"
+      },
+      {
+        "offset": 591,
+        "samples": 15,
+        "instruction": "24f:\t48 83 fa ff          \tcmp    $0xffffffffffffffff,%rdx"
+      },
+      {
+        "offset": 627,
+        "samples": 14,
+        "instruction": "273:\t48 89 c1             \tmov    %rax,%rcx"
+      }
+    ]
+  },
+  "chains": {
+    "matched_samples": 593,
+    "top": [
+      {
+        "offset": 550,
+        "samples": 79,
+        "instruction": "226:\t8b 45 e4             \tmov    -0x1c(%rbp),%eax"
+      },
+      {
+        "offset": 512,
+        "samples": 51,
+        "instruction": "200:\t8b 4d c4             \tmov    -0x3c(%rbp),%ecx"
+      },
+      {
+        "offset": 525,
+        "samples": 48,
+        "instruction": "20d:\t48 89 4d d0          \tmov    %rcx,-0x30(%rbp)"
+      },
+      {
+        "offset": 612,
+        "samples": 45,
+        "instruction": "264:\t48 8b 45 e8          \tmov    -0x18(%rbp),%rax"
+      },
+      {
+        "offset": 561,
+        "samples": 29,
+        "instruction": "231:\t48 c1 e2 01          \tshl    $0x1,%rdx"
+      },
+      {
+        "offset": 710,
+        "samples": 28,
+        "instruction": "2c6:\t8b 55 e4             \tmov    -0x1c(%rbp),%edx"
+      },
+      {
+        "offset": 671,
+        "samples": 26,
+        "instruction": "29f:\t8b 4d e4             \tmov    -0x1c(%rbp),%ecx"
+      },
+      {
+        "offset": 529,
+        "samples": 24,
+        "instruction": "211:\t48 85 c0             \ttest   %rax,%rax"
+      },
+      {
+        "offset": 796,
+        "samples": 23,
+        "instruction": "31c:\t48 8b 45 d0          \tmov    -0x30(%rbp),%rax"
+      },
+      {
+        "offset": 582,
+        "samples": 21,
+        "instruction": "246:\t48 83 fa ff          \tcmp    $0xffffffffffffffff,%rdx"
+      },
+      {
+        "offset": 592,
+        "samples": 20,
+        "instruction": "250:\t89 55 c4             \tmov    %edx,-0x3c(%rbp)"
+      },
+      {
+        "offset": 652,
+        "samples": 20,
+        "instruction": "28c:\t48 b9 ff ff ff ff ff \tmovabs $0xfffffffffffff,%rcx"
+      }
+    ]
+  },
+  "private-greedy": {
+    "matched_samples": 499,
+    "top": [
+      {
+        "offset": 346,
+        "samples": 75,
+        "instruction": "15a:\t48 89 c7             \tmov    %rax,%rdi"
+      },
+      {
+        "offset": 325,
+        "samples": 71,
+        "instruction": "145:\t48 85 ff             \ttest   %rdi,%rdi"
+      },
+      {
+        "offset": 362,
+        "samples": 62,
+        "instruction": "16a:\t8d 52 ff             \tlea    -0x1(%rdx),%edx"
+      },
+      {
+        "offset": 349,
+        "samples": 36,
+        "instruction": "15d:\t48 29 f7             \tsub    %rsi,%rdi"
+      },
+      {
+        "offset": 441,
+        "samples": 36,
+        "instruction": "1b9:\t49 21 c8             \tand    %rcx,%r8"
+      },
+      {
+        "offset": 372,
+        "samples": 30,
+        "instruction": "174:\t74 14                \tje     0x18a"
+      },
+      {
+        "offset": 318,
+        "samples": 27,
+        "instruction": "13e:\t85 c9                \ttest   %ecx,%ecx"
+      },
+      {
+        "offset": 412,
+        "samples": 25,
+        "instruction": "19c:\t48 c1 e0 01          \tshl    $0x1,%rax"
+      },
+      {
+        "offset": 404,
+        "samples": 20,
+        "instruction": "194:\t48 39 c8             \tcmp    %rcx,%rax"
+      },
+      {
+        "offset": 359,
+        "samples": 19,
+        "instruction": "167:\t0f b6 c9             \tmovzbl %cl,%ecx"
+      },
+      {
+        "offset": 320,
+        "samples": 15,
+        "instruction": "140:\t74 14                \tje     0x156"
+      },
+      {
+        "offset": 377,
+        "samples": 15,
+        "instruction": "179:\t48 85 ff             \ttest   %rdi,%rdi"
+      }
+    ]
+  },
+  "wt45": {
+    "matched_samples": 507,
+    "top": [
+      {
+        "offset": 340,
+        "samples": 83,
+        "instruction": "bf94:\t0f 85 0d 00 00 00    \tjne    bfa7 <wasm[0]::function[62]+0x167>"
+      },
+      {
+        "offset": 332,
+        "samples": 69,
+        "instruction": "bf8c:\te9 16 00 00 00       \tjmp    bfa7 <wasm[0]::function[62]+0x167>"
+      },
+      {
+        "offset": 381,
+        "samples": 46,
+        "instruction": "bfbd:\t45 0f b6 c9          \tmovzbl %r9b,%r9d"
+      },
+      {
+        "offset": 362,
+        "samples": 35,
+        "instruction": "bfaa:\t49 d1 e0             \tshl    $1,%r8"
+      },
+      {
+        "offset": 413,
+        "samples": 23,
+        "instruction": "bfdd:\t4c 89 c2             \tmov    %r8,%rdx"
+      },
+      {
+        "offset": 462,
+        "samples": 23,
+        "instruction": "c00e:\t0f 87 21 00 00 00    \tja     c035 <wasm[0]::function[62]+0x1f5>"
+      },
+      {
+        "offset": 555,
+        "samples": 20,
+        "instruction": "c06b:\t48 0b d0             \tor     %rax,%rdx"
+      },
+      {
+        "offset": 368,
+        "samples": 17,
+        "instruction": "bfb0:\t49 2b fb             \tsub    %r11,%rdi"
+      },
+      {
+        "offset": 490,
+        "samples": 17,
+        "instruction": "c02a:\te9 e5 ff ff ff       \tjmp    c014 <wasm[0]::function[62]+0x1d4>"
+      },
+      {
+        "offset": 374,
+        "samples": 16,
+        "instruction": "bfb6:\t49 f7 d1             \tnot    %r9"
+      },
+      {
+        "offset": 385,
+        "samples": 16,
+        "instruction": "bfc1:\t3b d6                \tcmp    %esi,%edx"
+      },
+      {
+        "offset": 428,
+        "samples": 14,
+        "instruction": "bfec:\te9 16 00 00 00       \tjmp    c007 <wasm[0]::function[62]+0x1c7>"
+      }
+    ]
+  }
+}

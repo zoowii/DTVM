@@ -1,0 +1,22 @@
+{
+  "baseline_commit": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
+  "upstream_main_at_completion": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
+  "production_source_changed": false,
+  "formal_processes": 2100,
+  "formal_measured_samples": 1959,
+  "formal_warmups": 141,
+  "PC_sampled_runs": 20,
+  "derived_counter_runs": 8,
+  "additional_native_verification_run": true,
+  "prototype_configurations_exhaustive": false,
+  "test_status": "Flags: 7/7 CTest and 99/99 WAST each eagerGreedy/explicitFastRA/lazyMT; regions and exact+forward: 99/99 lazyMT final runs",
+  "unvalidated": [
+    "EVM",
+    "ASan",
+    "SGX",
+    "other CPUs",
+    "all experimental flag combinations"
+  ],
+  "repository_format_check": "passes with production source restored and CI-matching tools; experimental patches are research snapshots",
+  "sampler_C_syntax_check": "pass"
+}
