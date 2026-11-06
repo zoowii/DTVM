@@ -129,6 +129,15 @@ construction visits f32/f64 add/sub/mul/div inside at least two simultaneously
 nested WASM loops with no guest call/call_indirect in that loop subtree.
 Block effects merge on structured exits, so calls outside the qualifying loop
 do not exclude a function; calls later in the same loop do. Sibling loops and nested non-loop blocks do not qualify.
+A second qualifying region is a call-free loop at nesting depth at least three
+containing an i32/i64 load or store (actual memory width, excluding byte/halfword
+accesses). FP arithmetic is not required for this deeper word-memory rule.
+The same 2048-byte body bound applies. Shallow integer loops and register-only
+loops do not qualify. No benchmark-specific names or indices are consulted.
+
+Hints are collected only when the foreground caller may select initial Greedy
+and the source body meets the size bound. This does not disable the independent
+loop/call metadata or loop callbacks used by opt-in private tiering.
 The signal is accumulated in constant time during existing MIR construction;
 it inserts no guest counters, requires no second compilation, and queues no
 additional background functions. It repairs one-shot kernels that cannot
