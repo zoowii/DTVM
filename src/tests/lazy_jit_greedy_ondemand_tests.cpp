@@ -480,12 +480,12 @@ TEST(LazyJitGreedyOndemand, DeepWordNestsChooseGreedyOnFirstDemandOnly) {
   LoadedMod LM = loadModule(Bytes, "words", true, false, false);
   ASSERT_TRUE(waitForBackgroundPublishes(*LM.Lazy, 1, 5000));
   ASSERT_EQ(LM.Lazy->getForegroundLoopGreedyCount(), 0u);
-  for (uint32_t I = 0; I < 10; ++I)
+  for (uint32_t I = 0; I < 14; ++I)
     EXPECT_TRUE(stubIsTrampoline(*LM.Mod, I));
   ASSERT_GT(LM.Mod->getCodeEntry(9)->CodeSize, 2048u);
-  const uint32_t Expected[] = {27, 27, 9, 27, 27, 27, 3, 27};
-  const uint32_t Selected[] = {1, 2, 2, 2, 2, 2, 2, 2};
-  for (uint32_t I = 0; I < 8; ++I) {
+  const uint32_t Expected[] = {27, 27, 9, 27, 27, 27, 3, 27, 27, 27, 27, 81};
+  const uint32_t Selected[] = {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  for (uint32_t I = 0; I < 12; ++I) {
     std::vector<TypedValue> Results;
     ASSERT_TRUE(LM.RT->callWasmFunction(*LM.Inst, "entry",
                                         {std::to_string(I), "3"}, Results));

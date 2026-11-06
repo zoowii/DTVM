@@ -129,11 +129,14 @@ construction visits f32/f64 add/sub/mul/div inside at least two simultaneously
 nested WASM loops with no guest call/call_indirect in that loop subtree.
 Block effects merge on structured exits, so calls outside the qualifying loop
 do not exclude a function; calls later in the same loop do. Sibling loops and nested non-loop blocks do not qualify.
-A second qualifying region is a call-free loop at nesting depth at least three
-containing an i32/i64 load or store (actual memory width, excluding byte/halfword
-accesses). FP arithmetic is not required for this deeper word-memory rule.
-The same 2048-byte body bound applies. Shallow integer loops and register-only
-loops do not qualify. No benchmark-specific names or indices are consulted.
+A second qualifying region is a third-level loop subtree (including any deeper
+loops) with at least two syntactic i32/i64 memory loads and one i32/i64 store,
+no other memory access widths/types, and no guest call/call_indirect. Counts
+saturate at two during frontend construction. This favors multi-input integer
+updates over read-only pointer scans and mixed byte-processing loops. A pure
+island below a callful/mixed third-level subtree does not qualify by itself.
+The same 2048-byte body bound applies. Shallow, register-only, single-load and
+read-only loops do not qualify. No benchmark names or indices are consulted.
 
 Hints are collected only when the foreground caller may select initial Greedy
 and the source body meets the size bound. This does not disable the independent

@@ -117,14 +117,24 @@ public:
     // Compile-time effects are merged upwards when a structured block ends.
     void noteFPArithmetic() { HasFPArithmetic = true; }
     void noteGuestCall() { HasGuestCall = true; }
-    void noteWordMemory() { HasWordMemory = true; }
-    bool hasWordMemory() const { return HasWordMemory; }
+    void noteWordLoad() {
+      if (WordLoads < 2)
+        ++WordLoads;
+    }
+    void noteWordStore() { HasWordStore = true; }
+    void noteOtherMemory() { HasOtherMemory = true; }
+    uint8_t getWordLoads() const { return WordLoads; }
+    bool hasWordStore() const { return HasWordStore; }
+    bool hasOtherMemory() const { return HasOtherMemory; }
     bool hasFPArithmetic() const { return HasFPArithmetic; }
     bool hasGuestCall() const { return HasGuestCall; }
-    void mergeLoopEffects(bool FP, bool Calls, bool Words) {
+    void mergeLoopEffects(bool FP, bool Calls, uint8_t Loads, bool Stores,
+                          bool Other) {
       HasFPArithmetic |= FP;
       HasGuestCall |= Calls;
-      HasWordMemory |= Words;
+      WordLoads = WordLoads + Loads >= 2 ? 2 : WordLoads + Loads;
+      HasWordStore |= Stores;
+      HasOtherMemory |= Other;
     }
 
     CtrlBlockKind getKind() const { return Kind; }
@@ -158,7 +168,9 @@ public:
     bool Reachable = true;
     bool HasFPArithmetic = false;
     bool HasGuestCall = false;
-    bool HasWordMemory = false;
+    uint8_t WordLoads = 0;
+    bool HasWordStore = false;
+    bool HasOtherMemory = false;
   };
 
   class ArgumentInfo {
@@ -248,9 +260,12 @@ public:
   // Load from memory in SrcType and extend to DestType
   template <WASMType DestType, WASMType SrcType, bool Sext>
   Operand handleLoad(Operand Base, uint32_t Offset, uint32_t Align) {
-    if constexpr (SrcType == WASMType::I32 || SrcType == WASMType::I64)
-      if (LoopDepth >= 3)
-        ControlStack.back().noteWordMemory();
+    if (LoopDepth >= 3) {
+      if constexpr (SrcType == WASMType::I32 || SrcType == WASMType::I64)
+        ControlStack.back().noteWordLoad();
+      else
+        ControlStack.back().noteOtherMemory();
+    }
     ZEN_ASSERT(DestType >= SrcType);
     MType *SrcMTy = Ctx.getMIRTypeFromWASMType(SrcType);
     MType *DestMTy = Ctx.getMIRTypeFromWASMType(DestType);
@@ -267,9 +282,12 @@ public:
   template <WASMType DestType>
   void handleStore(Operand Value, Operand Base, uint32_t Offset,
                    uint32_t Align) {
-    if constexpr (DestType == WASMType::I32 || DestType == WASMType::I64)
-      if (LoopDepth >= 3)
-        ControlStack.back().noteWordMemory();
+    if (LoopDepth >= 3) {
+      if constexpr (DestType == WASMType::I32 || DestType == WASMType::I64)
+        ControlStack.back().noteWordStore();
+      else
+        ControlStack.back().noteOtherMemory();
+    }
     MType *MTy = Ctx.getMIRTypeFromWASMType(DestType);
     MInstruction *ValueInst = extractOperand(Value);
     if (Value.getType() > DestType) {

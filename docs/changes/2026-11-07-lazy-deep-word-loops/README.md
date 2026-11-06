@@ -6,12 +6,30 @@
 
 ## Overview
 
-Keep #642's FP policy and bounded entry-only scheduling. Additionally select
-initial Greedy for a demanded body up to 2048 source bytes containing a call-free
-loop at depth >=3 with a 32/64-bit integer load or store. Byte/halfword accesses,
-shallow integer loops and register-only loops do not trigger this new rule.
-Do not collect these hints for ineligible bodies or allocator modes. Preserve
-#641 loop/call metadata independently.
+Keep #642's FP policy and bounded entry-only scheduling. Select initial Greedy
+for a demanded body up to 2048 source bytes containing a third-level loop
+subtree with at least two syntactic 32/64-bit integer loads and one integer
+store, with no other memory access types/widths or guest calls in that subtree.
+Deeper loops contribute effects to the third-level subtree; an isolated pure
+inner fragment does not override a mixed or callful enclosing region.
+
+Byte/halfword and mixed accesses, shallow integer loops, register-only loops,
+single-load updates and read-only pointer scans do not trigger the new rule.
+Do not collect hints for ineligible bodies or allocator modes. Preserve #641
+loop/call metadata independently. This is a static opportunity/cost heuristic,
+not a proof of runtime trip counts or universal profitability.
+
+## Rejected first prototype
+
+An any-word-access depth>=3 prototype accelerated the integer targets but
+independently regressed base64cli about 13%, qr2text about 6% and suggest about
+8% in paired 21-round checks. Diagnostics identified read-only pointer scans,
+Clap traversals and mixed byte/word HashBrown rehash loops. The refined rule
+uses multi-input word updates and rejects mixed/callful third-level regions;
+it has no benchmark-specific exclusions. Workload screens informed refinement;
+new process runs are independent confirmation, not blind workload holdouts.
+The original 2mm +23% three-round negative did not repeat in nine new rounds
+(paired ratio 1.004, interval [0.964, 1.037]). All prototype data are retained.
 
 ## Motivation
 

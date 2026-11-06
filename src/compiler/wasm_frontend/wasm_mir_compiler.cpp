@@ -441,18 +441,22 @@ void FunctionMirBuilder::handleEnd(const BlockInfo &Info) {
   const bool Reachable = Info.reachable();
   const bool HasFP = ControlStack.back().hasFPArithmetic();
   const bool HasCall = Info.hasGuestCall();
-  const bool HasWords = Info.hasWordMemory();
+  const uint8_t WordLoads = Info.getWordLoads();
+  const bool HasStores = Info.hasWordStore();
+  const bool HasOtherMemory = Info.hasOtherMemory();
   if (CollectInitialRAHints && Info.getKind() == CtrlBlockKind::LOOP) {
     ZEN_ASSERT(LoopDepth > 0);
     if (LoopDepth >= 2 && HasFP && !HasCall)
       HasCallFreeNestedFPLoop = true;
-    if (LoopDepth >= 3 && HasWords && !HasCall)
+    if (LoopDepth == 3 && WordLoads >= 2 && HasStores && !HasOtherMemory &&
+        !HasCall)
       HasCallFreeDeepWordLoop = true;
     --LoopDepth;
   }
   ControlStack.pop_back();
   if (CollectInitialRAHints && !ControlStack.empty())
-    ControlStack.back().mergeLoopEffects(HasFP, HasCall, HasWords);
+    ControlStack.back().mergeLoopEffects(HasFP, HasCall, WordLoads, HasStores,
+                                         HasOtherMemory);
   if (Reachable) {
     createInstruction<BrInstruction>(true, Ctx, NextBlock);
     addSuccessor(NextBlock);
