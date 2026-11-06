@@ -1,0 +1,20 @@
+[
+  {
+    "address": "0x7fa7ad3a60a0",
+    "size": 1152,
+    "name": "main",
+    "file": "code-2.bin"
+  },
+  {
+    "address": "0x7fa7ad3a9900",
+    "size": 40,
+    "name": "__original_main",
+    "file": "code-12.bin"
+  },
+  {
+    "address": "0x7fa7ad3a9980",
+    "size": 431,
+    "name": "__main_void",
+    "file": "code-14.bin"
+  }
+]

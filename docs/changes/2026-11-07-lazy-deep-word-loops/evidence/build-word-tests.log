@@ -1,0 +1,403 @@
+[0/2] Re-checking globbed directories...
+[1/2] Re-running CMake...
+-- Enable spdlog
+CMake Warning (dev) at /workspace/.dtvm-env/root/usr/share/cmake-3.31/Modules/FetchContent.cmake:1373 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  third_party/AddDeps.cmake:29 (FetchContent_Declare)
+  CMakeLists.txt:183 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/asmjit-src/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+** AsmJit Summary **
+   ASMJIT_DIR=/workspace/.dtvm-env/fetchcontent/asmjit-src
+   ASMJIT_TEST=FALSE
+   ASMJIT_TARGET_TYPE=STATIC
+   ASMJIT_DEPS=pthread;rt
+   ASMJIT_LIBS=asmjit;pthread;rt
+   ASMJIT_CFLAGS=-DASMJIT_STATIC;-DASMJIT_NO_FOREIGN;-DASMJIT_NO_DEPRECATED;-DASMJIT_NO_JIT;-DASMJIT_NO_LOGGING;-DASMJIT_NO_BUILDER;-DASMJIT_NO_COMPILER;-DASMJIT_NO_INTROSPECTION
+   ASMJIT_PRIVATE_CFLAGS=-Wall;-Wextra;-Wconversion;-fno-math-errno;-fno-threadsafe-statics;-fno-semantic-interposition;-DASMJIT_STATIC;-DASMJIT_NO_FOREIGN;-DASMJIT_NO_DEPRECATED;-DASMJIT_NO_JIT;-DASMJIT_NO_LOGGING;-DASMJIT_NO_BUILDER;-DASMJIT_NO_COMPILER;-DASMJIT_NO_INTROSPECTION
+   ASMJIT_PRIVATE_CFLAGS_DBG=
+   ASMJIT_PRIVATE_CFLAGS_REL=-O2;-fmerge-all-constants;-fno-enforce-eh-specs
+CMake Warning (dev) at /workspace/.dtvm-env/root/usr/share/cmake-3.31/Modules/FetchContent.cmake:1373 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  third_party/AddDeps.cmake:44 (FetchContent_Declare)
+  CMakeLists.txt:183 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/spdlog-src/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Build spdlog: 1.4.2
+-- Build type: Release
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/cli11-src/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Warning (dev) at /workspace/.dtvm-env/root/usr/share/cmake-3.31/Modules/FetchContent.cmake:1373 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  third_party/AddDeps.cmake:78 (FetchContent_Declare)
+  CMakeLists.txt:183 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /workspace/.dtvm-env/root/usr/share/cmake-3.31/Modules/FetchContent.cmake:1953 (message):
+  Calling FetchContent_Populate(boost) is deprecated, call
+  FetchContent_MakeAvailable(boost) instead.  Policy CMP0169 can be set to
+  OLD to allow FetchContent_Populate(boost) to be called directly for now,
+  but the ability to call it with declared details will be removed completely
+  in a future version.
+Call Stack (most recent call first):
+  third_party/AddDeps.cmake:86 (FetchContent_Populate)
+  CMakeLists.txt:183 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /workspace/.dtvm-env/root/usr/share/cmake-3.31/Modules/FetchContent.cmake:1373 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  third_party/AddDeps.cmake:90 (FetchContent_Declare)
+  CMakeLists.txt:183 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/rapidjson-src/CMakeLists.txt:1 (CMAKE_MINIMUM_REQUIRED):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Warning (dev) at /workspace/.dtvm-env/fetchcontent/rapidjson-src/CMakeLists.txt:167 (add_custom_command):
+  Exactly one of PRE_BUILD, PRE_LINK, or POST_BUILD must be given.  Assuming
+  POST_BUILD to preserve backward compatibility.
+
+  Policy CMP0175 is not set: add_custom_command() rejects invalid arguments.
+  Run "cmake --help-policy CMP0175" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/googletest-src/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/googletest-src/googletest/CMakeLists.txt:56 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /workspace/.dtvm-env/fetchcontent/yaml-cpp-src/CMakeLists.txt:2 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Found LLVM 15.0.6
+-- Using LLVMConfig.cmake in: /workspace/.dtvm-env/root/usr/lib/llvm-15/lib/cmake/llvm
+-- Use Static LLVM Libraries
+-- Configuring done (1.5s)
+-- Generating done (0.1s)
+-- Build files have been written to: /workspace/DTVM/work/build-policy-tests
+[0/4] Re-checking globbed directories...
+[1/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/archtraits.cpp.o
+[2/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/assembler.cpp.o
+[3/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/builder.cpp.o
+[4/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/codewriter.cpp.o
+[5/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/codeholder.cpp.o
+[6/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/compiler.cpp.o
+[7/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/constpool.cpp.o
+[8/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/cpuinfo.cpp.o
+[9/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/emithelper.cpp.o
+[10/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/emitter.cpp.o
+[11/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/emitterutils.cpp.o
+[12/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/environment.cpp.o
+[13/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/errorhandler.cpp.o
+[14/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/formatter.cpp.o
+[15/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/func.cpp.o
+[16/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/funcargscontext.cpp.o
+[17/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/globals.cpp.o
+[18/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/inst.cpp.o
+[19/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/jitallocator.cpp.o
+[20/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/jitruntime.cpp.o
+[21/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/logger.cpp.o
+[22/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/operand.cpp.o
+[23/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/osutils.cpp.o
+[24/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/ralocal.cpp.o
+[25/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/rapass.cpp.o
+[26/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/rastack.cpp.o
+[27/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/string.cpp.o
+[28/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/support.cpp.o
+[29/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/target.cpp.o
+[30/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/type.cpp.o
+[31/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/virtmem.cpp.o
+[32/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zone.cpp.o
+[33/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonehash.cpp.o
+[34/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonelist.cpp.o
+[35/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonestack.cpp.o
+[36/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonetree.cpp.o
+[37/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/armformatter.cpp.o
+[38/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonevector.cpp.o
+[39/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64assembler.cpp.o
+[40/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64builder.cpp.o
+[41/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64compiler.cpp.o
+[42/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64emithelper.cpp.o
+[43/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64formatter.cpp.o
+[44/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64func.cpp.o
+[45/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64instapi.cpp.o
+[46/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64instdb.cpp.o
+[47/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64operand.cpp.o
+[48/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64rapass.cpp.o
+[49/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86builder.cpp.o
+[50/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86compiler.cpp.o
+[51/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86emithelper.cpp.o
+[52/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86formatter.cpp.o
+[53/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86assembler.cpp.o
+[54/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86func.cpp.o
+[55/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86instdb.cpp.o
+[56/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86operand.cpp.o
+[57/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86instapi.cpp.o
+[58/90] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86rapass.cpp.o
+[59/90] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async_logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/stdout_sinks.cpp:11:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[60/90] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/spdlog.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/spdlog.h:12,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/spdlog-inl.h:7,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/spdlog.cpp:8:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[61/90] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/fmt.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/format.h:46,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/format-inl.h:11,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/fmt.cpp:10:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[62/90] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async_logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/color_sinks.cpp:11:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[63/90] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/async.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async_logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/async.cpp:8:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[64/90] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/details/file_helper.h:6,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/details/file_helper-inl.h:7,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/file_sinks.cpp:10:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[65/90] Building CXX object src/compiler/CMakeFiles/compiler.dir/wasm_frontend/wasm_mir_compiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/context.h:6,
+                 from /workspace/DTVM/src/compiler/wasm_frontend/wasm_mir_compiler.h:7,
+                 from /workspace/DTVM/src/compiler/wasm_frontend/wasm_mir_compiler.cpp:3:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[66/90] Building CXX object src/compiler/CMakeFiles/compiler.dir/stub/stub_builder.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/stub/stub_builder.h:7,
+                 from /workspace/DTVM/src/compiler/stub/stub_builder.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[67/90] Linking CXX static library /workspace/.dtvm-env/fetchcontent/asmjit-build/libasmjit.a
+[68/90] Linking CXX static library /workspace/.dtvm-env/fetchcontent/spdlog-build/libspdlog.a
+[69/90] Building CXX object src/compiler/CMakeFiles/compiler.dir/compiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/compiler.h:7,
+                 from /workspace/DTVM/src/compiler/compiler.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[70/90] Building CXX object src/action/CMakeFiles/action.dir/compiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/action/compiler.h:10,
+                 from /workspace/DTVM/src/action/compiler.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[71/90] Building CXX object src/runtime/CMakeFiles/runtime.dir/module.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/module.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[72/90] Linking CXX static library src/compiler/libcompiler.a
+[73/90] Generating ../../wast/core/binary/binary.json
+[74/90] Generating ../../wast/core/elem/elem.json
+[75/90] Generating lazy_numeric_loops.wasm
+[76/90] Generating lazy_word_loops.wasm
+[77/90] Linking CXX static library src/libdtvmcore.a
+[78/90] Building CXX object src/compiler/CMakeFiles/ircompiler.dir/ircompiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/compiler.h:7,
+                 from /workspace/DTVM/src/compiler/ircompiler.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[79/90] Building CXX object /workspace/.dtvm-env/fetchcontent/cli11-build/src/CMakeFiles/CLI11.dir/Precompile.cpp.o
+[80/90] Linking CXX static library /workspace/.dtvm-env/fetchcontent/cli11-build/src/libCLI11.a
+[81/90] Building CXX object src/tests/CMakeFiles/specUnitTests.dir/spec_unit_tests.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/zetaengine.h:9,
+                 from /workspace/DTVM/src/tests/spec_unit_tests.cpp:9:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[82/90] Building CXX object src/tests/CMakeFiles/specUnitTests.dir/spectest.cpp.o
+[83/90] Building CXX object src/tests/CMakeFiles/lazyJitGreedyOndemandTests.dir/lazy_private_tiering_tests.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/compiler.h:7,
+                 from /workspace/DTVM/src/tests/lazy_private_tiering_tests.cpp:3:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[84/90] Building CXX object src/tests/CMakeFiles/lazyJitGreedyOndemandTests.dir/lazy_jit_greedy_ondemand_tests.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/compiler.h:7,
+                 from /workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp: In member function ‘virtual void LazyJitGreedyOndemand_NumericNestKeepsExplicitFastEagerAndSerialChoices_Test::TestBody()’:
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp:472:8: warning: suggest explicit braces to avoid ambiguous ‘else’ [-Wdangling-else]
+  472 |     if (LM.Lazy)
+      |        ^
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp: In member function ‘virtual void LazyJitGreedyOndemand_DeepWordKeepsExplicitFastEagerAndSerialChoices_Test::TestBody()’:
+/workspace/DTVM/src/tests/lazy_jit_greedy_ondemand_tests.cpp:516:8: warning: suggest explicit braces to avoid ambiguous ‘else’ [-Wdangling-else]
+  516 |     if (LM.Lazy)
+      |        ^
+[85/90] Linking CXX executable ircompiler
+[86/90] Linking CXX executable specUnitTests
+[87/90] Linking CXX executable lazyJitGreedyOndemandTests

@@ -1,0 +1,298 @@
+{
+  "base64cli": {
+    "171": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "010ea0"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "011056"
+      }
+    ],
+    "412": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 8,
+        "loads": 6,
+        "stores": 2,
+        "other": 4,
+        "calls": 0,
+        "start": "02bb2b"
+      }
+    ],
+    "442": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "0363d0"
+      }
+    ],
+    "467": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "03c63a"
+      }
+    ]
+  },
+  "cowsay": {
+    "16": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 4,
+        "loads": 0,
+        "stores": 4,
+        "other": 4,
+        "calls": 2,
+        "start": "000e5d"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 0,
+        "loads": 0,
+        "stores": 0,
+        "other": 1,
+        "calls": 0,
+        "start": "000f8e"
+      }
+    ],
+    "36": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 4,
+        "loads": 0,
+        "stores": 4,
+        "other": 2,
+        "calls": 0,
+        "start": "002c61"
+      }
+    ],
+    "54": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "008d6a"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 3,
+        "loads": 2,
+        "stores": 1,
+        "other": 0,
+        "calls": 1,
+        "start": "008ddb"
+      }
+    ],
+    "262": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "01fc8e"
+      }
+    ],
+    "760": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 2,
+        "loads": 2,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "050722"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 0,
+        "loads": 0,
+        "stores": 0,
+        "other": 5,
+        "calls": 0,
+        "start": "050795"
+      }
+    ]
+  },
+  "qr2text": {
+    "104": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 2,
+        "loads": 2,
+        "stores": 0,
+        "other": 7,
+        "calls": 0,
+        "start": "00bfef"
+      }
+    ],
+    "122": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 5,
+        "loads": 3,
+        "stores": 2,
+        "other": 5,
+        "calls": 4,
+        "start": "00d466"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 5,
+        "loads": 3,
+        "stores": 2,
+        "other": 5,
+        "calls": 4,
+        "start": "00d599"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 2,
+        "loads": 2,
+        "stores": 0,
+        "other": 1,
+        "calls": 1,
+        "start": "00d6ea"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 1,
+        "calls": 1,
+        "start": "00d74d"
+      }
+    ]
+  },
+  "suggest": {
+    "293": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 15,
+        "loads": 9,
+        "stores": 6,
+        "other": 4,
+        "calls": 1,
+        "start": "026874"
+      }
+    ],
+    "304": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "02b66d"
+      },
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "02b69c"
+      }
+    ],
+    "337": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 1,
+        "loads": 1,
+        "stores": 0,
+        "other": 0,
+        "calls": 0,
+        "start": "031d4f"
+      }
+    ],
+    "372": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 8,
+        "loads": 6,
+        "stores": 2,
+        "other": 4,
+        "calls": 0,
+        "start": "03b816"
+      }
+    ]
+  },
+  "floyd-warshall": {
+    "9": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 4,
+        "loads": 3,
+        "stores": 1,
+        "other": 0,
+        "calls": 0,
+        "start": "0002f6"
+      }
+    ]
+  },
+  "nussinov": {
+    "9": [
+      {
+        "kind": "loop",
+        "depth": 3,
+        "word": 3,
+        "loads": 2,
+        "stores": 1,
+        "other": 0,
+        "calls": 0,
+        "start": "000347"
+      }
+    ]
+  }
+}

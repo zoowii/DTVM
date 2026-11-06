@@ -1,0 +1,187 @@
+diff --git a/src/compiler/compiler.cpp b/src/compiler/compiler.cpp
+index 7c1e9c9..566d408 100644
+--- a/src/compiler/compiler.cpp
++++ b/src/compiler/compiler.cpp
+@@ -410,13 +410,14 @@ bool WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
+   MFunction MFunc(Ctx, FuncIdx);
+   CgFunction CgFunc(Ctx, MFunc);
+   MFunc.setFunctionType(Mod.getFuncType(FuncIdx));
+-  FunctionMirBuilder MIRBuilder(Ctx, MFunc);
++  const bool CollectInitialRAHints = AllowLoopGreedy &&
++                                     !Config.DisableMultipassGreedyRA &&
++                                     FuncCode->CodeSize <= 2048;
++  FunctionMirBuilder MIRBuilder(Ctx, MFunc, CollectInitialRAHints);
+   MIRBuilder.compile(&Ctx); // pass the ctx argument only for compatibility
+-  runtime::Runtime *RT = WasmMod->getRuntime();
+-  const runtime::RuntimeConfig &Config = RT->getConfig();
+-  const bool LoopGreedy = AllowLoopGreedy && !Config.DisableMultipassGreedyRA &&
+-                          MIRBuilder.hasCallFreeNestedFPLoop() &&
+-                          FuncCode->CodeSize <= 2048;
++  const bool LoopGreedy =
++      CollectInitialRAHints && (MIRBuilder.hasCallFreeNestedFPLoop() ||
++                                MIRBuilder.hasCallFreeDeepWordLoop());
+   if (LoopGreedy)
+     DisableGreedyRA = false;
+   compileMIRToCgIR(Mod, MFunc, CgFunc, DisableGreedyRA);
+diff --git a/src/compiler/wasm_frontend/wasm_mir_compiler.cpp b/src/compiler/wasm_frontend/wasm_mir_compiler.cpp
+index 0fd5af2..112757d 100644
+--- a/src/compiler/wasm_frontend/wasm_mir_compiler.cpp
++++ b/src/compiler/wasm_frontend/wasm_mir_compiler.cpp
+@@ -84,8 +84,10 @@ void buildAllMIRFuncTypes(WasmFrontendContext &Context, MModule &MMod,
+ }
+ 
+ FunctionMirBuilder::FunctionMirBuilder(CompilerContext &Context,
+-                                       MFunction &MFunc)
+-    : Ctx(Context), ControlStack(Context.MemPool), CurFunc(&MFunc) {}
++                                       MFunction &MFunc,
++                                       bool CollectInitialRAHints)
++    : CollectInitialRAHints(CollectInitialRAHints), Ctx(Context),
++      ControlStack(Context.MemPool), CurFunc(&MFunc) {}
+ 
+ bool FunctionMirBuilder::compile([[maybe_unused]] CompilerContext *Context) {
+   zen::action::WASMByteCodeVisitor<FunctionMirBuilder> Visitor(*this, &Ctx);
+@@ -438,16 +440,23 @@ void FunctionMirBuilder::handleEnd(const BlockInfo &Info) {
+     NextBlock = Info.getJumpBlock();
+   const bool Reachable = Info.reachable();
+   const bool HasFP = ControlStack.back().hasFPArithmetic();
+-  const bool HasCall = ControlStack.back().hasGuestCall();
+-  if (Info.getKind() == CtrlBlockKind::LOOP) {
++  const bool HasCall = Info.hasGuestCall();
++  const uint8_t WordLoads = Info.getWordLoads();
++  const bool HasStores = Info.hasWordStore();
++  const bool HasOtherMemory = Info.hasOtherMemory();
++  if (CollectInitialRAHints && Info.getKind() == CtrlBlockKind::LOOP) {
+     ZEN_ASSERT(LoopDepth > 0);
+     if (LoopDepth >= 2 && HasFP && !HasCall)
+       HasCallFreeNestedFPLoop = true;
++    if (LoopDepth == 3 && WordLoads >= 2 && HasStores && !HasOtherMemory &&
++        !HasCall)
++      HasCallFreeDeepWordLoop = true;
+     --LoopDepth;
+   }
+   ControlStack.pop_back();
+-  if (!ControlStack.empty())
+-    ControlStack.back().mergeLoopEffects(HasFP, HasCall);
++  if (CollectInitialRAHints && !ControlStack.empty())
++    ControlStack.back().mergeLoopEffects(HasFP, HasCall, WordLoads, HasStores,
++                                         HasOtherMemory);
+   if (Reachable) {
+     createInstruction<BrInstruction>(true, Ctx, NextBlock);
+     addSuccessor(NextBlock);
+@@ -558,7 +567,8 @@ FunctionMirBuilder::Operand FunctionMirBuilder::handleCall(
+     uint32_t FuncIdx, uintptr_t Target, bool IsImport, bool FarCall,
+     const ArgumentInfo &ArgInfo, const std::vector<Operand> &Args) {
+   ++Ctx.NumGuestCalls;
+-  ControlStack.back().noteGuestCall();
++  if (CollectInitialRAHints)
++    ControlStack.back().noteGuestCall();
+ 
+   if (IsImport) {
+     MInstruction *FuncAddr = createIntConstInstruction(&Ctx.I64Type, Target);
+@@ -575,7 +585,8 @@ FunctionMirBuilder::Operand FunctionMirBuilder::handleCallIndirect(
+     uint32_t TypeIdx, Operand IndirectFuncIdxOp, uint32_t TblIdx,
+     const ArgumentInfo &ArgInfo, const std::vector<Operand> &Args) {
+   ++Ctx.NumGuestCalls;
+-  ControlStack.back().noteGuestCall();
++  if (CollectInitialRAHints)
++    ControlStack.back().noteGuestCall();
+ 
+   MInstruction *IndirectFuncIdx = extractOperand(IndirectFuncIdxOp);
+   MInstruction *ResuableIndirectFuncIdx =
+diff --git a/src/compiler/wasm_frontend/wasm_mir_compiler.h b/src/compiler/wasm_frontend/wasm_mir_compiler.h
+index 484a50f..b33a9e8 100644
+--- a/src/compiler/wasm_frontend/wasm_mir_compiler.h
++++ b/src/compiler/wasm_frontend/wasm_mir_compiler.h
+@@ -71,9 +71,11 @@ class FunctionMirBuilder final {
+ public:
+   typedef WasmFrontendContext CompilerContext;
+ 
+-  FunctionMirBuilder(CompilerContext &Context, MFunction &MFunc);
++  FunctionMirBuilder(CompilerContext &Context, MFunction &MFunc,
++                     bool CollectInitialRAHints = true);
+ 
+   bool hasCallFreeNestedFPLoop() const { return HasCallFreeNestedFPLoop; }
++  bool hasCallFreeDeepWordLoop() const { return HasCallFreeDeepWordLoop; }
+ 
+   class Operand {
+   public:
+@@ -115,11 +117,24 @@ public:
+     // Compile-time effects are merged upwards when a structured block ends.
+     void noteFPArithmetic() { HasFPArithmetic = true; }
+     void noteGuestCall() { HasGuestCall = true; }
++    void noteWordLoad() {
++      if (WordLoads < 2)
++        ++WordLoads;
++    }
++    void noteWordStore() { HasWordStore = true; }
++    void noteOtherMemory() { HasOtherMemory = true; }
++    uint8_t getWordLoads() const { return WordLoads; }
++    bool hasWordStore() const { return HasWordStore; }
++    bool hasOtherMemory() const { return HasOtherMemory; }
+     bool hasFPArithmetic() const { return HasFPArithmetic; }
+     bool hasGuestCall() const { return HasGuestCall; }
+-    void mergeLoopEffects(bool FP, bool Calls) {
++    void mergeLoopEffects(bool FP, bool Calls, uint8_t Loads, bool Stores,
++                          bool Other) {
+       HasFPArithmetic |= FP;
+       HasGuestCall |= Calls;
++      WordLoads = WordLoads + Loads >= 2 ? 2 : WordLoads + Loads;
++      HasWordStore |= Stores;
++      HasOtherMemory |= Other;
+     }
+ 
+     CtrlBlockKind getKind() const { return Kind; }
+@@ -153,6 +168,9 @@ public:
+     bool Reachable = true;
+     bool HasFPArithmetic = false;
+     bool HasGuestCall = false;
++    uint8_t WordLoads = 0;
++    bool HasWordStore = false;
++    bool HasOtherMemory = false;
+   };
+ 
+   class ArgumentInfo {
+@@ -242,6 +260,12 @@ public:
+   // Load from memory in SrcType and extend to DestType
+   template <WASMType DestType, WASMType SrcType, bool Sext>
+   Operand handleLoad(Operand Base, uint32_t Offset, uint32_t Align) {
++    if (LoopDepth >= 3) {
++      if constexpr (SrcType == WASMType::I32 || SrcType == WASMType::I64)
++        ControlStack.back().noteWordLoad();
++      else
++        ControlStack.back().noteOtherMemory();
++    }
+     ZEN_ASSERT(DestType >= SrcType);
+     MType *SrcMTy = Ctx.getMIRTypeFromWASMType(SrcType);
+     MType *DestMTy = Ctx.getMIRTypeFromWASMType(DestType);
+@@ -258,6 +282,12 @@ public:
+   template <WASMType DestType>
+   void handleStore(Operand Value, Operand Base, uint32_t Offset,
+                    uint32_t Align) {
++    if (LoopDepth >= 3) {
++      if constexpr (DestType == WASMType::I32 || DestType == WASMType::I64)
++        ControlStack.back().noteWordStore();
++      else
++        ControlStack.back().noteOtherMemory();
++    }
+     MType *MTy = Ctx.getMIRTypeFromWASMType(DestType);
+     MInstruction *ValueInst = extractOperand(Value);
+     if (Value.getType() > DestType) {
+@@ -665,7 +695,7 @@ private:
+                   BrIfInstruction *BranchInst = nullptr) {
+     auto BlockResult =
+         (Type == WASMType::VOID) ? Operand() : createTempStackOperand(Type);
+-    if (Kind == CtrlBlockKind::LOOP)
++    if (CollectInitialRAHints && Kind == CtrlBlockKind::LOOP)
+       ++LoopDepth;
+     ControlStack.emplace_back(Kind, BlockResult, StackSize, JumpBlock,
+                               NextBlock, BranchInst);
+@@ -863,6 +893,8 @@ private:
+ 
+   uint32_t LoopDepth = 0;
+   bool HasCallFreeNestedFPLoop = false;
++  bool HasCallFreeDeepWordLoop = false;
++  const bool CollectInitialRAHints;
+   CompilerContext &Ctx;
+   CompileVector<BlockInfo> ControlStack; // manage nested block
+   MFunction *CurFunc = nullptr;

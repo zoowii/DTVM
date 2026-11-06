@@ -1,0 +1,16 @@
+{
+  "word": {
+    "bytes": 1676,
+    "compute_loops": [
+      "f5ff8a9c4fb1e9bd7f89641082b70a97d87622b5f56766b48722809d94553277",
+      "b9273fcd464b41451a5f077edda307dea83a3fc22d2f83c8077e7310a0fda400"
+    ]
+  },
+  "word2": {
+    "bytes": 1676,
+    "compute_loops": [
+      "f5ff8a9c4fb1e9bd7f89641082b70a97d87622b5f56766b48722809d94553277",
+      "b9273fcd464b41451a5f077edda307dea83a3fc22d2f83c8077e7310a0fda400"
+    ]
+  }
+}

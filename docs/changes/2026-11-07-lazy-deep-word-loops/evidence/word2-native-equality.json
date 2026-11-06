@@ -1,0 +1,30 @@
+{
+  "floyd-warshall": {
+    "v1_bytes": 971,
+    "v2_bytes": 971,
+    "compute_loop_sha256": "4b5fe5e37a60c5c859a61faf58efe561838543574ef258002feaee841bb0c844",
+    "loop": {
+      "start": "0x1b2",
+      "end": "0x1e4",
+      "instructions": 15,
+      "frame_accesses": 0,
+      "calls": 0,
+      "heap_loads": 3,
+      "listing": "floyd-warshall-greedy-inner1.asm"
+    }
+  },
+  "nussinov": {
+    "v1_bytes": 1033,
+    "v2_bytes": 1033,
+    "compute_loop_sha256": "4959447807992152d6dc52bf97e5b98149dbbe53dab821ce4a33368441fd4b60",
+    "loop": {
+      "start": "0x1ee",
+      "end": "0x214",
+      "instructions": 11,
+      "frame_accesses": 0,
+      "calls": 0,
+      "heap_loads": 2,
+      "listing": "nussinov-greedy-inner1.asm"
+    }
+  }
+}

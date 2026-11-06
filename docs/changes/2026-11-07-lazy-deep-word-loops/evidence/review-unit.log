@@ -1,0 +1,50 @@
+Running main() from /workspace/.dtvm-env/fetchcontent/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 16 tests from 4 test suites.
+[----------] Global test environment set-up.
+[----------] 9 tests from LazyJitGreedyOndemand
+[ RUN      ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop
+[       OK ] LazyJitGreedyOndemand.FastRASpillsMoreThanGreedyOnFibLoop (3 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool
+[       OK ] LazyJitGreedyOndemand.LazyMtOneFnHasNoBackgroundPool (53 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync
+[       OK ] LazyJitGreedyOndemand.LazyMtOneFnDisableGreedyIsFastRASync (3 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyMtTwoFnStillTiers
+[       OK ] LazyJitGreedyOndemand.LazyMtTwoFnStillTiers (25 ms)
+[ RUN      ] LazyJitGreedyOndemand.LazyStOneFnStillGreedy
+[       OK ] LazyJitGreedyOndemand.LazyStOneFnStillGreedy (2 ms)
+[ RUN      ] LazyJitGreedyOndemand.BackgroundSeedsExcludeDirectAndIndirectCallees
+[       OK ] LazyJitGreedyOndemand.BackgroundSeedsExcludeDirectAndIndirectCallees (3 ms)
+[ RUN      ] LazyJitGreedyOndemand.EntrySeedFixtureKeepsEagerAndSerialBehavior
+[       OK ] LazyJitGreedyOndemand.EntrySeedFixtureKeepsEagerAndSerialBehavior (3 ms)
+[ RUN      ] LazyJitGreedyOndemand.NumericNestsChooseGreedyOnFirstDemandOnly
+[       OK ] LazyJitGreedyOndemand.NumericNestsChooseGreedyOnFirstDemandOnly (9 ms)
+[ RUN      ] LazyJitGreedyOndemand.NumericNestKeepsExplicitFastEagerAndSerialChoices
+[       OK ] LazyJitGreedyOndemand.NumericNestKeepsExplicitFastEagerAndSerialChoices (6 ms)
+[----------] 9 tests from LazyJitGreedyOndemand (110 ms total)
+
+[----------] 4 tests from LazyPrivateTiering
+[ RUN      ] LazyPrivateTiering.PreservesRegisterAndStackArgumentsAcrossBothTiers
+[       OK ] LazyPrivateTiering.PreservesRegisterAndStackArgumentsAcrossBothTiers (36 ms)
+[ RUN      ] LazyPrivateTiering.OneShotLoopNeverGetsBackedgeInstrumentation
+[       OK ] LazyPrivateTiering.OneShotLoopNeverGetsBackedgeInstrumentation (2 ms)
+[ RUN      ] LazyPrivateTiering.DisabledSerialExplicitFastAndZeroBudgetsKeepPolicyInactive
+[       OK ] LazyPrivateTiering.DisabledSerialExplicitFastAndZeroBudgetsKeepPolicyInactive (42 ms)
+[ RUN      ] LazyPrivateTiering.ProfitabilityGateCanRejectObservedLoopHeat
+[       OK ] LazyPrivateTiering.ProfitabilityGateCanRejectObservedLoopHeat (27 ms)
+[----------] 4 tests from LazyPrivateTiering (109 ms total)
+
+[----------] 2 tests from LazyPrivateBudget
+[ RUN      ] LazyPrivateBudget.HardLimitsRemainBoundedUnderContention
+[       OK ] LazyPrivateBudget.HardLimitsRemainBoundedUnderContention (5 ms)
+[ RUN      ] LazyPrivateBudget.FailedCompilationIsStillChargedAndSoftCapStopsNextTask
+[       OK ] LazyPrivateBudget.FailedCompilationIsStillChargedAndSoftCapStopsNextTask (1 ms)
+[----------] 2 tests from LazyPrivateBudget (7 ms total)
+
+[----------] 1 test from LazyPrivateGate
+[ RUN      ] LazyPrivateGate.ConcurrentColdCrossingRunsCallbackOnce
+[       OK ] LazyPrivateGate.ConcurrentColdCrossingRunsCallbackOnce (2 ms)
+[----------] 1 test from LazyPrivateGate (2 ms total)
+
+[----------] Global test environment tear-down
+[==========] 16 tests from 4 test suites ran. (230 ms total)
+[  PASSED  ] 16 tests.

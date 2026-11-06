@@ -1,0 +1,35 @@
+[0/2] Re-checking globbed directories...
+[1/5] Generating regmask_stress.wasm
+[2/5] Building CXX object src/tests/CMakeFiles/mirPeepholeTests.dir/x86_cg_lowering_tests.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/cgir/cg_operand.h:10,
+                 from /workspace/DTVM/src/compiler/cgir/cg_instruction.h:10,
+                 from /workspace/DTVM/src/compiler/cgir/cg_basic_block.h:10,
+                 from /workspace/DTVM/src/tests/x86_cg_lowering_tests.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+In file included from /workspace/DTVM/src/compiler/target/x86/x86lowering.h:6,
+                 from /workspace/DTVM/src/tests/x86_cg_lowering_tests.cpp:14:
+/workspace/DTVM/src/compiler/cgir/lowering.h: In member function ‘void COMPILER::CgLowering<T>::lower()’:
+/workspace/DTVM/src/compiler/cgir/lowering.h:38: note: ‘-Wmisleading-indentation’ is disabled from this point onwards, since column-tracking was disabled due to the size of the code/headers
+   38 |       ZEN_ASSERT(MIRBB);
+/workspace/DTVM/src/compiler/cgir/lowering.h:38: note: adding ‘-flarge-source-files’ will allow for more column-tracking support, at the expense of compilation time and memory
+[3/5] Building CXX object src/tests/CMakeFiles/mirPeepholeTests.dir/mir_peephole_tests.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/context.h:6,
+                 from /workspace/DTVM/src/tests/mir_peephole_tests.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[4/5] Linking CXX executable mirPeepholeTests

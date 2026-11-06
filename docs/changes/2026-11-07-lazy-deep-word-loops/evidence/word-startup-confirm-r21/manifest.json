@@ -1,0 +1,468 @@
+{
+  "commits": {
+    "main": "af4b07b22adf9f08586f9dd08adb1d57a07cce51",
+    "candidate": "148f1acf229af89449f3ee8c8d11a7f9e9d55ab2"
+  },
+  "seed": 2026110715,
+  "rounds": 21,
+  "excluded_warmup": -1,
+  "timeout_s": 180,
+  "boundary": "Fresh process pre-spawn through exit; CPU0 including workers; warm page cache; WT45 cache disabled; output captured; no profiles/builds/tests concurrently; private tiering default OFF",
+  "binaries": {
+    "main": {
+      "path": "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+      "sha256": "7e0e041f0faaa461feb8f651df77886882167a68f73e50a43251354382965002"
+    },
+    "candidate": {
+      "path": "/workspace/DTVM/work/pr642/dtvm-word-v1",
+      "sha256": "e537e3638fadd25c032a349097da8539eccd2ff0a079c7910ecdeb6ed06ac7ab"
+    },
+    "wt45": {
+      "path": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c"
+    }
+  },
+  "commands": {
+    "gesummv": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gesummv.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gesummv.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gesummv.wasm"
+      ]
+    },
+    "base64cli": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "--args",
+        "encode",
+        "helloworld"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+        "encode",
+        "helloworld"
+      ]
+    },
+    "chkfont": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/chkfont.wasm",
+        "--dir=fonts",
+        "--args",
+        "fonts/small.flf"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/chkfont.wasm",
+        "--dir=fonts",
+        "--args",
+        "fonts/small.flf"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "--dir",
+        "fonts",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/chkfont.wasm",
+        "fonts/small.flf"
+      ]
+    },
+    "code-stock": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm"
+      ]
+    },
+    "cowsay": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "--args",
+        "hello"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "--args",
+        "hello"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+        "hello"
+      ]
+    },
+    "pi": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "1"
+      ]
+    },
+    "qr2text": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/qr2text.wasm",
+        "--args",
+        "https://wapm.io"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/qr2text.wasm",
+        "--args",
+        "https://wapm.io"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/qr2text.wasm",
+        "https://wapm.io"
+      ]
+    },
+    "suggest": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+        "--args",
+        "instakk",
+        "update",
+        "install"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+        "--args",
+        "instakk",
+        "update",
+        "install"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+        "instakk",
+        "update",
+        "install"
+      ]
+    },
+    "tpl": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "gesummv",
+      "suite": "polybench",
+      "wasm": "benchmarks/polybenchc/gesummv.wasm",
+      "kind": "wasi-main",
+      "fairness": "same-wasm",
+      "skip_interp": false
+    },
+    {
+      "id": "base64cli",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/base64cli.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "args": [
+        "encode",
+        "helloworld"
+      ],
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "chkfont",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/chkfont.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "dirs": [
+        "fonts"
+      ],
+      "args": [
+        "fonts/small.flf"
+      ],
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "code-stock",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/code-stock.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "cowsay",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/cowsay.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "args": [
+        "hello"
+      ],
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "pi",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/pi.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "args": [
+        "1"
+      ],
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "qr2text",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/qr2text.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "args": [
+        "https://wapm.io"
+      ],
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "suggest",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/suggest.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "args": [
+        "instakk",
+        "update",
+        "install"
+      ],
+      "fairness": "same-wasm"
+    },
+    {
+      "id": "tpl",
+      "suite": "wapm",
+      "wasm": "benchmarks/wapm/tpl.wasm",
+      "kind": "wasi-main",
+      "cwd": "benchmarks/wapm",
+      "stdin": "\u0394 is 123456-123455.\n",
+      "fairness": "same-wasm"
+    }
+  ],
+  "inputs": {
+    "gesummv": "e5cd4e0fc62127b927ae2ae1d3d97ee6b60f5a08b8c4d55f69f1a1be6be88eb1",
+    "base64cli": "22dd5d48e40959c8fa25f5968aaf3d5af9430e848d9a582b7a0b6ba2aaf9a438",
+    "chkfont": "a8fcad775e5ab5739c3d6f723cc8121b56fea9c1078d2b1bb1c2e0216d599062",
+    "code-stock": "d7d05eab7c7753e8b3cfa8f71cce93ae05c09e3b79d16c40509d4dd813aeac27",
+    "cowsay": "0cf9a18923570a0e76eb5793522dc122f01cfda26db468fe9c3f9b1a1424550a",
+    "pi": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265",
+    "qr2text": "ee42716385c8c8b1d9ba916fcf52ff2a258a4152f4e54af2262425d1832671fe",
+    "suggest": "73b1387fba8d20f42ddced687edfada988fdc2b140e7077e33aed7b80d1303a2",
+    "tpl": "3abe85b37603894ee92a636f8ab54a7e0a4f3fd03cafad937602f8edca4e680f"
+  }
+}

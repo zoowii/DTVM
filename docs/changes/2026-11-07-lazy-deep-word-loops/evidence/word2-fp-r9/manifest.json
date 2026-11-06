@@ -1,0 +1,113 @@
+{
+  "commits": {
+    "main": "af4b07b22adf9f08586f9dd08adb1d57a07cce51",
+    "candidate": "be96a8c7c91541a647606292b0357aaafa80cbdd"
+  },
+  "seed": 2026110723,
+  "rounds": 9,
+  "excluded_warmup": -1,
+  "timeout_s": 180,
+  "boundary": "Fresh process pre-spawn through exit; CPU0 including workers; warm page cache; WT45 cache disabled; output captured; no profiles/builds/tests concurrently; private tiering default OFF",
+  "binaries": {
+    "main": {
+      "path": "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+      "sha256": "7e0e041f0faaa461feb8f651df77886882167a68f73e50a43251354382965002"
+    },
+    "candidate": {
+      "path": "/workspace/DTVM/work/pr642/dtvm-word-v2",
+      "sha256": "580305bd1e92b0953e67637f7a6955e208e9a3b9c6a5e2caff846780c2d82ad2"
+    },
+    "wt45": {
+      "path": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c"
+    }
+  },
+  "commands": {
+    "2mm": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v2",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+      ]
+    },
+    "gemm": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gemm.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v2",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gemm.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gemm.wasm"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "2mm",
+      "suite": "polybench",
+      "wasm": "benchmarks/polybenchc/2mm.wasm",
+      "kind": "wasi-main",
+      "fairness": "same-wasm",
+      "skip_interp": true
+    },
+    {
+      "id": "gemm",
+      "suite": "polybench",
+      "wasm": "benchmarks/polybenchc/gemm.wasm",
+      "kind": "wasi-main",
+      "fairness": "same-wasm",
+      "skip_interp": true
+    }
+  ],
+  "inputs": {
+    "2mm": "6d31eeebe685646cf2b8c4460beaf2243064dd8a311cb83a92523f9260260d99",
+    "gemm": "c12e6c2d971769bf4478119156b74789929c5d1c366b47a50eb985f7b9f09d53"
+  }
+}

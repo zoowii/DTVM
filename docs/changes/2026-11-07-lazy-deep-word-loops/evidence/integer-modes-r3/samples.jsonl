@@ -1,0 +1,1 @@
+{"case": "floyd-warshall", "suite": "polybench", "variant": "candidate", "round": -1, "wall_ms": 39996.070306, "cpu_ms": 39856.556, "exit": 0, "timeout": false, "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "stderr_sha256": "780732d4fd603b2432eb1fbd2355d2d72982ea3405ae0dd1405cbb1262b40679", "stdout_bytes": 0, "stderr_bytes": 16072078}

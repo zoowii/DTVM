@@ -1,0 +1,132 @@
+[0/2] Re-checking globbed directories...
+[1/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/archtraits.cpp.o
+[2/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/assembler.cpp.o
+[3/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/builder.cpp.o
+[4/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/codewriter.cpp.o
+[5/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/compiler.cpp.o
+[6/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/codeholder.cpp.o
+[7/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/constpool.cpp.o
+[8/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/cpuinfo.cpp.o
+[9/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/emithelper.cpp.o
+[10/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/emitter.cpp.o
+[11/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/environment.cpp.o
+[12/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/emitterutils.cpp.o
+[13/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/errorhandler.cpp.o
+[14/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/formatter.cpp.o
+[15/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/func.cpp.o
+[16/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/funcargscontext.cpp.o
+[17/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/globals.cpp.o
+[18/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/inst.cpp.o
+[19/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/jitallocator.cpp.o
+[20/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/jitruntime.cpp.o
+[21/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/logger.cpp.o
+[22/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/operand.cpp.o
+[23/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/osutils.cpp.o
+[24/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/ralocal.cpp.o
+[25/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/rapass.cpp.o
+[26/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/rastack.cpp.o
+[27/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/support.cpp.o
+[28/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/string.cpp.o
+[29/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/target.cpp.o
+[30/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/type.cpp.o
+[31/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/virtmem.cpp.o
+[32/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zone.cpp.o
+[33/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonehash.cpp.o
+[34/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonelist.cpp.o
+[35/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonestack.cpp.o
+[36/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonetree.cpp.o
+[37/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/armformatter.cpp.o
+[38/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/core/zonevector.cpp.o
+[39/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64assembler.cpp.o
+[40/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64builder.cpp.o
+[41/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64compiler.cpp.o
+[42/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64emithelper.cpp.o
+[43/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64formatter.cpp.o
+[44/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64func.cpp.o
+[45/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64instapi.cpp.o
+[46/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64instdb.cpp.o
+[47/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64operand.cpp.o
+[48/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/arm/a64rapass.cpp.o
+[49/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86builder.cpp.o
+[50/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86compiler.cpp.o
+[51/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86emithelper.cpp.o
+[52/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86formatter.cpp.o
+[53/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86assembler.cpp.o
+[54/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86func.cpp.o
+[55/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86instdb.cpp.o
+[56/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86operand.cpp.o
+[57/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86instapi.cpp.o
+[58/72] Building CXX object /workspace/.dtvm-env/fetchcontent/asmjit-build/CMakeFiles/asmjit.dir/src/asmjit/x86/x86rapass.cpp.o
+[59/72] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async_logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/stdout_sinks.cpp:11:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[60/72] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/spdlog.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/spdlog.h:12,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/spdlog-inl.h:7,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/spdlog.cpp:8:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[61/72] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/fmt.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/format.h:46,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/format-inl.h:11,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/fmt.cpp:10:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[62/72] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async_logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/color_sinks.cpp:11:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[63/72] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/async.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async_logger.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/async.h:17,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/async.cpp:8:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[64/72] Building CXX object /workspace/.dtvm-env/fetchcontent/spdlog-build/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o
+In file included from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/fmt.h:22,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/common.h:38,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/details/file_helper.h:6,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/details/file_helper-inl.h:7,
+                 from /workspace/.dtvm-env/fetchcontent/spdlog-src/src/file_sinks.cpp:10:
+/workspace/.dtvm-env/fetchcontent/spdlog-src/include/spdlog/fmt/bundled/core.h:328:6: warning: identifier ‘char8_t’ is a keyword in C++20 [-Wc++20-compat]
+  328 | enum char8_t : unsigned char {};
+      |      ^~~~~~~
+[65/72] Linking CXX static library /workspace/.dtvm-env/fetchcontent/asmjit-build/libasmjit.a
+[66/72] Linking CXX static library /workspace/.dtvm-env/fetchcontent/spdlog-build/libspdlog.a
+[67/72] Building CXX object /workspace/.dtvm-env/fetchcontent/cli11-build/src/CMakeFiles/CLI11.dir/Precompile.cpp.o
+[68/72] Linking CXX static library /workspace/.dtvm-env/fetchcontent/cli11-build/src/libCLI11.a
+[69/72] Building CXX object src/compiler/CMakeFiles/compiler.dir/compiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/compiler.h:7,
+                 from /workspace/DTVM/src/compiler/compiler.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[70/72] Linking CXX static library src/compiler/libcompiler.a
+[71/72] Linking CXX executable dtvm

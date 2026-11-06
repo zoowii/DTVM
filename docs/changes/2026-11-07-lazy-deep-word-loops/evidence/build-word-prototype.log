@@ -1,0 +1,28 @@
+[0/2] Re-checking globbed directories...
+[1/5] Building CXX object src/compiler/CMakeFiles/compiler.dir/wasm_frontend/wasm_mir_compiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/context.h:6,
+                 from /workspace/DTVM/src/compiler/wasm_frontend/wasm_mir_compiler.h:7,
+                 from /workspace/DTVM/src/compiler/wasm_frontend/wasm_mir_compiler.cpp:3:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[2/5] Building CXX object src/compiler/CMakeFiles/compiler.dir/compiler.cpp.o
+In file included from /workspace/DTVM/src/runtime/object.h:7,
+                 from /workspace/DTVM/src/runtime/module.h:10,
+                 from /workspace/DTVM/src/runtime/instance.h:9,
+                 from /workspace/DTVM/src/compiler/common/common_defs.h:13,
+                 from /workspace/DTVM/src/compiler/compiler.h:7,
+                 from /workspace/DTVM/src/compiler/compiler.cpp:4:
+/workspace/DTVM/src/runtime/runtime.h: In member function ‘void zen::runtime::Runtime::setWASIArgs(const std::string&, const std::vector<std::__cxx11::basic_string<char> >&)’:
+/workspace/DTVM/src/runtime/runtime.h:208:51: warning: redundant move in initialization [-Wredundant-move]
+  208 |     std::vector<std::string> wasi_args = std::move(args);
+      |                                          ~~~~~~~~~^~~~~~
+/workspace/DTVM/src/runtime/runtime.h:208:51: note: remove ‘std::move’ call
+[3/5] Linking CXX static library src/compiler/libcompiler.a
+[4/5] Linking CXX executable dtvm

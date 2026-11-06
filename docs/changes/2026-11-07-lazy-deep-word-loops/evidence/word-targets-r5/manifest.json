@@ -1,0 +1,113 @@
+{
+  "commits": {
+    "main": "af4b07b22adf9f08586f9dd08adb1d57a07cce51",
+    "candidate": "148f1acf229af89449f3ee8c8d11a7f9e9d55ab2"
+  },
+  "seed": 2026110710,
+  "rounds": 5,
+  "excluded_warmup": -1,
+  "timeout_s": 180,
+  "boundary": "Fresh process pre-spawn through exit; CPU0 including workers; warm page cache; WT45 cache disabled; output captured; no profiles/builds/tests concurrently; private tiering default OFF",
+  "binaries": {
+    "main": {
+      "path": "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+      "sha256": "7e0e041f0faaa461feb8f651df77886882167a68f73e50a43251354382965002"
+    },
+    "candidate": {
+      "path": "/workspace/DTVM/work/pr642/dtvm-word-v1",
+      "sha256": "e537e3638fadd25c032a349097da8539eccd2ff0a079c7910ecdeb6ed06ac7ab"
+    },
+    "wt45": {
+      "path": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c"
+    }
+  },
+  "commands": {
+    "floyd-warshall": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/floyd-warshall.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/floyd-warshall.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/floyd-warshall.wasm"
+      ]
+    },
+    "nussinov": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-pr642-e678e1e",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/nussinov.wasm"
+      ],
+      "candidate": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/pr642/dtvm-word-v1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/nussinov.wasm"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/nussinov.wasm"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "floyd-warshall",
+      "suite": "polybench",
+      "wasm": "benchmarks/polybenchc/floyd-warshall.wasm",
+      "kind": "wasi-main",
+      "fairness": "same-wasm",
+      "skip_interp": true
+    },
+    {
+      "id": "nussinov",
+      "suite": "polybench",
+      "wasm": "benchmarks/polybenchc/nussinov.wasm",
+      "kind": "wasi-main",
+      "fairness": "same-wasm",
+      "skip_interp": true
+    }
+  ],
+  "inputs": {
+    "floyd-warshall": "4607b0de3362cba3e366197f16e33b546ef867c2403d77936905c632025c733b",
+    "nussinov": "b1acce4bda648fa02bbf8514f891fa8ab7be4f78da3d69b0345869d204c23f25"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "integer-modes-r3": {
+    "samples": 1,
+    "cases": 1,
+    "interrupted": true
+  },
+  "integer-modes-resumed-r3": {
+    "samples": 32,
+    "cases": 2,
+    "interrupted": false
+  },
+  "matrix-confirm-r9": {
+    "samples": 60,
+    "cases": 2,
+    "interrupted": false
+  },
+  "polybench-r3": {
+    "samples": 360,
+    "cases": 30,
+    "interrupted": false
+  },
+  "startup-confirm-r21": {
+    "samples": 594,
+    "cases": 9,
+    "interrupted": false
+  },
+  "wapm-r7": {
+    "samples": 459,
+    "cases": 20,
+    "interrupted": false
+  },
+  "word-fp-confirm-r9": {
+    "samples": 30,
+    "cases": 1,
+    "interrupted": false
+  },
+  "word-fp-r3": {
+    "samples": 24,
+    "cases": 2,
+    "interrupted": false
+  },
+  "word-short-r21": {
+    "samples": 264,
+    "cases": 4,
+    "interrupted": false
+  },
+  "word-startup-confirm-r21": {
+    "samples": 594,
+    "cases": 9,
+    "interrupted": false
+  },
+  "word-targets-r5": {
+    "samples": 36,
+    "cases": 2,
+    "interrupted": false
+  },
+  "word-wapm-r7": {
+    "samples": 459,
+    "cases": 20,
+    "interrupted": false
+  },
+  "word2-final-followup-r21": {
+    "samples": 132,
+    "cases": 2,
+    "interrupted": false
+  },
+  "word2-fp-r9": {
+    "samples": 60,
+    "cases": 2,
+    "interrupted": false
+  },
+  "word2-short-r21": {
+    "samples": 264,
+    "cases": 4,
+    "interrupted": false
+  },
+  "word2-startup-r21": {
+    "samples": 462,
+    "cases": 7,
+    "interrupted": false
+  },
+  "word2-targets-r5": {
+    "samples": 36,
+    "cases": 2,
+    "interrupted": false
+  },
+  "word2-wapm-r7": {
+    "samples": 459,
+    "cases": 20,
+    "interrupted": false
+  }
+}
