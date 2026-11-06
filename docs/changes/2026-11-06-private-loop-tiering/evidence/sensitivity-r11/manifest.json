@@ -1,0 +1,219 @@
+{
+  "main_commit": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
+  "seed": 2026110618,
+  "extra_variants": {
+    "warm1k": [
+      "--lazy-tier-call-threshold",
+      "1000"
+    ],
+    "warm100k": [
+      "--lazy-tier-call-threshold",
+      "100000"
+    ],
+    "heat8m": [
+      "--lazy-tier-loop-threshold",
+      "8000000"
+    ],
+    "budget1ms": [
+      "--lazy-tier-budget-ms",
+      "1"
+    ],
+    "budget0": [
+      "--lazy-tier-budget-ms",
+      "0"
+    ]
+  },
+  "rounds": 11,
+  "excluded_warmup_round": -1,
+  "boundary": "fresh process pre-spawn through exit; CPU0; warm page cache; Wasmtime cache disabled; diagnostics disabled",
+  "hypothesis": "Entry heat, bounded loop sample, estimated profit and serialized per-module compile budget; no diagnostic tracing",
+  "variants": {
+    "main": {
+      "binary": "/workspace/DTVM/work/wapm-followup/dtvm-main",
+      "sha256": "0b08d14e3a9e672f08be81eac9a735a497e8e27ef6058c0f7472307e7783422b",
+      "policy": null
+    },
+    "off": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": null
+    },
+    "budgeted": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": "budgeted"
+    },
+    "warm1k": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": "budgeted"
+    },
+    "warm100k": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": "budgeted"
+    },
+    "heat8m": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": "budgeted"
+    },
+    "budget1ms": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": "budgeted"
+    },
+    "budget0": {
+      "binary": "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+      "sha256": "ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd",
+      "policy": "budgeted"
+    },
+    "wt45": {
+      "binary": "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "sha256": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c",
+      "policy": null
+    }
+  },
+  "commands": {
+    "pi1000": {
+      "main": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/wapm-followup/dtvm-main",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "off": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "budgeted": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "--enable-lazy-private-tiering",
+        "--lazy-tier-policy",
+        "budgeted",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "warm1k": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "--enable-lazy-private-tiering",
+        "--lazy-tier-policy",
+        "budgeted",
+        "--lazy-tier-call-threshold",
+        "1000",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "warm100k": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "--enable-lazy-private-tiering",
+        "--lazy-tier-policy",
+        "budgeted",
+        "--lazy-tier-call-threshold",
+        "100000",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "heat8m": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "--enable-lazy-private-tiering",
+        "--lazy-tier-policy",
+        "budgeted",
+        "--lazy-tier-loop-threshold",
+        "8000000",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "budget1ms": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "--enable-lazy-private-tiering",
+        "--lazy-tier-policy",
+        "budgeted",
+        "--lazy-tier-budget-ms",
+        "1",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "budget0": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/work/private-tiering/dtvm-reviewed",
+        "--enable-lazy-private-tiering",
+        "--lazy-tier-policy",
+        "budgeted",
+        "--lazy-tier-budget-ms",
+        "0",
+        "-m",
+        "multipass",
+        "--enable-multipass-lazy",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "--args",
+        "1000"
+      ],
+      "wt45": [
+        "taskset",
+        "-c",
+        "0",
+        "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+        "run",
+        "-C",
+        "cache=n",
+        "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+        "1000"
+      ]
+    }
+  },
+  "inputs": {
+    "pi1000": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265"
+  }
+}

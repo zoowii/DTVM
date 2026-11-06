@@ -1,0 +1,7 @@
+{
+ "warm1k": ["--lazy-tier-call-threshold", "1000"],
+ "warm100k": ["--lazy-tier-call-threshold", "100000"],
+ "heat8m": ["--lazy-tier-loop-threshold", "8000000"],
+ "budget1ms": ["--lazy-tier-budget-ms", "1"],
+ "budget0": ["--lazy-tier-budget-ms", "0"]
+}

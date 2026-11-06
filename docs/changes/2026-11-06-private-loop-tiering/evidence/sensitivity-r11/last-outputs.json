@@ -1,0 +1,20 @@
+{
+  "pi1000.budget0.stderr": "",
+  "pi1000.budget0.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.budget1ms.stderr": "",
+  "pi1000.budget1ms.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.budgeted.stderr": "",
+  "pi1000.budgeted.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.heat8m.stderr": "",
+  "pi1000.heat8m.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.main.stderr": "",
+  "pi1000.main.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.off.stderr": "",
+  "pi1000.off.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.warm100k.stderr": "",
+  "pi1000.warm100k.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.warm1k.stderr": "",
+  "pi1000.warm1k.stdout": "Decimal digits of pi at position 1000: 938095257\n",
+  "pi1000.wt45.stderr": "",
+  "pi1000.wt45.stdout": "Decimal digits of pi at position 1000: 938095257\n"
+}

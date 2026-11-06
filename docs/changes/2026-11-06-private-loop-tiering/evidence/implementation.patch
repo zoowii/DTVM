@@ -1,0 +1,1879 @@
+diff --git a/README.md b/README.md
+index a156410..85e37f4 100644
+--- a/README.md
++++ b/README.md
+@@ -76,6 +76,18 @@ Consult: [docs/user-guide.md](docs/user-guide.md) for other CMake options.
+ 
+ Note: Lazy JIT currently only supports the x86-64 target.
+ 
++Private WASM loop helpers can optionally upgrade from FastRA to Greedy using
++call heat, bounded loop sampling and a per-module compilation budget:
++
++```sh
++dtvm -m multipass --enable-multipass-lazy --enable-lazy-private-tiering program.wasm
++```
++
++This experimental policy is disabled by default. Use `--lazy-tier-policy`
++(`calls`, `loops`, `budgeted`) for comparisons; see the
++[design and measurements](docs/changes/2026-11-06-private-loop-tiering/README.md)
++for eligibility, budget controls and limitations.
++
+ ### Other Modes
+ 
+ DTVM also provides a standalone singlepass JIT and an interpreter by default. User can try this simple version via below instructions
+diff --git a/docs/modules/cli/spec.md b/docs/modules/cli/spec.md
+index 8fbcf4d..09ca30e 100644
+--- a/docs/modules/cli/spec.md
++++ b/docs/modules/cli/spec.md
+@@ -121,3 +121,13 @@ Parsing or initialization failures return `EXIT_FAILURE` uniformly; `evmc_status
+ - [utils module](../utils/spec.md): Logging, address parsing, hex conversion, state persistence
+ - [evm module](../evm/spec.md): EVM execution, `evmc_revision`, `DEFAULT_REVISION`
+ - [host module](../host/spec.md): WASI, env, evmabimock host modules
++
++### Private helper tiering options
++
++Multipass exposes `--enable-lazy-private-tiering`, `--lazy-tier-policy`
++(`calls|loops|budgeted`), `--lazy-tier-call-threshold`,
++`--lazy-tier-loop-threshold`, `--lazy-tier-max-functions`,
++`--lazy-tier-max-bytes`, `--lazy-tier-max-function-bytes`,
++`--lazy-tier-budget-ms` and `--lazy-tier-benefit-ratio`. The feature is off by
++default and requires lazy MT with Greedy enabled. Loop heat is inferred after a
++bounded sample; the budget is elapsed compilation time, not a hard deadline.
+diff --git a/docs/modules/compiler/spec.md b/docs/modules/compiler/spec.md
+index 8a054f9..260a954 100644
+--- a/docs/modules/compiler/spec.md
++++ b/docs/modules/compiler/spec.md
+@@ -119,6 +119,29 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
+   after FastRA compilation; long-running private helpers can lose throughput.
+   Eager multipass still compiles the whole module.
+ 
++### Opt-in private loop tiering
++
++`EnableLazyPrivateTiering` permits demand-compiled private WASM helpers to
++upgrade under lazy MT (non-SGX, Greedy enabled). Eligibility requires no exported
++or start/entry role, no guest calls or memory/global/table effects, at least one
++loop and two FastRA spill slots, at most 32 locals and the configured source size.
++A native entry gate first measures calls. `calls` queues Greedy directly;
++`loops` and `budgeted` first compile a profiling FastRA body and measure at most
++4096 loop-header visits (including first entries, not only backedges).
++They restore the original FastRA body, infer loop work per call, and count a
++further call quantum before upgrading. `budgeted` also requires projected
++savings to cover estimated compile and probe costs. Estimates and elapsed time
++affect scheduling only; guest results and trap behavior must remain identical.
++
++Unique-function and source-byte admission limits are hard, module-lifetime
++limits. Private profiling and Greedy tasks share one serialized soft elapsed
++compile budget; one active task may overrun. A bounded number of entry gates
++is allocated. Exhaustion retires profiling gates; failures retain FastRA.
++Profile transitions use expected-target CAS and may never overwrite canonical
++Greedy. Workers join before counters/cookies are freed. Native loop callbacks
++preserve GPR/x87/SSE state, with arithmetic flags modeled as clobbered. There is
++no OSR: a live profiling frame can keep inactive CALL/RET ticks until return.
++
+ ### Wasm linear-memory addressing
+ 
+ Wasm32 effective address is `zext64(wrap32(base)) + memarg_offset`, then
+diff --git a/docs/modules/runtime/spec.md b/docs/modules/runtime/spec.md
+index 4545e82..ada8b1f 100644
+--- a/docs/modules/runtime/spec.md
++++ b/docs/modules/runtime/spec.md
+@@ -117,3 +117,13 @@ runtime propagates errors via `common::Error` / `common::ErrorCode`; common runt
+ | cli | Runtime, Module, Instance, Isolation, HostModule |
+ | vm-interface | EVMModule, EVMInstance, managed isolation, callEVMMain |
+ | tests | Execution environment and instances |
++
++### Private helper tiering configuration
++
++Multipass `RuntimeConfig` offers opt-in `EnableLazyPrivateTiering` (default false)
++and `LazyTierPolicy` (`Calls`, `Loops`, default `Budgeted`). Defaults: 10,000 calls,
++1,000,000 estimated loop visits, 4 admitted functions, 16,384 source bytes,
++768 bytes per helper, 20 ms soft elapsed compile time, benefit ratio 2.
++Thresholds and ratio must be positive. Zero function/byte/time budgets disable
++profiling. Serial, explicitly FastRA and SGX configurations do not activate it.
++See the compiler specification for eligibility, lifetime and publication rules.
+diff --git a/src/cli/dtvm.cpp b/src/cli/dtvm.cpp
+index f3c3811..2fd8fc8 100644
+--- a/src/cli/dtvm.cpp
++++ b/src/cli/dtvm.cpp
+@@ -287,6 +287,39 @@ int main(int argc, char *argv[]) {
+         ->excludes(DMMOption);
+     CLIParser->add_flag("--enable-multipass-lazy", Config.EnableMultipassLazy,
+                         "Enable multipass lazy mode (on request compile)");
++    CLIParser->add_flag(
++        "--enable-lazy-private-tiering", Config.EnableLazyPrivateTiering,
++        "Profile and upgrade hot private loop helpers (lazy MT only)");
++    const std::map<std::string, zen::runtime::LazyPrivateTierPolicy>
++        TierPolicies{
++            {"calls", zen::runtime::LazyPrivateTierPolicy::Calls},
++            {"loops", zen::runtime::LazyPrivateTierPolicy::Loops},
++            {"budgeted", zen::runtime::LazyPrivateTierPolicy::Budgeted}};
++    CLIParser
++        ->add_option("--lazy-tier-policy", Config.LazyTierPolicy,
++                     "Private upgrade policy: calls, loops, budgeted")
++        ->transform(CLI::CheckedTransformer(TierPolicies, CLI::ignore_case));
++    CLIParser->add_option("--lazy-tier-call-threshold",
++                          Config.LazyTierCallThreshold,
++                          "Calls before admitting loop profiling");
++    CLIParser->add_option("--lazy-tier-loop-threshold",
++                          Config.LazyTierLoopThreshold,
++                          "Estimated loop visits before upgrading");
++    CLIParser->add_option("--lazy-tier-max-functions",
++                          Config.LazyTierMaxFunctions,
++                          "Maximum admitted private functions per module");
++    CLIParser->add_option("--lazy-tier-max-bytes", Config.LazyTierMaxBytes,
++                          "Maximum admitted private source bytes per module");
++    CLIParser->add_option("--lazy-tier-max-function-bytes",
++                          Config.LazyTierMaxFunctionBytes,
++                          "Maximum eligible private function source bytes");
++    CLIParser->add_option(
++        "--lazy-tier-budget-ms", Config.LazyTierBudgetMs,
++        "Soft elapsed private compilation budget in milliseconds");
++    CLIParser->add_option(
++        "--lazy-tier-benefit-ratio", Config.LazyTierBenefitRatio,
++        "Required projected saving / estimated compilation cost");
++
+     CLIParser->add_flag("--enable-profile-guided-jit",
+                         Config.EnableProfileGuidedJIT,
+                         "Enable profile-guided JIT mode");
+diff --git a/src/compiler/compiler.cpp b/src/compiler/compiler.cpp
+index 8cb0bec..dd3e6fc 100644
+--- a/src/compiler/compiler.cpp
++++ b/src/compiler/compiler.cpp
+@@ -14,6 +14,7 @@
+ #include "compiler/cgir/pass/register_coalescer.h"
+ #include "compiler/context.h"
+ #include "compiler/frontend/parser.h"
++#include "compiler/lazy_promotion_budget.h"
+ #include "compiler/mir/function.h"
+ #include "compiler/mir/module.h"
+ #include "compiler/mir/pass/dead_basicblock_elim.h"
+@@ -26,7 +27,9 @@
+ #include "llvm/Object/ELFObjectFile.h"
+ #include "llvm/Object/ObjectFile.h"
+ #include "llvm/Support/SmallVectorMemoryBuffer.h"
++#include <chrono>
+ #include <deque>
++#include <limits>
+ 
+ #if defined(ZEN_ENABLE_MULTIPASS_JIT_LOGGING) || defined(ZEN_ENABLE_LINUX_PERF)
+ #include "utils/asm_dump.h"
+@@ -139,6 +142,12 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
+   MF.dump();
+ #endif
+ 
++  MF.getContext().LastSpillSlots = 0;
++  if (MF.getContext().CollectTieringMetadata)
++    for (int I = MF.getFrameInfo().getObjectIndexBegin();
++         I < MF.getFrameInfo().getObjectIndexEnd(); ++I)
++      if (MF.getFrameInfo().isSpillSlotObjectIndex(I))
++        ++MF.getContext().LastSpillSlots;
+   PrologEpilogInserter PEInserter;
+   PEInserter.runOnCgFunction(MF);
+ #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
+@@ -377,7 +386,8 @@ void JITCompilerBase::emitObjectBuffer(CompileContext *Ctx) {
+ }
+ 
+ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
+-                                      uint32_t FuncIdx, bool DisableGreedyRA) {
++                                      uint32_t FuncIdx, bool DisableGreedyRA,
++                                      uint8_t *LoopTick) {
+   if (Ctx.Inited) {
+     // Release all memory allocated by previous function compilation
+     Ctx.MemPool = CompileMemPool();
+@@ -388,6 +398,9 @@ void WasmJITCompiler::compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod,
+     Ctx.initialize();
+   }
+ 
++  Ctx.LoopTick = LoopTick;
++  Ctx.CollectTieringMetadata =
++      Config.EnableLazyPrivateTiering && DisableGreedyRA;
+   uint32_t RealFuncIdx = FuncIdx + WasmMod->getNumImportFunctions();
+   TypeEntry *FuncType = WasmMod->getFunctionType(RealFuncIdx);
+   ZEN_ASSERT(FuncType);
+@@ -591,12 +604,50 @@ LazyJITCompiler::LazyJITCompiler(Module *WasmMod)
+       GreedyRACodePtrs[I] = nullptr;
+     }
+   }
++
++#if !defined(ZEN_ENABLE_SGX)
++  if (ThreadPool && Config.EnableLazyPrivateTiering &&
++      !Config.DisableMultipassGreedyRA && Config.LazyTierMaxFunctions &&
++      Config.LazyTierMaxBytes && Config.LazyTierBudgetMs) {
++    PrivateBudget = std::make_unique<LazyPromotionBudget>(
++        Config.LazyTierMaxFunctions, Config.LazyTierMaxBytes,
++        uint64_t(Config.LazyTierBudgetMs) * 1000000);
++    PrivateFunctions =
++        std::make_unique<PrivateFunction[]>(NumInternalFunctions);
++    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
++      PrivateFunctions[I].Owner = this;
++      PrivateFunctions[I].Index = I;
++      PrivateFunctions[I].Eligible = isPrivateCandidate(I);
++    }
++  }
++#endif
+ }
+ 
+ LazyJITCompiler::~LazyJITCompiler() {
+   if (ThreadPool) {
+     ThreadPool->interrupt();
+   }
++  if (PrivateBudget && Config.EnableStatistics) {
++    const auto S = getPrivateTieringStats();
++    ZEN_LOG_INFO(
++        "Private tiering: admitted=%u bytes=%llu compile_ms=%.3f profiles=%u "
++        "greedy=%u",
++        S.AdmittedFunctions, static_cast<unsigned long long>(S.AdmittedBytes),
++        S.CompileTimeNs / 1000000.0, S.ProfilingPublishes, S.GreedyPublishes);
++    for (uint32_t I = 0; I < NumInternalFunctions; ++I) {
++      const auto &P = PrivateFunctions[I];
++      if (P.OriginalFast)
++        ZEN_LOG_INFO("Private tier function: internal=%u spills=%u "
++                     "observed_loops=%llu estimated_loops=%llu "
++                     "sample_calls=%llu fast_ns=%llu profile_ns=%llu",
++                     I, P.SpillSlots,
++                     static_cast<unsigned long long>(P.ObservedLoops),
++                     static_cast<unsigned long long>(P.EstimatedLoops),
++                     static_cast<unsigned long long>(P.SampledCalls),
++                     static_cast<unsigned long long>(P.FastCompileNs),
++                     static_cast<unsigned long long>(P.ProfileCompileNs));
++    }
++  }
+   MainContext->ThreadMemPool.deleteObject(Mod);
+   delete MainContext;
+ }
+@@ -713,8 +764,9 @@ void LazyJITCompiler::precompile() {
+ 
+ uint8_t *LazyJITCompiler::compileFunction(WasmFrontendContext &Ctx,
+                                           uint32_t FuncIdx,
+-                                          bool DisableGreedyRA) {
+-  compileWasmToMC(Ctx, *Mod, FuncIdx, DisableGreedyRA);
++                                          bool DisableGreedyRA,
++                                          uint8_t *LoopTick) {
++  compileWasmToMC(Ctx, *Mod, FuncIdx, DisableGreedyRA, LoopTick);
+   emitObjectBuffer(&Ctx);
+   uint8_t *JITCode = const_cast<uint8_t *>(Ctx.CodeMPool->getMemStart());
+   for (const auto &Reloc : Ctx.ExternRelocs) {
+@@ -762,6 +814,11 @@ void LazyJITCompiler::compileFunctionInBackgroud(WasmFrontendContext &Ctx,
+ 
+ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
+   uint32_t FuncIdx = StubBuilder.getFuncIdxByStubCodePtr(FuncStubCodePtr);
++  std::unique_lock<std::mutex> ForegroundGuard;
++  if (PrivateFunctions)
++    ForegroundGuard = std::unique_lock<std::mutex>(ForegroundMutex);
++  if (PrivateFunctions && PrivateFunctions[FuncIdx].OriginalFast)
++    return handlePrivateEntry(FuncIdx);
+   if (!ThreadPool) {
+     // Single-thread lazy, or single-internal-function modules (no FastRA
+     // FG / Greedy BG split). Configured allocator on-demand (Greedy unless
+@@ -787,8 +844,44 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
+   // Compile the function with fastRA for faster compilation. Parallel
+   // foreground compiles of the same FuncIdx may each produce a FastRA body;
+   // at least this caller gets a runnable pointer even if stub CAS loses.
++  const auto PrivateStart = PrivateFunctions
++                                ? std::chrono::steady_clock::now()
++                                : std::chrono::steady_clock::time_point{};
+   uint8_t *JITFuncCodePtr = compileFunction(*MainContext, FuncIdx, true);
++  const auto PrivateNs =
++      PrivateFunctions ? std::chrono::duration_cast<std::chrono::nanoseconds>(
++                             std::chrono::steady_clock::now() - PrivateStart)
++                             .count()
++                       : 0;
+   Stats.stopRecord(Timer);
++  if (PrivateFunctions && PrivateFunctions[FuncIdx].Eligible &&
++      MainContext->NumWasmLoops && !MainContext->NumGuestCalls &&
++      MainContext->LastSpillSlots >= 2 &&
++      PrivateEntryGates.load(std::memory_order_relaxed) <
++          std::min<uint64_t>(64, uint64_t(Config.LazyTierMaxFunctions) * 4) &&
++      PrivateBudget->getTimeNs() <
++          uint64_t(Config.LazyTierBudgetMs) * 1000000) {
++    std::lock_guard<std::mutex> PrivateLock(PrivateMutex);
++    auto &P = PrivateFunctions[FuncIdx];
++    P.OriginalFast = JITFuncCodePtr;
++    P.SpillSlots = MainContext->LastSpillSlots;
++    P.FastCompileNs = static_cast<uint64_t>(PrivateNs);
++    P.EntryQuantum = Config.LazyTierCallThreshold;
++    P.EntryRemaining.store(P.EntryQuantum, std::memory_order_relaxed);
++    static_assert(sizeof(std::atomic<uint64_t>) == sizeof(uint64_t));
++    static_assert(std::atomic<uint64_t>::is_always_lock_free);
++    PrivateEntryGates.fetch_add(1, std::memory_order_relaxed);
++    P.EntryGate = StubBuilder.compileEntryCounterGate(
++        reinterpret_cast<uint64_t *>(&P.EntryRemaining), JITFuncCodePtr,
++        FuncStubCodePtr);
++    if (CompileStatuses[FuncIdx] == CompileStatus::Done)
++      return GreedyRACodePtrs[FuncIdx];
++    JITStubBuilder::tryUpdateStubJmpTargetIfTrampoline(FuncStubCodePtr,
++                                                       P.EntryGate);
++    if (CompileStatuses[FuncIdx] == CompileStatus::Done)
++      return GreedyRACodePtrs[FuncIdx];
++    return JITFuncCodePtr;
++  }
+   // Re-check immediately before any FastRA stub publish. Litmus this closes:
+   //   FG: FastRA compile; load Done == false
+   //   BG: store GreedyRA ptr; store Done; xchg stub -> GreedyRA
+@@ -806,6 +899,276 @@ uint8_t *LazyJITCompiler::compileFunctionOnRequest(uint8_t *FuncStubCodePtr) {
+   return JITFuncCodePtr;
+ }
+ 
++namespace {
++uint64_t saturatedProduct(uint64_t A, uint64_t B) {
++  const auto Max = std::numeric_limits<uint64_t>::max();
++  return B && A > Max / B ? Max : A * B;
++}
++uint64_t saturatedSum(uint64_t A, uint64_t B) {
++  const auto Max = std::numeric_limits<uint64_t>::max();
++  return A > Max - B ? Max : A + B;
++}
++} // namespace
++
++bool LazyJITCompiler::isPrivateCandidate(uint32_t FuncIdx) const {
++  const uint32_t Imports = WasmMod->getNumImportFunctions();
++  const uint32_t Real = FuncIdx + Imports;
++  const auto *Code = WasmMod->getCodeEntry(Real);
++  if (Code->CodeSize > Config.LazyTierMaxFunctionBytes ||
++      Code->CodeSize > Config.LazyTierMaxBytes || Code->NumLocals > 32 ||
++      Code->Stats != Module::SF_none || Real == WasmMod->getStartFuncIdx())
++    return false;
++  for (uint32_t Export : WasmMod->getExportedFuncIdxs())
++    if (Export == Real)
++      return false;
++  return true;
++}
++
++uint8_t *LazyJITCompiler::handlePrivateEntry(uint32_t FuncIdx) {
++  auto &P = PrivateFunctions[FuncIdx];
++  auto *Stub = StubBuilder.getFuncStubCodePtr(FuncIdx);
++  if (CompileStatuses[FuncIdx] == CompileStatus::Done)
++    return GreedyRACodePtrs[FuncIdx];
++  bool Queue = false;
++  {
++    std::lock_guard<std::mutex> Lock(PrivateMutex);
++    const auto Remaining = P.EntryRemaining.load(std::memory_order_relaxed);
++    // A caller which raced initial trampoline publication is not a heat event.
++    if ((P.Status == PrivateStatus::Cold ||
++         P.Status == PrivateStatus::WaitingHeat) &&
++        (Remaining == 0 || Remaining > P.EntryQuantum)) {
++      stub_jmp::tryUpdateTarget(Stub, P.EntryGate, P.OriginalFast);
++      const uint32_t Bytes =
++          WasmMod->getCodeEntry(FuncIdx + WasmMod->getNumImportFunctions())
++              ->CodeSize;
++      P.CountedCalls = saturatedSum(P.CountedCalls, P.EntryQuantum);
++      if (P.Status == PrivateStatus::Cold) {
++        if (PrivateBudget->tryReserve(Bytes)) {
++          P.Status =
++              Config.LazyTierPolicy == runtime::LazyPrivateTierPolicy::Calls
++                  ? PrivateStatus::GreedyPending
++                  : PrivateStatus::ProfilingPending;
++          Queue = true;
++        } else
++          P.Status = PrivateStatus::Stopped;
++      } else {
++        P.EstimatedLoops = saturatedSum(
++            P.EstimatedLoops,
++            saturatedProduct(P.EntryQuantum, P.SampledLoops) / P.SampledCalls);
++        P.Status = PrivateStatus::GreedyPending;
++        Queue = true;
++      }
++    }
++  }
++  if (Queue)
++    ThreadPool->pushTask([this, FuncIdx](WasmFrontendContext *Ctx) {
++      bool Greedy;
++      {
++        std::lock_guard<std::mutex> Lock(PrivateMutex);
++        Greedy =
++            PrivateFunctions[FuncIdx].Status == PrivateStatus::GreedyPending;
++      }
++      if (Greedy)
++        compilePrivateGreedy(*Ctx, FuncIdx);
++      else
++        compilePrivateProfile(*Ctx, FuncIdx);
++    });
++  if (CompileStatuses[FuncIdx] == CompileStatus::Done)
++    return GreedyRACodePtrs[FuncIdx];
++  return P.OriginalFast;
++}
++
++void LazyJITCompiler::stopPrivateProfiling(uint32_t FuncIdx) {
++  std::lock_guard<std::mutex> Lock(PrivateMutex);
++  auto &P = PrivateFunctions[FuncIdx];
++  if (!P.OriginalFast || P.Status == PrivateStatus::Done ||
++      CompileStatuses[FuncIdx] == CompileStatus::Done)
++    return;
++  P.Status = PrivateStatus::Stopped;
++  if (P.LoopGate)
++    StubBuilder.stopLoopCounterGate(P.LoopGate);
++  auto *Stub = StubBuilder.getFuncStubCodePtr(FuncIdx);
++  if (P.ProfileEntryGate)
++    stub_jmp::tryUpdateTarget(Stub, P.ProfileEntryGate, P.OriginalFast);
++  if (P.EntryGate)
++    stub_jmp::tryUpdateTarget(Stub, P.EntryGate, P.OriginalFast);
++}
++
++void LazyJITCompiler::retireExhaustedProfilers() {
++  if (PrivateBudget->getTimeNs() <
++          uint64_t(Config.LazyTierBudgetMs) * 1000000 ||
++      PrivateProfilersRetired.exchange(true, std::memory_order_acq_rel))
++    return;
++  for (uint32_t I = 0; I < NumInternalFunctions; ++I)
++    stopPrivateProfiling(I);
++}
++
++void LazyJITCompiler::compilePrivateProfile(WasmFrontendContext &Ctx,
++                                            uint32_t FuncIdx) {
++  try {
++    const bool Ran = PrivateBudget->runIfTimeAvailable([&] {
++      auto &P = PrivateFunctions[FuncIdx];
++      const auto Start = std::chrono::steady_clock::now();
++      P.LoopRemaining.store(
++          std::min<uint64_t>(Config.LazyTierLoopThreshold, 4096),
++          std::memory_order_relaxed);
++      auto *Gate = StubBuilder.compileLoopCounterGate(
++          reinterpret_cast<uint64_t *>(&P.LoopRemaining), &P,
++          privateLoopCallback);
++      auto *Body = compileFunction(Ctx, FuncIdx, true, Gate);
++      P.SampleEntries.store(std::numeric_limits<uint64_t>::max(),
++                            std::memory_order_relaxed);
++      auto *SampleGate = StubBuilder.compileEntryCounterGate(
++          reinterpret_cast<uint64_t *>(&P.SampleEntries), Body,
++          StubBuilder.getFuncStubCodePtr(FuncIdx));
++      const auto Ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
++                          std::chrono::steady_clock::now() - Start)
++                          .count();
++      std::lock_guard<std::mutex> Lock(PrivateMutex);
++      P.LoopGate = Gate;
++      P.ProfileEntryGate = SampleGate;
++      P.ProfileFast = Body;
++      P.ProfileCompileNs = static_cast<uint64_t>(Ns);
++      P.Status = PrivateStatus::Profiling;
++      if (stub_jmp::tryUpdateTarget(StubBuilder.getFuncStubCodePtr(FuncIdx),
++                                    P.OriginalFast, SampleGate))
++        PrivateProfilePublishes.fetch_add(1, std::memory_order_release);
++      else {
++        P.Status = PrivateStatus::Stopped;
++        StubBuilder.stopLoopCounterGate(Gate);
++      }
++    });
++    if (!Ran)
++      stopPrivateProfiling(FuncIdx);
++    retireExhaustedProfilers();
++  } catch (...) {
++    stopPrivateProfiling(FuncIdx);
++    retireExhaustedProfilers();
++  }
++}
++
++void LazyJITCompiler::privateLoopCallback(void *Cookie) noexcept {
++  auto *P = static_cast<PrivateFunction *>(Cookie);
++  P->Owner->recordPrivateLoops(P->Index);
++}
++
++void LazyJITCompiler::recordPrivateLoops(uint32_t FuncIdx) noexcept {
++  try {
++    bool Queue = false;
++    {
++      std::lock_guard<std::mutex> Lock(PrivateMutex);
++      auto &P = PrivateFunctions[FuncIdx];
++      if (P.Status != PrivateStatus::Profiling)
++        return;
++      StubBuilder.stopLoopCounterGate(P.LoopGate);
++      auto *Stub = StubBuilder.getFuncStubCodePtr(FuncIdx);
++      stub_jmp::tryUpdateTarget(Stub, P.ProfileEntryGate, P.OriginalFast);
++      P.SampledLoops = std::min<uint64_t>(Config.LazyTierLoopThreshold, 4096);
++      P.SampledCalls = std::max<uint64_t>(
++          1, std::numeric_limits<uint64_t>::max() -
++                 P.SampleEntries.load(std::memory_order_relaxed));
++      P.ObservedLoops = P.SampledLoops;
++      P.EstimatedLoops = P.SampledLoops;
++      // Infer future loop work from a bounded sample, then restore unprofiled
++      // FastRA. Counter values are lower-bound samples during concurrent use.
++      const uint64_t SavedOps =
++          std::min<uint64_t>(uint64_t(P.SpillSlots) * 2, 16);
++      const uint64_t SavedPerCallNs =
++          saturatedProduct(P.SampledLoops, SavedOps) /
++          saturatedProduct(P.SampledCalls, 3);
++      constexpr uint64_t EntryTickNs = 8; // conservative nominal fast-gate cost
++      const uint64_t GreedyCost =
++          std::max<uint64_t>(saturatedProduct(P.FastCompileNs, 32), 100000);
++      const uint64_t CompileCost =
++          saturatedProduct(saturatedSum(P.ProfileCompileNs, GreedyCost),
++                           Config.LazyTierBenefitRatio);
++      const uint64_t ProbeCost =
++          saturatedSum(saturatedProduct(P.SampledLoops, 30),
++                       saturatedProduct(P.CountedCalls, EntryTickNs));
++      if (SavedPerCallNs <= EntryTickNs &&
++          Config.LazyTierPolicy == runtime::LazyPrivateTierPolicy::Budgeted) {
++        P.Status = PrivateStatus::Stopped;
++      } else {
++        auto CeilDiv = [](uint64_t N, uint64_t D) {
++          return N / D + (N % D != 0);
++        };
++        const uint64_t HeatCalls =
++            P.SampledLoops >= Config.LazyTierLoopThreshold
++                ? 0
++                : CeilDiv(saturatedProduct(Config.LazyTierLoopThreshold -
++                                               P.SampledLoops,
++                                           P.SampledCalls),
++                          P.SampledLoops);
++        uint64_t ProfitCalls = 0;
++        if (Config.LazyTierPolicy == runtime::LazyPrivateTierPolicy::Budgeted)
++          ProfitCalls = CeilDiv(saturatedSum(CompileCost, ProbeCost),
++                                SavedPerCallNs - EntryTickNs);
++        const uint64_t Calls = std::max(HeatCalls, ProfitCalls);
++        if (Calls == 0) {
++          P.Status = PrivateStatus::GreedyPending;
++          Queue = true;
++        } else {
++          P.EntryQuantum = Calls;
++          P.EntryRemaining.store(Calls, std::memory_order_relaxed);
++          P.Status = PrivateStatus::WaitingHeat;
++          stub_jmp::tryUpdateTarget(Stub, P.OriginalFast, P.EntryGate);
++        }
++      }
++    }
++    if (Queue)
++      ThreadPool->pushTask([this, FuncIdx](WasmFrontendContext *Ctx) {
++        compilePrivateGreedy(*Ctx, FuncIdx);
++      });
++  } catch (...) {
++    // No C++ exception may unwind through the generated register-saving thunk.
++    try {
++      stopPrivateProfiling(FuncIdx);
++    } catch (...) {
++    }
++  }
++}
++
++void LazyJITCompiler::compilePrivateGreedy(WasmFrontendContext &Ctx,
++                                           uint32_t FuncIdx) {
++  try {
++    const bool Ran = PrivateBudget->runIfTimeAvailable([&] {
++      compileFunctionInBackgroud(Ctx, FuncIdx);
++      std::lock_guard<std::mutex> Lock(PrivateMutex);
++      PrivateFunctions[FuncIdx].Status = PrivateStatus::Done;
++      PrivateGreedyPublishes.fetch_add(1, std::memory_order_release);
++    });
++    if (!Ran)
++      stopPrivateProfiling(FuncIdx);
++    retireExhaustedProfilers();
++  } catch (...) {
++    auto Expected = CompileStatus::InProgress;
++    CompileStatuses[FuncIdx].compare_exchange_strong(Expected,
++                                                     CompileStatus::None);
++    stopPrivateProfiling(FuncIdx);
++    retireExhaustedProfilers();
++  }
++}
++
++LazyJITCompiler::PrivateTieringStats
++LazyJITCompiler::getPrivateTieringStats() const {
++  PrivateTieringStats S;
++  if (PrivateBudget) {
++    S.AdmittedFunctions = PrivateBudget->getFunctions();
++    S.AdmittedBytes = PrivateBudget->getBytes();
++    S.CompileTimeNs = PrivateBudget->getTimeNs();
++    S.ProfilingPublishes =
++        PrivateProfilePublishes.load(std::memory_order_acquire);
++    S.GreedyPublishes = PrivateGreedyPublishes.load(std::memory_order_acquire);
++  }
++  return S;
++}
++uint64_t LazyJITCompiler::getObservedLoopHeat(uint32_t FuncIdx) const {
++  if (!PrivateFunctions || FuncIdx >= NumInternalFunctions)
++    return 0;
++  std::lock_guard<std::mutex> Lock(PrivateMutex);
++  return PrivateFunctions[FuncIdx].ObservedLoops;
++}
++
+ std::pair<std::unique_ptr<MModule>, std::vector<void *>>
+ MIRTextJITCompiler::compile(CompileContext &Context, const char *Ptr,
+                             size_t Size) {
+diff --git a/src/compiler/compiler.h b/src/compiler/compiler.h
+index 5c3f5d7..fcead80 100644
+--- a/src/compiler/compiler.h
++++ b/src/compiler/compiler.h
+@@ -9,6 +9,7 @@
+ 
+ #include <atomic>
+ #include <cstdint>
++#include <mutex>
+ 
+ namespace COMPILER {
+ 
+@@ -17,6 +18,7 @@ class WasmFrontendContext;
+ class MModule;
+ class MFunction;
+ class CgFunction;
++class LazyPromotionBudget;
+ 
+ class JITCompilerBase : public NonCopyable {
+ protected:
+@@ -39,7 +41,7 @@ protected:
+   ~WasmJITCompiler() override = default;
+ 
+   void compileWasmToMC(WasmFrontendContext &Ctx, MModule &Mod, uint32_t FuncIdx,
+-                       bool DisableGreedyRA);
++                       bool DisableGreedyRA, uint8_t *LoopTick = nullptr);
+ 
+   runtime::Module *WasmMod;
+   const uint32_t NumInternalFunctions;
+@@ -73,7 +75,7 @@ public:
+   void precompile();
+ 
+   uint8_t *compileFunction(WasmFrontendContext &Ctx, uint32_t FuncIdx,
+-                           bool DisableGreedyRA);
++                           bool DisableGreedyRA, uint8_t *LoopTick = nullptr);
+ 
+   void compileFunctionInBackgroud(WasmFrontendContext &Ctx, uint32_t FuncIdx);
+ 
+@@ -112,6 +114,16 @@ public:
+     return GreedyRACodePtrs[FuncIdx].load(std::memory_order_acquire);
+   }
+ 
++  struct PrivateTieringStats {
++    uint32_t AdmittedFunctions = 0;
++    uint64_t AdmittedBytes = 0;
++    uint64_t CompileTimeNs = 0;
++    uint32_t ProfilingPublishes = 0;
++    uint32_t GreedyPublishes = 0;
++  };
++  PrivateTieringStats getPrivateTieringStats() const;
++  uint64_t getObservedLoopHeat(uint32_t FuncIdx) const;
++
+ private:
+   enum class CompileStatus : uint8_t {
+     None,
+@@ -122,6 +134,55 @@ private:
+     Done,
+   };
+ 
++  enum class PrivateStatus : uint8_t {
++    Cold,
++    ProfilingPending,
++    Profiling,
++    WaitingHeat,
++    GreedyPending,
++    Done,
++    Stopped
++  };
++  struct PrivateFunction {
++    LazyJITCompiler *Owner = nullptr;
++    uint32_t Index = 0;
++    bool Eligible = false;
++    PrivateStatus Status = PrivateStatus::Cold;
++    alignas(8) std::atomic<uint64_t> EntryRemaining{0};
++    alignas(8) std::atomic<uint64_t> LoopRemaining{0};
++    uint64_t ObservedLoops = 0;
++    uint64_t EstimatedLoops = 0;
++    uint64_t CountedCalls = 0;
++    uint64_t EntryQuantum = 0;
++    uint64_t SampledCalls = 0;
++    uint64_t SampledLoops = 0;
++    alignas(8) std::atomic<uint64_t> SampleEntries{0};
++    uint64_t FastCompileNs = 0;
++    uint64_t ProfileCompileNs = 0;
++    uint32_t SpillSlots = 0;
++    uint8_t *OriginalFast = nullptr;
++    uint8_t *ProfileFast = nullptr;
++    uint8_t *ProfileEntryGate = nullptr;
++    uint8_t *EntryGate = nullptr;
++    uint8_t *LoopGate = nullptr;
++  };
++  static void privateLoopCallback(void *Cookie) noexcept;
++  void recordPrivateLoops(uint32_t FuncIdx) noexcept;
++  uint8_t *handlePrivateEntry(uint32_t FuncIdx);
++  void stopPrivateProfiling(uint32_t FuncIdx);
++  void compilePrivateProfile(WasmFrontendContext &Ctx, uint32_t FuncIdx);
++  void compilePrivateGreedy(WasmFrontendContext &Ctx, uint32_t FuncIdx);
++  bool isPrivateCandidate(uint32_t FuncIdx) const;
++  void retireExhaustedProfilers();
++  mutable std::mutex PrivateMutex;
++  std::mutex ForegroundMutex;
++  std::unique_ptr<PrivateFunction[]> PrivateFunctions;
++  std::unique_ptr<LazyPromotionBudget> PrivateBudget;
++  std::atomic<uint32_t> PrivateEntryGates{0};
++  std::atomic<bool> PrivateProfilersRetired{false};
++  std::atomic<uint32_t> PrivateProfilePublishes{0};
++  std::atomic<uint32_t> PrivateGreedyPublishes{0};
++
+   JITStubBuilder StubBuilder;
+   WasmFrontendContext *MainContext;
+   MModule *Mod;
+diff --git a/src/compiler/context.h b/src/compiler/context.h
+index 32f705f..482472d 100644
+--- a/src/compiler/context.h
++++ b/src/compiler/context.h
+@@ -44,6 +44,10 @@ class CompileContext {
+   };
+ 
+ public:
++  // Per-function diagnostics used only by the optional private tiering policy.
++  uint32_t LastSpillSlots = 0;
++  bool CollectTieringMetadata = false;
++
+   CompileContext();
+ 
+   virtual ~CompileContext();
+diff --git a/src/compiler/mir/instructions.h b/src/compiler/mir/instructions.h
+index fb3d9eb..fc1009c 100644
+--- a/src/compiler/mir/instructions.h
++++ b/src/compiler/mir/instructions.h
+@@ -446,6 +446,10 @@ private:
+ 
+ class CallInstructionBase : public DynamicOperandInstruction {
+ public:
++  // Internal no-argument/void profiling thunk; preserves all allocatable regs.
++  bool isPreserveAll() const { return PreserveAll; }
++  void setPreserveAll() { PreserveAll = true; }
++
+   template <typename T, typename Callee>
+   static T *create(CompileMemPool &MemPool, MType *type, Callee callee,
+                    llvm::ArrayRef<MInstruction *> args) {
+@@ -457,6 +461,9 @@ public:
+     return inst->getKind() == CALL;
+   }
+ 
++private:
++  bool PreserveAll = false;
++
+ protected:
+   CallInstructionBase(MType *type, Opcode opcode,
+                       llvm::ArrayRef<MInstruction *> args)
+diff --git a/src/compiler/stub/stub_builder.cpp b/src/compiler/stub/stub_builder.cpp
+index afa10d6..4ae4f5f 100644
+--- a/src/compiler/stub/stub_builder.cpp
++++ b/src/compiler/stub/stub_builder.cpp
+@@ -94,3 +94,64 @@ void JITStubBuilder::compileFunctionToStub(uint32_t FuncIdx) {
+   int32_t CallRelOffsetI32 = static_cast<int32_t>(CallRelOffset);
+   std::memcpy(NewStubTmplPatchPointPtr + 1, &CallRelOffsetI32, 4);
+ }
++
++namespace {
++// JMP active; push r11; movabs counter,r11; lock decq (r11); pop r11;
++// JE cold; then a normal tail (RET for loops, JMP Fast for entry gates).
++void counterPrefix(uint8_t *Code, uint64_t *Counter) {
++  const uint8_t Bytes[] = {
++      0xe9, 0, 0,    0,    0,    0x41, 0x53, 0x49, 0xbb, 0,    0, 0, 0, 0, 0,
++      0,    0, 0xf0, 0x49, 0xff, 0x0b, 0x41, 0x5b, 0x0f, 0x84, 0, 0, 0, 0};
++  std::memcpy(Code, Bytes, sizeof(Bytes));
++  const auto Address = reinterpret_cast<uint64_t>(Counter);
++  std::memcpy(Code + 9, &Address, 8);
++}
++void relativeJump(uint8_t *At, uint8_t *Target) {
++  At[0] = 0xe9;
++  const int32_t Offset = stub_jmp::computeRel32(At, Target);
++  std::memcpy(At + 1, &Offset, 4);
++}
++} // namespace
++
++uint8_t *JITStubBuilder::compileEntryCounterGate(uint64_t *Counter,
++                                                 uint8_t *Fast, uint8_t *Stub) {
++  auto *Code = static_cast<uint8_t *>(CodeMPool.allocate(
++      common::CodeMemPool::PageSize, common::CodeMemPool::PageSize));
++  counterPrefix(Code, Counter);
++  // JE at 23 is six bytes; cold starts after the five-byte normal JMP.
++  const int32_t ColdOffset = 5;
++  std::memcpy(Code + 25, &ColdOffset, 4);
++  relativeJump(Code + 29, Fast);
++  relativeJump(Code + 34, Stub + 5); // existing register-saving resolver
++  platform::mprotect(Code, common::CodeMemPool::PageSize,
++                     PROT_READ | PROT_EXEC);
++  return Code;
++}
++
++uint8_t *
++JITStubBuilder::compileLoopCounterGate(uint64_t *Counter, void *Cookie,
++                                       void (*Callback)(void *) noexcept) {
++  auto *Code = static_cast<uint8_t *>(CodeMPool.allocate(
++      common::CodeMemPool::PageSize, common::CodeMemPool::PageSize));
++  counterPrefix(Code, Counter);
++  const int32_t ColdOffset = 1;
++  std::memcpy(Code + 25, &ColdOffset, 4);
++  Code[29] = 0xc3;
++  auto *Cold = reinterpret_cast<uint8_t *>(privateLoopCold);
++  const size_t Size = reinterpret_cast<uint8_t *>(privateLoopColdEnd) - Cold;
++  std::memcpy(Code + 30, Cold, Size);
++  const uint64_t CookieAddr = reinterpret_cast<uint64_t>(Cookie);
++  const uint64_t CallbackAddr = reinterpret_cast<uint64_t>(Callback);
++  std::memcpy(Code + 30 +
++                  (reinterpret_cast<uint8_t *>(privateLoopColdCookie) - Cold) +
++                  2,
++              &CookieAddr, 8);
++  std::memcpy(
++      Code + 30 +
++          (reinterpret_cast<uint8_t *>(privateLoopColdCallback) - Cold) + 2,
++      &CallbackAddr, 8);
++  // Only this gate's first jump is subsequently patched, just like lazy stubs.
++  platform::mprotect(Code, common::CodeMemPool::PageSize,
++                     PROT_READ | PROT_WRITE | PROT_EXEC);
++  return Code;
++}
+diff --git a/src/compiler/stub/stub_builder.h b/src/compiler/stub/stub_builder.h
+index 1dd7a96..2ecd2a3 100644
+--- a/src/compiler/stub/stub_builder.h
++++ b/src/compiler/stub/stub_builder.h
+@@ -29,6 +29,16 @@ public:
+     return stub_jmp::tryUpdateTargetIfTrampoline(CurStubCodePtr, TargetPtr);
+   }
+ 
++  // Counter gates occupy separate pages; a loop gate is called with no
++  // arguments and preserves all GPR/x87/SSE state except arithmetic flags.
++  uint8_t *compileEntryCounterGate(uint64_t *Counter, uint8_t *Fast,
++                                   uint8_t *Stub);
++  uint8_t *compileLoopCounterGate(uint64_t *Counter, void *Cookie,
++                                  void (*Callback)(void *) noexcept);
++  static void stopLoopCounterGate(uint8_t *Gate) {
++    updateStubJmpTargetPtr(Gate, Gate + 29); // normal RET in the gate template
++  }
++
+   void allocateStubSpace(uint32_t NumInternalFunctions);
+ 
+   void compileStubResolver();
+@@ -59,6 +69,10 @@ private:
+ } // namespace COMPILER
+ 
+ extern "C" {
++void privateLoopCold();
++void privateLoopColdCookie();
++void privateLoopColdCallback();
++void privateLoopColdEnd();
+ void stubResolver();
+ void stubResolverPatchPoint();
+ void stubResolverEnd();
+diff --git a/src/compiler/stub/stub_jmp_target.h b/src/compiler/stub/stub_jmp_target.h
+index 6fee497..445e36d 100644
+--- a/src/compiler/stub/stub_jmp_target.h
++++ b/src/compiler/stub/stub_jmp_target.h
+@@ -43,8 +43,8 @@ inline void updateTarget(uint8_t *CurStubCodePtr, uint8_t *TargetPtr) {
+   /// \note x86_64 only
+   asm volatile(
+       "xchgl %0, 1(%1)" // +1 because the jmp instruction's first byte is opcode
+-      :
+-      : "r"(CallRelOffsetI32), "r"(CurStubCodePtr)
++      : "+r"(CallRelOffsetI32)
++      : "r"(CurStubCodePtr)
+       : "memory");
+ }
+ 
+@@ -70,6 +70,19 @@ inline bool tryUpdateTargetIfTrampoline(uint8_t *CurStubCodePtr,
+   return Success != 0;
+ }
+ 
++// Change only a known tier target; never overwrite a concurrent Greedy publish.
++inline bool tryUpdateTarget(uint8_t *Stub, const uint8_t *ExpectedTarget,
++                            uint8_t *Target) {
++  int32_t Expected = computeRel32(Stub, ExpectedTarget);
++  const int32_t Desired = computeRel32(Stub, Target);
++  uint8_t Success;
++  asm volatile("lock cmpxchgl %2, 1(%3)\n\tsete %0"
++               : "=q"(Success), "+a"(Expected)
++               : "r"(Desired), "r"(Stub)
++               : "memory", "cc");
++  return Success != 0;
++}
++
+ } // namespace stub_jmp
+ } // namespace COMPILER
+ 
+diff --git a/src/compiler/stub/stub_x86_64.S b/src/compiler/stub/stub_x86_64.S
+index c0c8eaf..4c16724 100644
+--- a/src/compiler/stub/stub_x86_64.S
++++ b/src/compiler/stub/stub_x86_64.S
+@@ -116,6 +116,64 @@ _stubTemplateEnd:
+ stubTemplateEnd:
+ #endif
+ 
++
++    .text
++    .align 4
++#ifdef ZEN_BUILD_PLATFORM_DARWIN
++#define PRIVATE_SYM(x) _##x
++#else
++#define PRIVATE_SYM(x) x
++#endif
++    .globl PRIVATE_SYM(privateLoopCold)
++PRIVATE_SYM(privateLoopCold):
++    // Called at a regular aligned call site: entry RSP % 16 == 8.
++    push %rbp
++    mov %rsp, %rbp
++    push %rax
++    push %rbx
++    push %rcx
++    push %rdx
++    push %rdi
++    push %rsi
++    push %r8
++    push %r9
++    push %r10
++    push %r11
++    push %r12
++    push %r13
++    push %r14
++    push %r15
++    sub $512, %rsp
++    fxsave64 (%rsp)
++    .globl PRIVATE_SYM(privateLoopColdCookie)
++PRIVATE_SYM(privateLoopColdCookie):
++    movabsq $0, %rdi
++    .globl PRIVATE_SYM(privateLoopColdCallback)
++PRIVATE_SYM(privateLoopColdCallback):
++    movabsq $0, %rax
++    call *%rax
++    fxrstor64 (%rsp)
++    add $512, %rsp
++    pop %r15
++    pop %r14
++    pop %r13
++    pop %r12
++    pop %r11
++    pop %r10
++    pop %r9
++    pop %r8
++    pop %rsi
++    pop %rdi
++    pop %rdx
++    pop %rcx
++    pop %rbx
++    pop %rax
++    pop %rbp
++    ret
++    .globl PRIVATE_SYM(privateLoopColdEnd)
++PRIVATE_SYM(privateLoopColdEnd):
++#undef PRIVATE_SYM
++
+ #ifndef ZEN_BUILD_PLATFORM_DARWIN
+     .section .note.GNU-stack,"",@progbits
+ #endif
+diff --git a/src/compiler/target/x86/x86lowering.cpp b/src/compiler/target/x86/x86lowering.cpp
+index 823c419..2ad1f13 100644
+--- a/src/compiler/target/x86/x86lowering.cpp
++++ b/src/compiler/target/x86/x86lowering.cpp
+@@ -2067,7 +2067,29 @@ CgRegister X86CgLowering::lowerCall(const CallInstructionBase &Inst) {
+   }
+ 
+   // Add a register mask operand representing the call-preserved registers.
+-  CallOperands.push_back(CgOperand::createRegMask(CSR_64_RegMask));
++  if (Inst.isPreserveAll()) {
++    ZEN_ASSERT(Inst.getType()->isVoid() && Inst.getNumOperands() == 0);
++    static const auto Mask = [] {
++      std::array<uint32_t, (X86::NUM_TARGET_REGS + 31) / 32> M;
++      M.fill(~uint32_t(0));
++      auto Clobber = [&](unsigned Reg) {
++        M[Reg / 32] &= ~(uint32_t(1) << (Reg % 32));
++      };
++      Clobber(X86::EFLAGS);
++      // FXSAVE64 preserves XMM0-15, not AVX/AVX-512 extensions. Keep
++      // wider values spillable if the target gains those features later.
++      for (unsigned Reg = X86::XMM16; Reg <= X86::ZMM31; ++Reg)
++        Clobber(Reg);
++      for (unsigned Reg = X86::K0; Reg <= X86::K7; ++Reg)
++        Clobber(Reg);
++      for (unsigned Reg = X86::K0_K1; Reg <= X86::K6_K7; ++Reg)
++        Clobber(Reg);
++      return M;
++    }();
++    CallOperands.push_back(CgOperand::createRegMask(Mask.data()));
++  } else {
++    CallOperands.push_back(CgOperand::createRegMask(CSR_64_RegMask));
++  }
+ 
+   OperandNum NumOperands = Inst.getNumOperands();
+   SmallVector<CgRegister, 6> ArgVirtRegs;
+diff --git a/src/compiler/wasm_frontend/wasm_mir_compiler.cpp b/src/compiler/wasm_frontend/wasm_mir_compiler.cpp
+index c990e78..4dee97c 100644
+--- a/src/compiler/wasm_frontend/wasm_mir_compiler.cpp
++++ b/src/compiler/wasm_frontend/wasm_mir_compiler.cpp
+@@ -383,6 +383,7 @@ void FunctionMirBuilder::handleBlock(WASMType Type, uint32_t StackSize) {
+ }
+ 
+ void FunctionMirBuilder::handleLoop(WASMType Type, uint32_t StackSize) {
++  ++Ctx.NumWasmLoops;
+   MBasicBlock *LoopBlock = createBasicBlock();
+   MBasicBlock *EndBlock = createBasicBlock();
+   createInstruction<BrInstruction>(true, Ctx, LoopBlock);
+@@ -390,6 +391,13 @@ void FunctionMirBuilder::handleLoop(WASMType Type, uint32_t StackSize) {
+ 
+   enterBlock(CtrlBlockKind::LOOP, Type, StackSize, LoopBlock, EndBlock);
+   setInsertBlock(LoopBlock);
++  if (Ctx.LoopTick) {
++    auto *Addr = createIntConstInstruction(
++        &Ctx.I64Type, reinterpret_cast<uintptr_t>(Ctx.LoopTick));
++    auto *Tick = createInstruction<ICallInstruction>(
++        true, &Ctx.VoidType, Addr, llvm::ArrayRef<MInstruction *>{});
++    Tick->setPreserveAll();
++  }
+ }
+ 
+ void FunctionMirBuilder::handleIf(Operand CondOp, WASMType Type,
+@@ -539,6 +547,7 @@ void FunctionMirBuilder::handleReturn(Operand Opnd) {
+ FunctionMirBuilder::Operand FunctionMirBuilder::handleCall(
+     uint32_t FuncIdx, uintptr_t Target, bool IsImport, bool FarCall,
+     const ArgumentInfo &ArgInfo, const std::vector<Operand> &Args) {
++  ++Ctx.NumGuestCalls;
+ 
+   if (IsImport) {
+     MInstruction *FuncAddr = createIntConstInstruction(&Ctx.I64Type, Target);
+@@ -554,6 +563,7 @@ FunctionMirBuilder::Operand FunctionMirBuilder::handleCall(
+ FunctionMirBuilder::Operand FunctionMirBuilder::handleCallIndirect(
+     uint32_t TypeIdx, Operand IndirectFuncIdxOp, uint32_t TblIdx,
+     const ArgumentInfo &ArgInfo, const std::vector<Operand> &Args) {
++  ++Ctx.NumGuestCalls;
+ 
+   MInstruction *IndirectFuncIdx = extractOperand(IndirectFuncIdxOp);
+   MInstruction *ResuableIndirectFuncIdx =
+diff --git a/src/compiler/wasm_frontend/wasm_mir_compiler.h b/src/compiler/wasm_frontend/wasm_mir_compiler.h
+index f4e354e..cfbe4dd 100644
+--- a/src/compiler/wasm_frontend/wasm_mir_compiler.h
++++ b/src/compiler/wasm_frontend/wasm_mir_compiler.h
+@@ -39,6 +39,7 @@ public:
+ 
+   void setCurFunc(uint32_t FuncIdx, runtime::TypeEntry *FuncType,
+                   runtime::CodeEntry *FuncCode) {
++    NumWasmLoops = NumGuestCalls = 0;
+     CurFuncIdx = FuncIdx;
+     WasmFuncType = FuncType;
+     WasmFuncCode = FuncCode;
+@@ -50,6 +51,10 @@ public:
+ 
+   const runtime::CodeEntry &getWasmFuncCode() const { return *WasmFuncCode; }
+ 
++  uint8_t *LoopTick = nullptr;
++  uint32_t NumWasmLoops = 0;
++  uint32_t NumGuestCalls = 0;
++
+   const bool UseSoftMemCheck;
+ 
+ private:
+diff --git a/src/runtime/config.h b/src/runtime/config.h
+index bf7522b..ff3c601 100644
+--- a/src/runtime/config.h
++++ b/src/runtime/config.h
+@@ -9,6 +9,8 @@
+ 
+ namespace zen::runtime {
+ 
++enum class LazyPrivateTierPolicy { Calls, Loops, Budgeted };
++
+ struct RuntimeConfig {
+   // Run time Format
+   common::InputFormat Format = common::InputFormat::WASM;
+@@ -39,6 +41,18 @@ struct RuntimeConfig {
+   uint32_t NumMultipassThreads = 8;
+   // Enable WASM multipass lazy compilation (segment-based lazy compile)
+   bool EnableMultipassLazy = false;
++  // Opt-in private-helper profiling/tiering. Only active for lazy MT with
++  // Greedy enabled. Zero admission/time limits disable profiling entirely.
++  bool EnableLazyPrivateTiering = false;
++  LazyPrivateTierPolicy LazyTierPolicy = LazyPrivateTierPolicy::Budgeted;
++  uint64_t LazyTierCallThreshold = 10000;
++  uint64_t LazyTierLoopThreshold = 1000000;
++  uint32_t LazyTierMaxFunctions = 4;
++  uint64_t LazyTierMaxBytes = 16384;
++  uint32_t LazyTierMaxFunctionBytes = 768;
++  uint32_t LazyTierBudgetMs = 20;
++  uint32_t LazyTierBenefitRatio = 2;
++
+   // Enable profile-guided JIT:
+   // contracts start in interpreter mode; runtime profiling (sliding window
+   // of recent calls) determines which contracts are hot enough to trigger
+@@ -75,6 +89,13 @@ struct RuntimeConfig {
+ 
+     case common::RunMode::MultipassMode:
+ #ifdef ZEN_ENABLE_MULTIPASS_JIT
++      if (EnableLazyPrivateTiering &&
++          (LazyTierCallThreshold == 0 || LazyTierLoopThreshold == 0 ||
++           LazyTierBenefitRatio == 0)) {
++        ZEN_LOG_ERROR(
++            "private tiering thresholds and benefit ratio must be positive");
++        return false;
++      }
+       if (!DisableMultipassMultithread && NumMultipassThreads == 0) {
+         ZEN_LOG_FATAL(
+             "multipass JIT multithread enabled but thread number is 0");
+diff --git a/src/tests/CMakeLists.txt b/src/tests/CMakeLists.txt
+index 5fc7e35..384877e 100644
+--- a/src/tests/CMakeLists.txt
++++ b/src/tests/CMakeLists.txt
+@@ -633,6 +633,25 @@ if(ZEN_ENABLE_SPEC_TEST)
+         PUBLIC ${GTEST_BOTH_LIBRARIES}
+       )
+     endif()
++    set(PRIVATE_TIER_WAT
++        "${CMAKE_SOURCE_DIR}/tests/wast/multipass/private_tiering.wat"
++    )
++    set(PRIVATE_TIER_WASM "${CMAKE_CURRENT_BINARY_DIR}/private_tiering.wasm")
++    add_custom_command(
++      OUTPUT ${PRIVATE_TIER_WASM}
++      COMMAND wat2wasm ${PRIVATE_TIER_WAT} -o ${PRIVATE_TIER_WASM}
++      DEPENDS ${PRIVATE_TIER_WAT}
++      VERBATIM
++    )
++    add_custom_target(private_tier_wasm DEPENDS ${PRIVATE_TIER_WASM})
++    add_dependencies(lazyJitGreedyOndemandTests private_tier_wasm)
++    target_sources(
++      lazyJitGreedyOndemandTests PRIVATE lazy_private_tiering_tests.cpp
++    )
++    target_compile_definitions(
++      lazyJitGreedyOndemandTests
++      PRIVATE PRIVATE_TIER_WASM_PATH="${PRIVATE_TIER_WASM}"
++    )
+     add_test(NAME lazyJitGreedyOndemandTests COMMAND lazyJitGreedyOndemandTests)
+   endif()
+ 
+diff --git a/src/tests/spec_unit_tests.cpp b/src/tests/spec_unit_tests.cpp
+index 7ba5e7f..1329c33 100644
+--- a/src/tests/spec_unit_tests.cpp
++++ b/src/tests/spec_unit_tests.cpp
+@@ -168,6 +168,9 @@ GTEST_API_ int main(int argc, char *argv[]) {
+       ->excludes(DMMOption);
+   CLIParser.add_flag("--enable-multipass-lazy", Config.EnableMultipassLazy,
+                      "Enable multipass lazy mode(on request compile)");
++  CLIParser.add_flag("--enable-lazy-private-tiering",
++                     Config.EnableLazyPrivateTiering,
++                     "Enable private loop tiering during lazy MT spec tests");
+   CLIParser.add_flag("--enable-profile-guided-jit",
+                      Config.EnableProfileGuidedJIT,
+                      "Enable profile-guided JIT mode");
+diff --git a/docs/changes/2026-11-06-private-loop-tiering/README.md b/docs/changes/2026-11-06-private-loop-tiering/README.md
+new file mode 100644
+index 0000000..1894ae3
+--- /dev/null
++++ b/docs/changes/2026-11-06-private-loop-tiering/README.md
+@@ -0,0 +1,204 @@
++# Change: Budgeted private loop tiering
++
++- **Status**: Implemented
++- **Date**: 2026-11-06
++- **Tier**: Full
++
++## Motivation and scope
++
++WAPM pi(1000) spends most sampled CPU time in a private scalar helper. Previous
++native-code experiments found FastRA emitted 893 bytes with 95 frame accesses,
++versus Greedy's 518 bytes with one frame access; Wasmtime 45 emitted 688 bytes.
++These are code-shape observations, not instruction counts or guarantees of
++runtime speed. The prior frozen analysis is available at
++[research evidence](https://github.com/zoowii/DTVM/blob/11a8bbaa8f339453709167a1a327ff877451472c/docs/changes/2026-11-06-fast-ra-liveout/README.md).
++
++The production change uses no function IDs, names or benchmark-specific checks.
++It adds an experimental, default-off way to upgrade repeatedly called private
++WASM loop helpers. It does not address one-shot long loops or replace live frames.
++Compiler, runtime, CLI and tests are affected; the guest ABI is unchanged.
++
++## Design
++
++1. Compile normal FastRA. Eligible helpers are private (including exclusion of
++   start and hinted entry), at most 768 source bytes and 32 locals by default,
++   without guest calls or memory/global/table effects, with actual WASM loops
++   and at least two spill slots. Source bytes exclude local declarations.
++2. Install a native entry counter. Default warmup is 10,000 calls. One-shot loops
++   therefore get no backedge instrumentation or extra compilation.
++3. At the warmup threshold reserve a unique-function/source-byte admission.
++   `calls` queues Greedy directly. `loops` and `budgeted` compile a second FastRA
++   body with preserve-all native ticks at loop headers. A profiling entry gate
++   also counts calls. The sample stops after min(loop threshold, 4096) header
++   visits, including first entries. Then restore the original FastRA body.
++4. Use sample visits/call to calculate another entry-counter quantum. `loops`
++   requires at least the configured estimated loop work (default 1,000,000).
++   `budgeted` also requires projected savings to repay estimated compilation,
++   probe and counter overhead. It rejects a sample whose estimated per-call
++   savings cannot cover the entry counter. On quantum completion queue Greedy.
++5. Publish future calls to Greedy, retaining old bodies until module destruction.
++
++The nominal savings model uses min(2 × spill slots, 16) saved operations per
++loop visit, 3 operations/ns, an 8 ns entry tick and a 30 ns sample tick. Predicted
++Greedy compilation is max(32 × measured initial FastRA elapsed time, 0.1 ms);
++profile compilation is measured. Default benefit ratio is 2. These constants
++are heuristics, not bounds: the runtime cannot know remaining work or guarantee
++payback. Initial calibration found about 6.7 ms Greedy versus 0.35 ms FastRA,
++so the earlier experimental factor of 4 was rejected before final validation.
++
++Hard per-module limits default to 4 admitted functions and 16,384 source bytes.
++Each function is admitted once, with no refund after failure. Both profiling and
++Greedy compilation share a serialized, soft 20 ms elapsed budget. One active
++compile may overrun; queued tasks check again immediately before compiling.
++Failures are charged too. Exhaustion retires profiling gates. Initial entry gate
++pages are capped at min(64, 4 × max admitted functions); two extra pages per
++admitted sampled helper are possible. Per-function metadata remains O(module
++functions). Code is retained, so profiling consumes additional code memory.
++
++## Publication and native state
++
++Profile transitions use expected-target CAS and cannot overwrite canonical
++Greedy code. Foreground compilation is serialized when the policy is active.
++Budget tasks use independent worker contexts. Workers join before gate cookies
++and counters are freed. Callback exceptions cannot unwind through assembly.
++
++The x86-64 tick preserves GPRs and FXSAVE64 state (x87 and XMM0–15); arithmetic
++flags and unsaved AVX/AVX-512 extensions are modeled as clobbered. Gates occupy
++separate code-pool pages. This follows the existing lazy stub patching mechanism.
++There is no OSR: an already active profiling frame can retain inactive CALL/RET
++ticks until it returns, even though subsequent calls use original FastRA.
++
++## Compatibility and controls
++
++Only lazy MT with more than one internal function, Greedy enabled and non-SGX
++activates the policy. Eager, serial, explicit FastRA and zero admission/time
++budgets leave it inactive. Default is off. Positive call/loop thresholds and
++benefit ratio are required when enabled. Timing and counters affect scheduling,
++not guest semantics. Host timing makes tier schedules nondeterministic, as with
++the existing background compiler; guest results must remain deterministic.
++
++Flags: `--enable-lazy-private-tiering`, `--lazy-tier-policy calls|loops|budgeted`,
++`--lazy-tier-call-threshold`, `--lazy-tier-loop-threshold`,
++`--lazy-tier-max-functions`, `--lazy-tier-max-bytes`,
++`--lazy-tier-max-function-bytes`, `--lazy-tier-budget-ms`,
++`--lazy-tier-benefit-ratio`. `--enable-statistics` reports admission, publishes,
++measured sample heat and estimated heat separately; disable it for benchmarks.
++
++## Implementation and verification
++
++- [x] Native entry/loop gates and preserved-register lowering.
++- [x] Eligibility, bounded sample, benefit estimate, hard admission and soft time budget.
++- [x] Calls/loops/budgeted ablations and CLI controls.
++- [x] Arguments across FastRA/profiling/Greedy, including integer/FP/stack arguments.
++- [x] One-shot rejection, disable switches, byte/size rejection, benefit rejection.
++- [x] Concurrent admission/gate crossing and failed-compilation time accounting.
++- [x] 14 unit tests, 98 MIR tests, 97 WAST cases each in interpreter, singlepass,
++      multipass eager and multipass lazy with private tiering enabled.
++- [x] Final production-binary timing, 17-case screen and parameter sensitivity.
++
++Spec fixtures are generated after applying `tests/wast/spec.patch`; the patch is
++reversed in the submodule after tests. Production benchmarking has SPEC/ASAN/EVM/
++profiler/logging disabled; tests use a separate SPEC-enabled build.
++
++## Experimental protocol
++
++Frozen upstream main is `193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2`.
++Linux x86-64, AMD EPYC 9V74, GCC 14.2, LLVM 15, Release `-O3 -DNDEBUG`.
++All engines and their child threads are pinned to CPU 0. Independent processes,
++warm file-page cache, Wasmtime 45 compilation cache disabled (`-C cache=n`).
++Measure Python pre-spawn through process exit, including startup, compilation,
++execution and teardown. One excluded warmup, randomized engine order within each
++round. No concurrent builds, tests or profiles during formal timing. This is one
++machine/CPU-affinity configuration, not a multi-host throughput claim.
++
++The first 7-round pilot and 31-round factor-4 confirmation are exploratory and
++retained under their original labels. Factor-32 final timing uses a new seed.
++Always include upstream main, policy-off candidate and Wasmtime 45, plus policy
++ablations. Compare paired within-round ratios and bootstrap 95% intervals, not
++only ratios of group medians. Preserve commands, input/binary hashes, exits and
++output hashes. Validate deterministic outputs; UUID/fortune-style programs need
++not emit identical text across runs.
++
++Reproduce from the repository root (paths point at frozen binaries):
++
++```sh
++python3 docs/changes/2026-11-06-private-loop-tiering/benchmark.py \
++  --main /path/to/dtvm-main --candidate /path/to/dtvm-candidate \
++  --wasmtime /path/to/wasmtime-45 --out /path/to/new-results \
++  --cases pi,pi100,pi1000,fib_iter_dev,base64cli,echo,md5 \
++  --repeats 31 --seed 2026110616
++```
++
++## Results and limitations
++
++Final production SHA-256: `ed77ecc2816738e2a7a8c97de3a8ea991da32a252624b43bb1fdb815e1f2ecfd`.
++A final review corrected the existing xchg input-only operand to read/write;
++the rebuilt production binary was byte-identical to the frozen 31-round binary.
++The register mask also correctly marks unsaved AVX/AVX-512 state as clobbered.
++
++Final confirmation, 31 rounds, medians in milliseconds:
++
++| Case | Main | Candidate off | Calls | Loops | Budgeted | WT45 |
++|---|---:|---:|---:|---:|---:|---:|
++| base64cli | 126.576 | 123.025 | 123.082 | 123.414 | 124.735 | 498.806 |
++| echo | 27.016 | 28.074 | 27.034 | 27.995 | 28.259 | 39.534 |
++| fib_iter_dev | 23.258 | 24.114 | 23.609 | 23.795 | 23.978 | 15.887 |
++| md5 | 28.397 | 28.138 | 29.002 | 29.542 | 29.395 | 43.404 |
++| pi | 26.436 | 26.877 | 26.273 | 27.351 | 26.778 | 38.894 |
++| pi100 | 35.810 | 35.735 | 36.050 | 37.187 | 36.684 | 47.555 |
++| pi1000 | 623.597 | 628.795 | 555.514 | 554.318 | 563.338 | 560.139 |
++
++For pi(1000), paired budgeted/main ratio is **0.9008** (bootstrap 95%
++**0.8842–0.9096**), budgeted/off **0.8964** (0.8856–0.9044), and
++budgeted/WT45 **1.0007** (0.9839–1.0132). Thus about 9.9% less time than main;
++no demonstrated win against WT45. Calls/main is 0.8776 and loops/main 0.8843:
++the joint estimator has **not** surpassed the simpler calls policy.
++
++pi(100) pays a measured profiling toll: paired budgeted/off 1.0245
++(1.0084–1.0609). Echo's budgeted/main ratio is 1.0508 (1.0110–1.0970),
++whereas budgeted/off is 1.0291 (0.9774–1.0607). The latter does not isolate
++a clear policy effect. These are pointwise exploratory intervals without
++multiple-comparison correction. Do not describe short-case results as zero
++regression. Fib remains slower than WT45 and gains no stable benefit.
++
++Parameter sensitivity, pi(1000), independent 11 rounds (all include main/off/WT45):
++
++| Configuration | Median ms | Paired ratio vs main |
++|---|---:|---:|
++| budget0 | 594.134 | 1.0130 |
++| budget1ms | 540.898 | 0.9229 |
++| budgeted | 543.642 | 0.9029 |
++| heat8m | 556.137 | 0.9125 |
++| main | 592.228 | 1.0000 |
++| off | 606.905 | 1.0016 |
++| warm100k | 541.036 | 0.9009 |
++| warm1k | 545.248 | 0.9281 |
++| wt45 | 537.705 | 0.9039 |
++
++`warm1k`/`warm100k` change call warmup to 1,000/100,000; `heat8m`
++raises the heat threshold to 8,000,000. `budget1ms` and `budget0` change
++elapsed compile budget. Budget zero removes the gain. Budget 1 ms can still
++upgrade: it is a **soft** cap; a diagnostic run spent 1.996 ms because a Greedy
++compile started below the limit and was allowed to complete. Do not call this
++a hard deadline. Default gain also repeated in this independent set (paired
++ratio 0.9029, 95% 0.8822–0.9200).
++
++Independent diagnostic runs (not timed data) showed pi(1) admitted zero helpers,
++pi(100) published a profile but no Greedy, and pi(1000) published both. The
++measured sample was 4096 visits; millions of reported estimated visits are
++extrapolations, not measured loop counters. At an 8-million heat setting,
++publication waited for that estimate, versus about 5.7 million with the default
++profit gate in one diagnostic run. Diagnostics perturb scheduling; they are not
++per-round traces of the formal samples.
++
++The 17 canonical short WAPM cases were also screened in 7 new rounds. All
++remained faster than WT45 under this process-level boundary, but that advantage
++predates this feature. The screen is too small/noisy to establish broad policy
++non-regression; full medians and samples are retained with the evidence.
++
++A one-shot long invocation cannot switch tier without OSR. Sampled density can
++change with workload phases, and spill slots need not measure spills in a hot
++loop. Code memory, inactive calls in live profiling frames, short-case overhead,
++and cost-model transfer to other machines remain limitations. This PR keeps
++the policy opt-in and exposes ablations for further study. No overall WAPM win
++rate, guaranteed profitability or default-policy improvement is claimed.
+diff --git a/docs/changes/2026-11-06-private-loop-tiering/benchmark.py b/docs/changes/2026-11-06-private-loop-tiering/benchmark.py
+new file mode 100644
+index 0000000..711d065
+--- /dev/null
++++ b/docs/changes/2026-11-06-private-loop-tiering/benchmark.py
+@@ -0,0 +1,169 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: Apache-2.0
++"""Run from repository root; randomized paired fresh-process timing."""
++import argparse
++import hashlib
++import importlib.util
++import json
++import os
++import random
++import resource
++import statistics
++import subprocess
++import time
++from pathlib import Path
++
++root = Path.cwd()
++p = argparse.ArgumentParser()
++p.add_argument("--out", required=True)
++p.add_argument("--main", required=True)
++p.add_argument("--candidate", required=True)
++p.add_argument("--wasmtime", required=True)
++p.add_argument(
++    "--extra-variants",
++    help="JSON mapping extra budgeted variant names to CLI arguments",
++)
++p.add_argument("--seed", type=int, default=2026110616)
++p.add_argument("--repeats", type=int, default=7)
++p.add_argument("--cases", default="pi,pi100,pi1000")
++p.add_argument("--variants", default="main,off,calls,loops,budgeted,wt45")
++a = p.parse_args()
++spec = importlib.util.spec_from_file_location(
++    "h", root / "benchmarks/paper/harness/run.py"
++)
++h = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(h)
++base = Path(a.main).resolve()
++candidate = Path(a.candidate).resolve()
++wt = Path(a.wasmtime).resolve()
++variants = {
++    "main": (base, None),
++    "off": (candidate, None),
++    "calls": (candidate, None),
++    "loops": (candidate, None),
++    "budgeted": (candidate, None),
++    "wt45": (wt, None),
++}
++extras = json.loads(Path(a.extra_variants).read_text()) if a.extra_variants else {}
++variants.update({v: (candidate, None) for v in extras})
++variants = {v: variants[v] for v in a.variants.split(",")}
++cases = h.load_cases(h.read_json(h.CATALOG_PATH))
++pi = next((c for c in cases if c["id"] == "pi"))
++cases += [{**pi, "id": "pi" + str(n), "args": [str(n)]} for n in [10, 100, 1000]]
++cases = [c for c in cases if c["id"] in a.cases.split(",")]
++assert len(cases) == len(a.cases.split(","))
++sha = lambda b: hashlib.sha256(b).hexdigest()
++out = Path(a.out)
++out.mkdir(parents=True, exist_ok=False)
++cmds = {
++    c["id"]: {
++        v: ["taskset", "-c", "0"]
++        + (
++            h.wasmtime_cmd(b, c)
++            if v == "wt45"
++            else h.dtvm_cmd(b, c, "lazy-G-MT", False)
++        )
++        for v, (b, _) in variants.items()
++    }
++    for c in cases
++}
++for c in cases:
++    for v in variants:
++        if v in ["calls", "loops", "budgeted"] or v in extras:
++            cmd = cmds[c["id"]][v]
++            cmd[4:4] = [
++                "--enable-lazy-private-tiering",
++                "--lazy-tier-policy",
++                "budgeted" if v in extras else v,
++            ] + extras.get(v, [])
++manifest = {
++    "main_commit": "193b8d2e8ddeb54af974bc8a2b9cc52b838de8b2",
++    "seed": a.seed,
++    "extra_variants": extras,
++    "rounds": a.repeats,
++    "excluded_warmup_round": -1,
++    "boundary": "fresh process pre-spawn through exit; CPU0; warm page cache; Wasmtime cache disabled; diagnostics disabled",
++    "hypothesis": "Entry heat, bounded loop sample, estimated profit and serialized per-module compile budget; no diagnostic tracing",
++    "variants": {
++        v: {
++            "binary": str(b),
++            "sha256": sha(b.read_bytes()),
++            "policy": (
++                ("budgeted" if v in extras else v)
++                if v in ["calls", "loops", "budgeted"] or v in extras
++                else None
++            ),
++        }
++        for v, (b, ids) in variants.items()
++    },
++    "commands": cmds,
++    "inputs": {c["id"]: sha(h.paper_join(c["wasm"]).read_bytes()) for c in cases},
++}
++(out / "manifest.json").write_text(json.dumps(manifest, indent=2))
++rng = random.Random(a.seed)
++rows = []
++with (out / "samples.jsonl").open("w", buffering=1) as f:
++    for c in cases:
++        for rnd in range(-1, a.repeats):
++            order = list(variants)
++            rng.shuffle(order)
++            for v in order:
++                env = {**os.environ, "LC_ALL": "C", "WASMTIME_CACHE": "0"}
++                env.pop("DTVM_TRACE_DIR", None)
++                env.pop("DTVM_RESEARCH_GREEDY_FUNCTIONS", None)
++                env.pop("DTVM_RESEARCH_PURE_LOOP_GREEDY", None)
++                before = resource.getrusage(resource.RUSAGE_CHILDREN)
++                t = time.perf_counter_ns()
++                r = subprocess.run(
++                    cmds[c["id"]][v],
++                    cwd=h.case_cwd(c),
++                    input=c.get("stdin"),
++                    text=True,
++                    capture_output=True,
++                    env=env,
++                    timeout=120,
++                )
++                wall = (time.perf_counter_ns() - t) / 1000000.0
++                after = resource.getrusage(resource.RUSAGE_CHILDREN)
++                row = {
++                    "case": c["id"],
++                    "variant": v,
++                    "round": rnd,
++                    "wall_ms": wall,
++                    "cpu_ms": 1000
++                    * (
++                        after.ru_utime
++                        + after.ru_stime
++                        - before.ru_utime
++                        - before.ru_stime
++                    ),
++                    "exit": r.returncode,
++                    "stdout_sha256": sha(r.stdout.encode()),
++                    "stderr_sha256": sha(r.stderr.encode()),
++                }
++                assert r.returncode == 0, (c["id"], v, r.stderr)
++                rows.append(row)
++                f.write(json.dumps(row) + "\n")
++                (out / (c["id"] + "." + v + ".stdout")).write_text(r.stdout)
++                (out / (c["id"] + "." + v + ".stderr")).write_text(r.stderr)
++        if c["id"].startswith("pi"):
++            assert len({r["stdout_sha256"] for r in rows if r["case"] == c["id"]}) == 1
++        print(
++            c["id"],
++            {
++                v: round(
++                    statistics.median(
++                        (
++                            r["wall_ms"]
++                            for r in rows
++                            if r["case"] == c["id"]
++                            and r["variant"] == v
++                            and (r["round"] >= 0)
++                        )
++                    ),
++                    3,
++                )
++                for v in variants
++            },
++            flush=True,
++        )
+diff --git a/src/compiler/lazy_promotion_budget.h b/src/compiler/lazy_promotion_budget.h
+new file mode 100644
+index 0000000..d4b5036
+--- /dev/null
++++ b/src/compiler/lazy_promotion_budget.h
+@@ -0,0 +1,96 @@
++// Copyright (C) 2026 the DTVM authors. All Rights Reserved.
++// SPDX-License-Identifier: Apache-2.0
++
++#ifndef ZEN_COMPILER_LAZY_PROMOTION_BUDGET_H
++#define ZEN_COMPILER_LAZY_PROMOTION_BUDGET_H
++
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <limits>
++#include <mutex>
++
++namespace COMPILER {
++
++// Module-lifetime admission budget. Function/byte limits are hard limits.
++// Time is a soft limit: previously admitted work is allowed to complete.
++class LazyPromotionBudget {
++public:
++  LazyPromotionBudget(uint32_t MaxFunctions, uint64_t MaxBytes,
++                      uint64_t MaxTimeNs)
++      : MaxFunctions(MaxFunctions), MaxBytes(MaxBytes), MaxTimeNs(MaxTimeNs) {}
++
++  bool tryReserve(uint32_t Bytes) {
++    std::lock_guard<std::mutex> Lock(Mutex);
++    if (Functions >= MaxFunctions || MaxBytes == 0 ||
++        Bytes > MaxBytes - UsedBytes ||
++        UsedTimeNs.load(std::memory_order_acquire) >= MaxTimeNs) {
++      return false;
++    }
++    ++Functions;
++    UsedBytes += Bytes;
++    return true;
++  }
++
++  void recordTime(uint64_t Ns) {
++    uint64_t Old = UsedTimeNs.load(std::memory_order_relaxed);
++    uint64_t Next;
++    do {
++      Next = Ns > std::numeric_limits<uint64_t>::max() - Old
++                 ? std::numeric_limits<uint64_t>::max()
++                 : Old + Ns;
++    } while (!UsedTimeNs.compare_exchange_weak(
++        Old, Next, std::memory_order_release, std::memory_order_relaxed));
++  }
++
++  // Serialize private promotions and check time immediately before compiling.
++  // Otherwise a burst of queued work could overshoot the soft cap by every
++  // worker/queued function. At most the currently running compile can overrun.
++  template <typename Task> bool runIfTimeAvailable(Task &&Compile) {
++    std::lock_guard<std::mutex> Lock(CompilationMutex);
++    if (getTimeNs() >= MaxTimeNs) {
++      return false;
++    }
++    const auto Start = std::chrono::steady_clock::now();
++    try {
++      Compile();
++    } catch (...) {
++      recordTime(static_cast<uint64_t>(
++          std::chrono::duration_cast<std::chrono::nanoseconds>(
++              std::chrono::steady_clock::now() - Start)
++              .count()));
++      throw;
++    }
++    const auto Elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
++                             std::chrono::steady_clock::now() - Start)
++                             .count();
++    recordTime(static_cast<uint64_t>(Elapsed));
++    return true;
++  }
++
++  uint32_t getFunctions() const {
++    std::lock_guard<std::mutex> Lock(Mutex);
++    return Functions;
++  }
++  uint64_t getBytes() const {
++    std::lock_guard<std::mutex> Lock(Mutex);
++    return UsedBytes;
++  }
++  uint64_t getTimeNs() const {
++    return UsedTimeNs.load(std::memory_order_acquire);
++  }
++
++private:
++  const uint32_t MaxFunctions;
++  const uint64_t MaxBytes;
++  const uint64_t MaxTimeNs;
++  mutable std::mutex Mutex;
++  std::mutex CompilationMutex;
++  uint32_t Functions = 0;
++  uint64_t UsedBytes = 0;
++  std::atomic<uint64_t> UsedTimeNs{0};
++};
++
++} // namespace COMPILER
++
++#endif // ZEN_COMPILER_LAZY_PROMOTION_BUDGET_H
+diff --git a/src/tests/lazy_private_tiering_tests.cpp b/src/tests/lazy_private_tiering_tests.cpp
+new file mode 100644
+index 0000000..7e9ff7f
+--- /dev/null
++++ b/src/tests/lazy_private_tiering_tests.cpp
+@@ -0,0 +1,204 @@
++// Copyright (C) 2026 the DTVM authors. All Rights Reserved.
++// SPDX-License-Identifier: Apache-2.0
++#include "compiler/compiler.h"
++#include "compiler/lazy_promotion_budget.h"
++#include "compiler/stub/stub_builder.h"
++#include "runtime/isolation.h"
++#include "runtime/module.h"
++#include "runtime/runtime.h"
++#include <atomic>
++#include <chrono>
++#include <fstream>
++#include <gtest/gtest.h>
++#include <stdexcept>
++#include <thread>
++#include <vector>
++
++using namespace COMPILER;
++using namespace zen::runtime;
++using namespace zen::common;
++namespace {
++RuntimeConfig tierConfig() {
++  RuntimeConfig C;
++  C.Mode = RunMode::MultipassMode;
++#ifdef ZEN_ENABLE_BUILTIN_WASI
++  C.DisableWASI = true;
++#endif
++  C.EnableMultipassLazy = true;
++  C.EnableLazyPrivateTiering = true;
++  C.LazyTierPolicy = LazyPrivateTierPolicy::Loops;
++  C.LazyTierCallThreshold = 4;
++  C.LazyTierLoopThreshold = 64;
++  C.LazyTierBudgetMs = 1000;
++  C.NumMultipassThreads = 2;
++  return C;
++}
++struct Fixture {
++  std::unique_ptr<Runtime> RT;
++  Module *Mod = nullptr;
++  Instance *Inst = nullptr;
++  explicit Fixture(RuntimeConfig C) : RT(Runtime::newRuntime(C)) {
++    EXPECT_NE(RT, nullptr);
++    if (!RT)
++      return;
++    std::ifstream In(PRIVATE_TIER_WASM_PATH, std::ios::binary);
++    std::vector<uint8_t> Bytes((std::istreambuf_iterator<char>(In)), {});
++    auto M = RT->loadModule("private-tier", Bytes.data(), Bytes.size());
++    EXPECT_TRUE(M);
++    if (!M)
++      return;
++    Mod = *M;
++    auto *Iso = RT->createManagedIsolation();
++    auto I = Iso->createInstance(*Mod);
++    EXPECT_TRUE(I);
++    if (I)
++      Inst = *I;
++  }
++  LazyJITCompiler *compiler() { return Mod->getLazyJITCompiler(); }
++  double repeat(uint32_t Count, uint32_t Trips) {
++    std::vector<TypedValue> R;
++    EXPECT_TRUE(RT->callWasmFunction(
++        *Inst, "repeat", {std::to_string(Count), std::to_string(Trips)}, R));
++    EXPECT_FALSE(Inst->hasError());
++    return R.empty() ? -1 : R[0].Value.F64;
++  }
++};
++double expected(uint32_t Count, uint32_t Trips) {
++  uint64_t X = 1, Sum = 0;
++  for (uint32_t I = 0; I < Trips; ++I) {
++    X = (X * 1664525 + 1013904223) & 1023;
++    Sum += X;
++  }
++  return Count * (double(Sum + 36) + 11.25);
++}
++} // namespace
++
++TEST(LazyPrivateTiering, PreservesRegisterAndStackArgumentsAcrossBothTiers) {
++  for (auto Policy :
++       {LazyPrivateTierPolicy::Calls, LazyPrivateTierPolicy::Loops,
++        LazyPrivateTierPolicy::Budgeted}) {
++    auto C = tierConfig();
++    C.LazyTierPolicy = Policy;
++    const uint32_t Count =
++        Policy == LazyPrivateTierPolicy::Budgeted ? 4096 : 128;
++    Fixture F(C);
++    ASSERT_NE(F.Inst, nullptr);
++    for (unsigned I = 0; I < 1000; ++I) {
++      EXPECT_DOUBLE_EQ(F.repeat(Count, 64), expected(Count, 64));
++      if (F.compiler()->getPrivateTieringStats().GreedyPublishes)
++        break;
++      std::this_thread::sleep_for(std::chrono::milliseconds(1));
++    }
++    auto S = F.compiler()->getPrivateTieringStats();
++    EXPECT_EQ(S.AdmittedFunctions, 1u);
++    EXPECT_EQ(S.GreedyPublishes, 1u);
++    EXPECT_EQ(S.ProfilingPublishes,
++              Policy == LazyPrivateTierPolicy::Calls ? 0u : 1u);
++    EXPECT_DOUBLE_EQ(F.repeat(Count, 64), expected(Count, 64));
++  }
++}
++TEST(LazyPrivateTiering, OneShotLoopNeverGetsBackedgeInstrumentation) {
++  auto C = tierConfig();
++  C.LazyTierCallThreshold = 100;
++  Fixture F(C);
++  ASSERT_NE(F.Inst, nullptr);
++  EXPECT_DOUBLE_EQ(F.repeat(1, 100000), expected(1, 100000));
++  auto S = F.compiler()->getPrivateTieringStats();
++  EXPECT_EQ(S.AdmittedFunctions, 0u);
++  EXPECT_EQ(S.ProfilingPublishes, 0u);
++  EXPECT_EQ(S.GreedyPublishes, 0u);
++}
++TEST(LazyPrivateTiering,
++     DisabledSerialExplicitFastAndZeroBudgetsKeepPolicyInactive) {
++  for (unsigned Mode = 0; Mode < 7; ++Mode) {
++    auto C = tierConfig();
++    if (Mode == 0)
++      C.EnableLazyPrivateTiering = false;
++    if (Mode == 1)
++      C.DisableMultipassMultithread = true;
++    if (Mode == 2)
++      C.DisableMultipassGreedyRA = true;
++    if (Mode == 3)
++      C.LazyTierMaxFunctions = 0;
++    if (Mode == 4)
++      C.LazyTierBudgetMs = 0;
++    if (Mode == 5)
++      C.LazyTierMaxBytes = 1;
++    if (Mode == 6)
++      C.LazyTierMaxFunctionBytes = 1;
++    Fixture F(C);
++    ASSERT_NE(F.Inst, nullptr);
++    EXPECT_DOUBLE_EQ(F.repeat(64, 16), expected(64, 16));
++    EXPECT_EQ(F.compiler()->getPrivateTieringStats().AdmittedFunctions, 0u);
++  }
++}
++TEST(LazyPrivateTiering, ProfitabilityGateCanRejectObservedLoopHeat) {
++  auto C = tierConfig();
++  C.LazyTierPolicy = LazyPrivateTierPolicy::Budgeted;
++  C.LazyTierBenefitRatio = 0xffffffffu;
++  Fixture F(C);
++  ASSERT_NE(F.Inst, nullptr);
++  for (unsigned I = 0; I < 20; ++I) {
++    EXPECT_DOUBLE_EQ(F.repeat(64, 16), expected(64, 16));
++    std::this_thread::sleep_for(std::chrono::milliseconds(1));
++  }
++  EXPECT_EQ(F.compiler()->getPrivateTieringStats().ProfilingPublishes, 1u);
++  EXPECT_GT(F.compiler()->getObservedLoopHeat(0), 0u);
++  EXPECT_EQ(F.compiler()->getPrivateTieringStats().GreedyPublishes, 0u);
++}
++TEST(LazyPrivateBudget, HardLimitsRemainBoundedUnderContention) {
++  for (uint32_t MaxFunctions : {2u, 4u}) {
++    LazyPromotionBudget B(MaxFunctions, 1000, 1000000000);
++    std::atomic<unsigned> Admitted{0};
++    std::vector<std::thread> Threads;
++    for (unsigned I = 0; I < 8; ++I)
++      Threads.emplace_back([&] {
++        for (unsigned J = 0; J < 100; ++J)
++          if (B.tryReserve(300))
++            ++Admitted;
++      });
++    for (auto &T : Threads)
++      T.join();
++    EXPECT_EQ(Admitted.load(), std::min(MaxFunctions, 3u));
++    EXPECT_EQ(B.getBytes(), std::min(MaxFunctions, 3u) * 300u);
++  }
++}
++TEST(LazyPrivateBudget,
++     FailedCompilationIsStillChargedAndSoftCapStopsNextTask) {
++  LazyPromotionBudget B(4, 1000, 1);
++  EXPECT_THROW(B.runIfTimeAvailable([] {
++    std::this_thread::sleep_for(std::chrono::milliseconds(1));
++    throw std::runtime_error("test compilation failure");
++  }),
++               std::runtime_error);
++  EXPECT_GT(B.getTimeNs(), 0u);
++  bool Ran = false;
++  EXPECT_FALSE(B.runIfTimeAvailable([&] { Ran = true; }));
++  EXPECT_FALSE(Ran);
++}
++TEST(LazyPrivateGate, ConcurrentColdCrossingRunsCallbackOnce) {
++  struct Cookie {
++    uint8_t *Gate = nullptr;
++    std::atomic<unsigned> Hits{0};
++  } C;
++  CodeMemPool Pool;
++  JITStubBuilder Builder(Pool);
++  alignas(8) std::atomic<uint64_t> Remaining{32};
++  auto Callback = +[](void *P) noexcept {
++    auto *C = static_cast<Cookie *>(P);
++    ++C->Hits;
++    JITStubBuilder::stopLoopCounterGate(C->Gate);
++  };
++  C.Gate = Builder.compileLoopCounterGate(
++      reinterpret_cast<uint64_t *>(&Remaining), &C, Callback);
++  auto Fn = reinterpret_cast<void (*)()>(C.Gate);
++  std::vector<std::thread> Threads;
++  for (unsigned I = 0; I < 4; ++I)
++    Threads.emplace_back([&] {
++      for (unsigned J = 0; J < 1000; ++J)
++        Fn();
++    });
++  for (auto &T : Threads)
++    T.join();
++  EXPECT_EQ(C.Hits.load(), 1u);
++}
+diff --git a/tests/wast/multipass/private_tiering.wat b/tests/wast/multipass/private_tiering.wat
+new file mode 100644
+index 0000000..9fe87aa
+--- /dev/null
++++ b/tests/wast/multipass/private_tiering.wat
+@@ -0,0 +1,41 @@
++(module
++ (func $kernel (param $n i32)
++  (param $a i64) (param $b i64) (param $c i64) (param $d i64)
++  (param $e i64) (param $f i64) (param $g i64) (param $h i64)
++  (param $p f64) (param $q f64) (param $r f64) (param $s f64)
++  (param $t f64) (param $u f64) (param $v f64) (param $w f64) (param $z f64)
++  (result f64) (local $i i32) (local $x i64) (local $sum i64)
++  (local.set $x (i64.const 1))
++  (loop $again
++   (local.set $x (i64.and (i64.add (i64.mul (local.get $x) (i64.const 1664525)) (i64.const 1013904223)) (i64.const 1023)))
++   (local.set $sum (i64.add (local.get $sum) (local.get $x)))
++   (br_if $again (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (local.get $n))))
++  (f64.add
++   (f64.convert_i64_u (i64.add (local.get $sum)
++    (i64.add (i64.add (i64.add (local.get $a) (local.get $b)) (i64.add (local.get $c) (local.get $d)))
++             (i64.add (i64.add (local.get $e) (local.get $f)) (i64.add (local.get $g) (local.get $h))))))
++   (f64.add (f64.add (f64.add (local.get $p) (local.get $q)) (f64.add (local.get $r) (local.get $s)))
++    (f64.add (f64.add (local.get $t) (local.get $u)) (f64.add (local.get $v) (f64.add (local.get $w) (local.get $z)))))))
++ (func $simple (param $n i32) (result i64) (local $i i32) (local $s i64) (local $x i64)
++  (local.set $x (i64.const 1))
++  (loop $again
++   (local.set $x (i64.and (i64.add (i64.mul (local.get $x) (i64.const 1664525)) (i64.const 1013904223)) (i64.const 1023)))
++   (local.set $s (i64.add (local.get $s) (local.get $x)))
++   (br_if $again (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (local.get $n))))
++  (local.get $s))
++ (func (export "repeat") (param $count i32) (param $trips i32) (result f64) (local $i i32) (local $total f64)
++  (loop $again
++   (local.set $total (f64.add (local.get $total)
++    (call $kernel (local.get $trips)
++     (i64.const 1) (i64.const 2) (i64.const 3) (i64.const 4)
++     (i64.const 5) (i64.const 6) (i64.const 7) (i64.const 8)
++     (f64.const 0.25) (f64.const 0.5) (f64.const 0.75) (f64.const 1)
++     (f64.const 1.25) (f64.const 1.5) (f64.const 1.75) (f64.const 2) (f64.const 2.25))))
++   (br_if $again (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (local.get $count))))
++  (local.get $total))
++ (func (export "repeat_simple") (param $count i32) (param $trips i32) (result i64) (local $i i32) (local $total i64)
++  (loop $again
++   (local.set $total (i64.add (local.get $total) (call $simple (local.get $trips))))
++   (br_if $again (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (local.get $count))))
++  (local.get $total))
++)
