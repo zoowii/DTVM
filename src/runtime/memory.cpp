@@ -534,8 +534,11 @@ WasmMemoryAllocator::enlargeWasmMemory(const WasmMemoryData &OldMemoryData,
     // memory.grow must re-alloc memory to grow
     bool OldUseMmap = (OldMemoryData.Type == WM_MEMORY_DATA_TYPE_BUCKET_MMAP ||
                        OldMemoryData.Type == WM_MEMORY_DATA_TYPE_SINGLE_MMAP);
-    bool InstanceUseMmap =
-        OldUseMmap && (NewMemorySize <= MmapMemoryBucketGrowMaxSize);
+    const size_t Capacity =
+        OldMemoryData.Type == WM_MEMORY_DATA_TYPE_SINGLE_MMAP
+            ? WasmMemoryAllocatorMmapSize
+            : MmapMemoryBucketGrowMaxSize;
+    bool InstanceUseMmap = OldUseMmap && (NewMemorySize <= Capacity);
     if (OldUseMmap && InstanceUseMmap) {
       // the mmap item space has enough space to grow
       const auto &NewMemoryData = WasmMemoryData{

@@ -676,4 +676,22 @@ TEST(WasmBucketMemory, SlotRetirementAndLargerMappingFallbackStayZero) {
   EXPECT_EQ(Call(Inst, "read", {"65535"}), 222u);
   EXPECT_EQ(Call(Inst, "read", {"65536"}), 0u);
   EXPECT_EQ(Call(Inst, "read", {"33619967"}), 0u);
+  // Once outside the bucket, the single mapping owns a full reservation.
+  // Later growth must preserve its base instead of copying all old bytes.
+  auto *SingleBase = Inst->getDefaultMemoryInst().MemBase;
+  std::vector<TypedValue> Results;
+  ASSERT_TRUE(RT->callWasmFunction(*Inst, "write", {"33619967", "77"}, Results));
+  for (unsigned I = 0; I < 3; ++I) {
+    EXPECT_EQ(Call(Inst, "grow", {"1"}), 513u + I);
+    EXPECT_EQ(Inst->getDefaultMemoryInst().MemBase, SingleBase);
+    EXPECT_EQ(Call(Inst, "read", {"33619967"}), 77u);
+    const auto Begin = std::to_string((513u + I) * 65536u);
+    const auto End = std::to_string((514u + I) * 65536u);
+    EXPECT_EQ(Call(Inst, "scan", {Begin, End}), 0u);
+  }
+  EXPECT_EQ(Call(Inst, "grow", {"0"}), 516u);
+  EXPECT_EQ(Call(Inst, "grow", {"1024"}), UINT32_MAX);
+  EXPECT_EQ(Inst->getDefaultMemoryInst().MemBase, SingleBase);
+  EXPECT_FALSE(RT->callWasmFunction(*Inst, "read", {"33816576"}, Results));
+  Inst->clearError();
 }
