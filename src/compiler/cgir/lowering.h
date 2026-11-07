@@ -426,7 +426,7 @@ protected:
     llvm::MVT VT = getMVT(Type);
 
     if (IsInteger && (Opcode == OP_add || Opcode == OP_sub)) {
-      if (CgRegister LeaReg = SELF.tryLowerAddSubImmAsLEA(Inst)) {
+      if (CgRegister LeaReg = SELF.tryLowerI32AddSubAsLEA(Inst)) {
         return LeaReg;
       }
     }

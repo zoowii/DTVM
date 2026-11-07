@@ -913,14 +913,14 @@ struct LeaLoweringFixture {
       : I32(&CompileContext::I32Type), I64(&CompileContext::I64Type), F(Ctx, 0),
         Entry(F.createBasicBlock()) {
     Ctx.initialize();
-    F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32, I64}));
+    F.setFunctionType(MFunctionType::create(Ctx, *I32, {I32, I64, I32}));
     F.appendBlock(Entry);
   }
 
   ~LeaLoweringFixture() { finishLitmus(F); }
 
-  MInstruction *paramI32() {
-    return F.createInstruction<DreadInstruction>(false, *Entry, I32, 0);
+  MInstruction *paramI32(uint32_t Arg = 0) {
+    return F.createInstruction<DreadInstruction>(false, *Entry, I32, Arg);
   }
   MInstruction *paramI64() {
     return F.createInstruction<DreadInstruction>(false, *Entry, I64, 1);
@@ -935,7 +935,8 @@ struct LeaLoweringFixture {
   }
 
   std::string lowerRet(MInstruction *V, bool Optimize = false) {
-    F.setFunctionType(MFunctionType::create(Ctx, *V->getType(), {I32, I64}));
+    F.setFunctionType(
+        MFunctionType::create(Ctx, *V->getType(), {I32, I64, I32}));
     F.createInstruction<COMPILER::ReturnInstruction>(true, *Entry, V->getType(),
                                                      V);
     if (Optimize) {
@@ -1013,4 +1014,40 @@ TEST(X86CgLowering, I64AddImmTooWideStaysAdd) {
       false, *B.Entry, OP_add, B.I64, B.paramI64(), B.iconst64(0x100000000ull));
   const std::string Dump = B.lowerRet(Add);
   EXPECT_EQ(Dump.find("LEA64r"), std::string::npos) << Dump;
+}
+
+TEST(X86CgLowering, AddTwoVariablesI32EmitsLEA64_32r) {
+  LeaLoweringFixture B;
+  auto *Add = B.F.createInstruction<BinaryInstruction>(
+      false, *B.Entry, OP_add, B.I32, B.paramI32(0), B.paramI32(2));
+  const std::string Dump = B.lowerRet(Add);
+  EXPECT_NE(Dump.find("LEA64_32r"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("ADD32rr"), std::string::npos) << Dump;
+}
+
+TEST(X86CgLowering, AddSameValueI32EmitsLEA64_32r) {
+  LeaLoweringFixture B;
+  auto *P = B.paramI32();
+  auto *Add = B.F.createInstruction<BinaryInstruction>(false, *B.Entry, OP_add,
+                                                       B.I32, P, P);
+  const std::string Dump = B.lowerRet(Add);
+  EXPECT_NE(Dump.find("LEA64_32r"), std::string::npos) << Dump;
+}
+
+TEST(X86CgLowering, AddTwoVariablesI64StaysADDForCarry) {
+  LeaLoweringFixture B;
+  auto *Add = B.F.createInstruction<BinaryInstruction>(
+      false, *B.Entry, OP_add, B.I64, B.paramI64(), B.paramI64());
+  const std::string Dump = B.lowerRet(Add);
+  EXPECT_NE(Dump.find("ADD64rr"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("LEA64r"), std::string::npos) << Dump;
+  EXPECT_EQ(Dump.find("LEA64_32r"), std::string::npos) << Dump;
+}
+
+TEST(X86CgLowering, SubTwoVariablesI32StaysSUB) {
+  LeaLoweringFixture B;
+  auto *Sub = B.F.createInstruction<BinaryInstruction>(
+      false, *B.Entry, OP_sub, B.I32, B.paramI32(0), B.paramI32(2));
+  const std::string Dump = B.lowerRet(Sub);
+  EXPECT_EQ(Dump.find("LEA64_32r"), std::string::npos) << Dump;
 }

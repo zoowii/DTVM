@@ -1742,7 +1742,7 @@ void X86CgLowering::lowerBrIfStmt(const BrIfInstruction &Inst) {
   }
 }
 
-CgRegister X86CgLowering::tryLowerAddSubImmAsLEA(const MInstruction &Inst) {
+CgRegister X86CgLowering::tryLowerI32AddSubAsLEA(const MInstruction &Inst) {
   const Opcode Opc = Inst.getOpcode();
   if (Opc != OP_add && Opc != OP_sub) {
     return 0;
@@ -1768,7 +1768,28 @@ CgRegister X86CgLowering::tryLowerAddSubImmAsLEA(const MInstruction &Inst) {
     }
   }
   if (!IntC) {
-    return 0;
+    if (Opc != OP_add) {
+      return 0;
+    }
+    // Keep i32 wrap before any subsequent Wasm memory offset. Both input
+    // expressions are evaluated in the same left-to-right order as ADD.
+    CgRegister LHSReg = lowerExpr(*LHS);
+    CgRegister RHSReg = lowerExpr(*RHS);
+    CgRegister BaseReg =
+        fastEmitInst_subregtoreg(&X86::GR64RegClass, LHSReg, X86::sub_32bit);
+    CgRegister IndexReg =
+        fastEmitInst_subregtoreg(&X86::GR64RegClass, RHSReg, X86::sub_32bit);
+    CgRegister ResultReg = createReg(TLI.getRegClassFor(getMVT(*Ty)));
+    SmallVector<CgOperand, 6> LEAOperands{
+        CgOperand::createRegOperand(ResultReg, true),
+        CgOperand::createRegOperand(BaseReg, false),
+        CgOperand::createImmOperand(1),
+        CgOperand::createRegOperand(IndexReg, false),
+        CgOperand::createImmOperand(0),
+        CgOperand::createRegOperand(X86::NoRegister, false),
+    };
+    MF->createCgInstruction(*CurBB, TII.get(X86::LEA64_32r), LEAOperands);
+    return ResultReg;
   }
 
   llvm::APInt DispAP = IntC->getValue();
