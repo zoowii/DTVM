@@ -1,0 +1,2152 @@
+{
+  "method": "WABT wasm2wat stack syntax; immediately preceding i32.const only. This is a lower-bound syntactic site inventory, not function coverage, dynamic frequency, or independent statistical observations. Loop depth is lexical only; duplicated libc sites across modules are not independent evidence.",
+  "cases": [
+    {
+      "suite": "polybench",
+      "case": "2mm",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/2mm.wasm",
+      "sha256": "6d31eeebe685646cf2b8c4460beaf2243064dd8a311cb83a92523f9260260d99",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9872,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "3mm",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/3mm.wasm",
+      "sha256": "50bc67dec69851859d7096994ed879b3270fdd846a2c638bb4f063b708a8b97b",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9965,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "adi",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/adi.wasm",
+      "sha256": "6f1ddea5df711a918574659fd97375e5a8fa21cc565737beabbab084552679a4",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 10148,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "atax",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/atax.wasm",
+      "sha256": "796cdecca44721f058f182e5e4994649f45a5b2f394f449d6bb63b6415aadd66",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 261,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9633,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "bicg",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/bicg.wasm",
+      "sha256": "5017122c17ebff6f927d7fd6785fadb154ebfda6a8fb1c1f4721b734cbd1febe",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 75,
+          "divisor": 1900,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 106,
+          "divisor": 2100,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 256,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 316,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9690,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "cholesky",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/cholesky.wasm",
+      "sha256": "1b1d008a549c2fa53816faed968c599eea750cf733e9e9f9413b64e0511920fb",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9882,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "correlation",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/correlation.wasm",
+      "sha256": "c5cbf9de3f59fa1a5880ac2c6548aed812a672c3779e9f8a5d212428d900b962",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9827,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "covariance",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/covariance.wasm",
+      "sha256": "8a7b44e64ea17c0b069c8bb0dbed6d6ff4eaa3f2127fe15531d400d586c22c09",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9729,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "deriche",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/deriche.wasm",
+      "sha256": "b4d559e2832ea244a240761354c554aa4cee14e2ab7969fb592bb3a6acad6d83",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9955,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "doitgen",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/doitgen.wasm",
+      "sha256": "4058e25b7c3433dbbecd713fe863c021e78bbaadcf7978837d504b065f5f5196",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9751,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "durbin",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/durbin.wasm",
+      "sha256": "5002d0ea979566bc3431e03ad8cf3274851e70a831e8d210e569862abafc88eb",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 238,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9606,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "fdtd-2d",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/fdtd-2d.wasm",
+      "sha256": "26acbd07ffa58a8eb414a6ba72e579025d9ab8517ea000e6434d6e56cfa19e13",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 10015,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "floyd-warshall",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/floyd-warshall.wasm",
+      "sha256": "4607b0de3362cba3e366197f16e33b546ef867c2403d77936905c632025c733b",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9652,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "gemm",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gemm.wasm",
+      "sha256": "c12e6c2d971769bf4478119156b74789929c5d1c366b47a50eb985f7b9f09d53",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9738,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "gemver",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gemver.wasm",
+      "sha256": "64b9dc332a87d1d0435288d6464f13ab1c7b09426e89c46562be8e8b09f12ddf",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 414,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9796,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "gesummv",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gesummv.wasm",
+      "sha256": "e5cd4e0fc62127b927ae2ae1d3d97ee6b60f5a08b8c4d55f69f1a1be6be88eb1",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 79,
+          "divisor": 1300,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 272,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9646,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "gramschmidt",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/gramschmidt.wasm",
+      "sha256": "6fc59d4c8746661515da0acb1f509cfdfe25f2a09ed10df0d615f7d248ab078d",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9876,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "heat-3d",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/heat-3d.wasm",
+      "sha256": "f3ba7fa0a00456ab28bc5a2393cb1fdad3031e12b1d9d26dc70b095def2e2565",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9852,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "jacobi-2d",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/jacobi-2d.wasm",
+      "sha256": "e5df1ac83af2476f8b75198596c93cd9c06071f91aa4009ccd1d3f44272ab499",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9707,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "jacobi_1d",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/jacobi_1d.wasm",
+      "sha256": "564cd1c6d63e1f73c0cdf18d602edf69a64c3cc374d16f66d8f292e516b5bef4",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 197,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9565,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "lu",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/lu.wasm",
+      "sha256": "051d61f55dd4c7e41f4b7881aa3589b3097e2f60124138bdbac96dd665461285",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9895,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "ludcmp",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/ludcmp.wasm",
+      "sha256": "f4e3fc8f16bae052db1283a926da0fa270b89f39727256fe9bc01af04696611f",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 684,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 10062,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "mvt",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/mvt.wasm",
+      "sha256": "83d248c3ccc35a595ac5777851e9537a182d3c2d3ae75aeb1d074d531c937719",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 81,
+          "divisor": 2000,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 96,
+          "divisor": 2000,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 110,
+          "divisor": 2000,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 124,
+          "divisor": 2000,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 301,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$main",
+          "wat_line": 361,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9735,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "nussinov",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/nussinov.wasm",
+      "sha256": "b1acce4bda648fa02bbf8514f891fa8ab7be4f78da3d69b0345869d204c23f25",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9685,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "seidel-2d",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/seidel-2d.wasm",
+      "sha256": "6fdf6ce763caf0d6c20bb9125382ed8aa1d0ec2efbd2118710f83d422f2c5d21",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9650,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "symm",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/symm.wasm",
+      "sha256": "bda11acdb2d49090db998059966291d12c7d1dc675a400ead2ae354dfe5d35d4",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9825,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "syr2k",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/syr2k.wasm",
+      "sha256": "1efca89e231483c74e73ff7311219cc0a93e269a1a24d0b562bf32c36f1d2606",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9751,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "syrk",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/syrk.wasm",
+      "sha256": "b5e91788d5e6452b961d52d0792b328bbebc256dacb75cfc0b68b7ae9a2345b0",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9696,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "trisolv",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/trisolv.wasm",
+      "sha256": "661196c5294ff3ddf426b626d10f04c5cca88e245dc37d84b3d6452fb0b154a4",
+      "sites": [
+        {
+          "function": "$main",
+          "wat_line": 253,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$printf_core",
+          "wat_line": 9612,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "polybench",
+      "case": "trmm",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/polybenchc/trmm.wasm",
+      "sha256": "9c779b2b4b493d34810ed49045c89c411be003d0dc9a72bdc645f854bc19434e",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 9729,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "amirali",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/amirali.wasm",
+      "sha256": "649e7bbe96303bf0a86c38397191c74d1cd3d589f2c3c187c4a7175e8365a007",
+      "sites": []
+    },
+    {
+      "suite": "wapm",
+      "case": "base64cli",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+      "sha256": "22dd5d48e40959c8fa25f5968aaf3d5af9430e848d9a582b7a0b6ba2aaf9a438",
+      "sites": [
+        {
+          "function": "$_ZN6base646encode19encode_with_padding17h350ea9fd412192daE",
+          "wat_line": 12183,
+          "divisor": 3,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN6base646encode19encode_with_padding17h350ea9fd412192daE",
+          "wat_line": 12529,
+          "divisor": 3,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 49080,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 49086,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 49127,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 49195,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 49201,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 49242,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 50102,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 50108,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 50149,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 50217,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 50223,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 50264,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51262,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51268,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51336,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51342,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51486,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51563,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51856,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51862,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51930,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 51936,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 52080,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h233e47a6fa46e1feE",
+          "wat_line": 52157,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "chkfont",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/chkfont.wasm",
+      "sha256": "a8fcad775e5ab5739c3d6f723cc8121b56fea9c1078d2b1bb1c2e0216d599062",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 11493,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "code-stock",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/code-stock.wasm",
+      "sha256": "d7d05eab7c7753e8b3cfa8f71cce93ae05c09e3b79d16c40509d4dd813aeac27",
+      "sites": []
+    },
+    {
+      "suite": "wapm",
+      "case": "cowsay",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/cowsay.wasm",
+      "sha256": "0cf9a18923570a0e76eb5793522dc122f01cfda26db468fe9c3f9b1a1424550a",
+      "sites": [
+        {
+          "function": "$_ZN4clap6errors5Error13invalid_value17h2491abfabf8f40daE",
+          "wat_line": 134569,
+          "divisor": 12,
+          "lexical_loop_depth": 2
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "dice",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/dice.wasm",
+      "sha256": "bc7cb89c1cb09cd1098755e9459d8f44ebd5f7fa723f5a42a79130512653c641",
+      "sites": []
+    },
+    {
+      "suite": "wapm",
+      "case": "echo",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/echo.wasm",
+      "sha256": "2854e8f4d8f62028d0799f2740ec960c390515443923f85d0846dc7902a02d25",
+      "sites": [
+        {
+          "function": 31,
+          "wat_line": 8181,
+          "divisor": 10,
+          "lexical_loop_depth": 2
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "erdtree",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+      "sha256": "1fa2f44be2a81231e01bcd8db2e63195cfd3341d73fb34f4b163ce5d5be162d0",
+      "sites": [
+        {
+          "function": "$_ZN4core3fmt9Formatter21write_formatted_parts17h66e738fd2be868c5E",
+          "wat_line": 53889,
+          "divisor": 10,
+          "lexical_loop_depth": 2
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "figlet",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/figlet.wasm",
+      "sha256": "cfb54deb829a5c910544ea7fe25c576c921e9a62f7181cae0f0ccd16432ace65",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 11344,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "fortune",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/fortune.wasm",
+      "sha256": "b8298c6a2615a36e4426ad4982de0a29da7a2b2da2675a49c13749e0d1aeaaf7",
+      "sites": []
+    },
+    {
+      "suite": "wapm",
+      "case": "irb",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/irb.wasm",
+      "sha256": "257133432664662ce6bb17f1e6b75bd512e068a53523026eddd8518d2134676b",
+      "sites": [
+        {
+          "function": 49,
+          "wat_line": 296702,
+          "divisor": 7,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 64,
+          "wat_line": 448333,
+          "divisor": 101,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 65,
+          "wat_line": 459785,
+          "divisor": 3600,
+          "lexical_loop_depth": 2
+        },
+        {
+          "function": 65,
+          "wat_line": 459817,
+          "divisor": 60,
+          "lexical_loop_depth": 2
+        },
+        {
+          "function": 66,
+          "wat_line": 464627,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 71,
+          "wat_line": 499006,
+          "divisor": 3,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 105,
+          "wat_line": 678249,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 105,
+          "wat_line": 678274,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 105,
+          "wat_line": 678288,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 108,
+          "wat_line": 691379,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 108,
+          "wat_line": 691404,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 108,
+          "wat_line": 691418,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 115,
+          "wat_line": 719572,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 115,
+          "wat_line": 719597,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 115,
+          "wat_line": 719611,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 131,
+          "wat_line": 776275,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 146,
+          "wat_line": 830321,
+          "divisor": 3,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 146,
+          "wat_line": 830422,
+          "divisor": 7,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 166,
+          "wat_line": 894736,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 170,
+          "wat_line": 906128,
+          "divisor": 3,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 170,
+          "wat_line": 906229,
+          "divisor": 7,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 181,
+          "wat_line": 937422,
+          "divisor": 9,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 250,
+          "wat_line": 1094595,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 282,
+          "wat_line": 1155844,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 298,
+          "wat_line": 1185070,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 298,
+          "wat_line": 1185095,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 298,
+          "wat_line": 1185109,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 324,
+          "wat_line": 1230019,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 324,
+          "wat_line": 1230027,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 394,
+          "wat_line": 1337336,
+          "divisor": 3,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 394,
+          "wat_line": 1337427,
+          "divisor": 7,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 461,
+          "wat_line": 1429123,
+          "divisor": 9,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 468,
+          "wat_line": 1437540,
+          "divisor": 1000000000,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 468,
+          "wat_line": 1438260,
+          "divisor": 9,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 566,
+          "wat_line": 1551645,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 566,
+          "wat_line": 1551653,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 567,
+          "wat_line": 1552332,
+          "divisor": 1000000000,
+          "lexical_loop_depth": 2
+        },
+        {
+          "function": 632,
+          "wat_line": 1619901,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 632,
+          "wat_line": 1619926,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 632,
+          "wat_line": 1619940,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 647,
+          "wat_line": 1634504,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 647,
+          "wat_line": 1634588,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 647,
+          "wat_line": 1634862,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 647,
+          "wat_line": 1634946,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 670,
+          "wat_line": 1656658,
+          "divisor": 1023,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 781,
+          "wat_line": 1757133,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 781,
+          "wat_line": 1757158,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 781,
+          "wat_line": 1757172,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 910,
+          "wat_line": 1859271,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 924,
+          "wat_line": 1869651,
+          "divisor": 1023,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1021,
+          "wat_line": 1939389,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1159,
+          "wat_line": 2029751,
+          "divisor": 1023,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1200,
+          "wat_line": 2055357,
+          "divisor": 6,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 1200,
+          "wat_line": 2055371,
+          "divisor": 6,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 1200,
+          "wat_line": 2055422,
+          "divisor": 36,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 1268,
+          "wat_line": 2095583,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1268,
+          "wat_line": 2095669,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1268,
+          "wat_line": 2095785,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1268,
+          "wat_line": 2095869,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1297,
+          "wat_line": 2112236,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1297,
+          "wat_line": 2112322,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1297,
+          "wat_line": 2112438,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1297,
+          "wat_line": 2112522,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1336,
+          "wat_line": 2134177,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 1336,
+          "wat_line": 2134260,
+          "divisor": 20,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 1339,
+          "wat_line": 2135788,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1339,
+          "wat_line": 2135871,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1339,
+          "wat_line": 2135984,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1339,
+          "wat_line": 2136068,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1348,
+          "wat_line": 2140746,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1348,
+          "wat_line": 2140832,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1348,
+          "wat_line": 2140948,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1348,
+          "wat_line": 2141032,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151146,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151154,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151284,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151292,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151384,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151392,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151537,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1367,
+          "wat_line": 2151545,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1380,
+          "wat_line": 2158213,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1380,
+          "wat_line": 2158296,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1380,
+          "wat_line": 2158409,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1380,
+          "wat_line": 2158493,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1589,
+          "wat_line": 2266081,
+          "divisor": 67,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2288966,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2289013,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2289060,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2289107,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2289154,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2289201,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1636,
+          "wat_line": 2289233,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1748,
+          "wat_line": 2340656,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 1748,
+          "wat_line": 2340675,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 2030,
+          "wat_line": 2458835,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2030,
+          "wat_line": 2458916,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2155,
+          "wat_line": 2506849,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2155,
+          "wat_line": 2506929,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2354,
+          "wat_line": 2577924,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2354,
+          "wat_line": 2577944,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 2495,
+          "wat_line": 2625412,
+          "divisor": 1023,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2508,
+          "wat_line": 2629597,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 2508,
+          "wat_line": 2629677,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3026,
+          "wat_line": 2785613,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3026,
+          "wat_line": 2785693,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3276,
+          "wat_line": 2853332,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3276,
+          "wat_line": 2853338,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3276,
+          "wat_line": 2853395,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3276,
+          "wat_line": 2853401,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3276,
+          "wat_line": 2853446,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3276,
+          "wat_line": 2853454,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3324,
+          "wat_line": 2865794,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3324,
+          "wat_line": 2865819,
+          "divisor": 100,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3324,
+          "wat_line": 2865833,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3686,
+          "wat_line": 2953377,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3686,
+          "wat_line": 2953383,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3686,
+          "wat_line": 2953476,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 3686,
+          "wat_line": 2953482,
+          "divisor": 7,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 4007,
+          "wat_line": 3023718,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 4007,
+          "wat_line": 3023798,
+          "divisor": 20,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 4619,
+          "wat_line": 3139080,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 6784,
+          "wat_line": 3401116,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 6784,
+          "wat_line": 3401126,
+          "divisor": 126,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": 6842,
+          "wat_line": 3404781,
+          "divisor": 400,
+          "lexical_loop_depth": 0
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "md5",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/md5.wasm",
+      "sha256": "21552b0d4c3d74cf464bc350d03f095ebb5f8f8c499329aca8d66af598ca15aa",
+      "sites": [
+        {
+          "function": 35,
+          "wat_line": 10176,
+          "divisor": 10,
+          "lexical_loop_depth": 2
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "pi",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pi.wasm",
+      "sha256": "7ebe0f1b08eb7e4d358b23091202aabcaa612995145afbfd1ef2d2de47c96265",
+      "sites": [
+        {
+          "function": 32,
+          "wat_line": 8721,
+          "divisor": 10,
+          "lexical_loop_depth": 2
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "pkg1",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/pkg1.wasm",
+      "sha256": "6db80cabfc853820b9568a6ed8b4fe5f5d31e6ce6b92d607355529db2be13dd0",
+      "sites": []
+    },
+    {
+      "suite": "wapm",
+      "case": "qr2text",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/qr2text.wasm",
+      "sha256": "ee42716385c8c8b1d9ba916fcf52ff2a258a4152f4e54af2262425d1832671fe",
+      "sites": [
+        {
+          "function": "$_ZN6qrcode6QrCode3new17h87719b8b596eb266E",
+          "wat_line": 8417,
+          "divisor": 255,
+          "lexical_loop_depth": 3
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "sam",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/sam.wasm",
+      "sha256": "9ce1fa91b3902c67af78a8c8ec991ff9c00b55e418b5f691f27389c16a181f72",
+      "sites": [
+        {
+          "function": "$printf_core",
+          "wat_line": 8492,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "suggest",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+      "sha256": "73b1387fba8d20f42ddced687edfada988fdc2b140e7077e33aed7b80d1303a2",
+      "sites": [
+        {
+          "function": "$_ZN5alloc5slice10merge_sort17h1c07455e50c06373E",
+          "wat_line": 57433,
+          "divisor": 24,
+          "lexical_loop_depth": 2
+        },
+        {
+          "function": "$_ZN5alloc5slice10merge_sort17h71d454c2e323995eE",
+          "wat_line": 59039,
+          "divisor": 20,
+          "lexical_loop_depth": 2
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 116151,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 116157,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 116198,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 116266,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 116272,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 116313,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 117125,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 117131,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 117172,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 117240,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 117246,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 117287,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118231,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118237,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118305,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118311,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118452,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118529,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118813,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118819,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118887,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 118893,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 119034,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h34622ea1f5e110a0E",
+          "wat_line": 119111,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "tpl",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/tpl.wasm",
+      "sha256": "3abe85b37603894ee92a636f8ab54a7e0a4f3fd03cafad937602f8edca4e680f",
+      "sites": [
+        {
+          "function": 333,
+          "wat_line": 135582,
+          "divisor": 26,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 817,
+          "wat_line": 359826,
+          "divisor": 10,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": 853,
+          "wat_line": 372707,
+          "divisor": 6,
+          "lexical_loop_depth": 0
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "uuid",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/uuid.wasm",
+      "sha256": "d926c50304238d423d63f52f5f460b1a7170fe870e10f031b9cbd74b29bc06e5",
+      "sites": [
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 42841,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 42847,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 42888,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 42956,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 42962,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 43003,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 43863,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 43869,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 43910,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 43978,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 43984,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 44025,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45023,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45029,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45097,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45103,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45247,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45324,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45617,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45623,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45691,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45697,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45841,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17hb9660f0ed6323cc3E",
+          "wat_line": 45918,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        }
+      ]
+    },
+    {
+      "suite": "wapm",
+      "case": "viu",
+      "wasm": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/viu.wasm",
+      "sha256": "7e48bfd68f658ac4916c291b536e6756c173f6ba63311c67c11ffa4b111f0bff",
+      "sites": [
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7549,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7555,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7621,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7707,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7713,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7779,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 7997,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8003,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8069,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8155,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8161,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8227,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8333,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8415,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8533,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8539,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8614,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8620,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8795,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8877,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 8995,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 9001,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 9076,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN9termcolor13Ansi$LT$W$GT$11write_color17h973ecc940e68d445E",
+          "wat_line": 9082,
+          "divisor": 10,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN7inflate13InflateStream10next_state17hb07090c61c0bc523E",
+          "wat_line": 299260,
+          "divisor": 31,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN7adler3214RollingAdler3213update_buffer17hdeec66755c4fdb1aE",
+          "wat_line": 322373,
+          "divisor": 65521,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$_ZN7adler3214RollingAdler3213update_buffer17hdeec66755c4fdb1aE",
+          "wat_line": 322378,
+          "divisor": 65521,
+          "lexical_loop_depth": 1
+        },
+        {
+          "function": "$_ZN7adler3214RollingAdler3213update_buffer17hdeec66755c4fdb1aE",
+          "wat_line": 322657,
+          "divisor": 65521,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN7adler3214RollingAdler3213update_buffer17hdeec66755c4fdb1aE",
+          "wat_line": 322727,
+          "divisor": 65521,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN7adler3214RollingAdler3213update_buffer17hdeec66755c4fdb1aE",
+          "wat_line": 322743,
+          "divisor": 65521,
+          "lexical_loop_depth": 0
+        },
+        {
+          "function": "$_ZN5alloc5slice10merge_sort17h45fedfcbb5dc86a4E",
+          "wat_line": 493842,
+          "divisor": 12,
+          "lexical_loop_depth": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "command": [
+      "g++",
+      "-std=c++17",
+      "-Isrc",
+      "-fsyntax-only",
+      "docs/changes/2026-11-07-single-mmap-growth/evidence/sgx-remap-smoke.cpp"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "limit": "Actual remap block, real SGX mman header, stub surrounding types; not a full SDK build."
+  },
+  {
+    "command": [
+      "g++",
+      "-std=c++17",
+      "-Isrc",
+      "-DZEN_ENABLE_SGX",
+      "-fsyntax-only",
+      "docs/changes/2026-11-07-single-mmap-growth/evidence/sgx-remap-smoke.cpp"
+    ],
+    "exit": 0,
+    "stderr": "",
+    "limit": "Actual remap block, real SGX mman header, stub surrounding types; not a full SDK build."
+  }
+]

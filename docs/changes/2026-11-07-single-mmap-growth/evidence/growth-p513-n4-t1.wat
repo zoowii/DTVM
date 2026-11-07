@@ -1,0 +1,30 @@
+(module
+ (import "wasi_snapshot_preview1" "clock_time_get" (func $clock (param i32 i64 i32) (result i32)))
+ (import "wasi_snapshot_preview1" "fd_write" (func $write (param i32 i32 i32 i32) (result i32)))
+ (memory (export "memory") 1 2048) (data (i32.const 0) "\2a")
+ (func (export "_start") (local $i i32)
+ (if (i32.ne (memory.grow (i32.const 512)) (i32.const 1)) (then unreachable))
+ (local.set $i (i32.const 1)) (loop $fill
+ (i32.store8 (i32.shl (local.get $i) (i32.const 16)) (i32.const 90))
+ (local.set $i (i32.add (local.get $i) (i32.const 1)))
+ (br_if $fill (i32.lt_u (local.get $i) (i32.const 513))))
+ (if (call $clock (i32.const 1) (i64.const 1) (i32.const 128)) (then unreachable))
+ (local.set $i (i32.const 0))
+ (loop $grow
+ (if (i32.ne (memory.grow (i32.const 1)) (i32.add (i32.const 513) (local.get $i))) (then unreachable))
+ (local.set $i (i32.add (local.get $i) (i32.const 1)))
+ (br_if $grow (i32.lt_u (local.get $i) (i32.const 4))))
+ (if (call $clock (i32.const 1) (i64.const 1) (i32.const 136)) (then unreachable))
+ (if (i32.ne (i32.load8_u (i32.const 0)) (i32.const 42)) (then unreachable))
+ (local.set $i (i32.const 1)) (loop $check
+ (if (i32.ne (i32.load8_u (i32.shl (local.get $i) (i32.const 16))) (i32.const 90)) (then unreachable))
+ (local.set $i (i32.add (local.get $i) (i32.const 1)))
+ (br_if $check (i32.lt_u (local.get $i) (i32.const 513))))
+ (local.set $i (i32.const 33619968))
+ (loop $zero
+ (if (i32.load (local.get $i)) (then unreachable))
+ (local.set $i (i32.add (local.get $i) (i32.const 4)))
+ (br_if $zero (i32.lt_u (local.get $i) (i32.const 33882112))))
+ (i32.store (i32.const 144) (memory.size))
+ (i32.store (i32.const 160) (i32.const 128)) (i32.store (i32.const 164) (i32.const 20))
+ (if (call $write (i32.const 1) (i32.const 160) (i32.const 1) (i32.const 176)) (then unreachable))))

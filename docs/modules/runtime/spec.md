@@ -140,3 +140,9 @@ later growth reuses the reservation, since Wasm memory never shrinks. Existing
 contents, neighbouring items and guard permissions stay unchanged. Accounting,
 protection and bucket retirement operate across both mapping types. Growth past
 the bucket limit retains the existing allocate/copy fallback.
+
+SINGLE_MMAP growth uses that mapping's own 8 GiB reservation capacity, including
+after a bucket-to-single transition. The first transition retains its existing
+allocation/copy; subsequent positive grows expose zero pages in the same mapping.
+Instance-level maximum-page and 32-bit logical-size checks remain authoritative;
+the larger reservation does not increase the Wasm memory limit.

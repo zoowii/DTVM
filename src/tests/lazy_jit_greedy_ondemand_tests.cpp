@@ -680,7 +680,8 @@ TEST(WasmBucketMemory, SlotRetirementAndLargerMappingFallbackStayZero) {
   // Later growth must preserve its base instead of copying all old bytes.
   auto *SingleBase = Inst->getDefaultMemoryInst().MemBase;
   std::vector<TypedValue> Results;
-  ASSERT_TRUE(RT->callWasmFunction(*Inst, "write", {"33619967", "77"}, Results));
+  ASSERT_TRUE(
+      RT->callWasmFunction(*Inst, "write", {"33619967", "77"}, Results));
   for (unsigned I = 0; I < 3; ++I) {
     EXPECT_EQ(Call(Inst, "grow", {"1"}), 513u + I);
     EXPECT_EQ(Inst->getDefaultMemoryInst().MemBase, SingleBase);

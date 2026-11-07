@@ -530,8 +530,8 @@ WasmMemoryAllocator::enlargeWasmMemory(const WasmMemoryData &OldMemoryData,
                                        size_t NewMemorySize) {
   bool NeedFreeOldMmap = false;
   if (UseMmap) {
-    // when use bucket with mmap linear-memory,
-    // memory.grow must re-alloc memory to grow
+    // Use the actual backing capacity: single mappings retain the larger
+    // reservation after growing out of a bucket item.
     bool OldUseMmap = (OldMemoryData.Type == WM_MEMORY_DATA_TYPE_BUCKET_MMAP ||
                        OldMemoryData.Type == WM_MEMORY_DATA_TYPE_SINGLE_MMAP);
     const size_t Capacity =
@@ -540,7 +540,7 @@ WasmMemoryAllocator::enlargeWasmMemory(const WasmMemoryData &OldMemoryData,
             : MmapMemoryBucketGrowMaxSize;
     bool InstanceUseMmap = OldUseMmap && (NewMemorySize <= Capacity);
     if (OldUseMmap && InstanceUseMmap) {
-      // the mmap item space has enough space to grow
+      // The existing mapping has enough reserved space to grow.
       const auto &NewMemoryData = WasmMemoryData{
           .Type = OldMemoryData.Type,
           .MemoryData = OldMemoryData.MemoryData,

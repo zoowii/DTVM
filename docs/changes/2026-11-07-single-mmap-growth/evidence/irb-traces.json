@@ -1,0 +1,68 @@
+[
+  {
+    "engine": "previous",
+    "command": [
+      "taskset",
+      "-c",
+      "0",
+      "/workspace/DTVM/work/pr643-research/dtvm-anon-grown-once",
+      "-m",
+      "multipass",
+      "--enable-multipass-lazy",
+      "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/irb.wasm"
+    ],
+    "stdin_sha256": "04f6d9225878b81211dbf3a1c1527f3ade244074f24edb6e6ed4f79a25541b40",
+    "stdin": "3+4\n",
+    "cwd": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm",
+    "exit": 0,
+    "stdout_sha256": "774e88801102999b530c8fd2632ce04620f6bcad635824a65ad65fe038459ce6",
+    "lines": 4739,
+    "maps_8gib": 51,
+    "anonymous_maps_8gib": 50,
+    "trace": "irb-previous.strace.gz"
+  },
+  {
+    "engine": "candidate",
+    "command": [
+      "taskset",
+      "-c",
+      "0",
+      "/workspace/DTVM/work/pr644-research/dtvm-single-capacity",
+      "-m",
+      "multipass",
+      "--enable-multipass-lazy",
+      "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/irb.wasm"
+    ],
+    "stdin_sha256": "04f6d9225878b81211dbf3a1c1527f3ade244074f24edb6e6ed4f79a25541b40",
+    "stdin": "3+4\n",
+    "cwd": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm",
+    "exit": 0,
+    "stdout_sha256": "774e88801102999b530c8fd2632ce04620f6bcad635824a65ad65fe038459ce6",
+    "lines": 4632,
+    "maps_8gib": 2,
+    "anonymous_maps_8gib": 1,
+    "trace": "irb-candidate.strace.gz"
+  },
+  {
+    "engine": "wt45",
+    "command": [
+      "taskset",
+      "-c",
+      "0",
+      "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+      "run",
+      "-C",
+      "cache=n",
+      "/workspace/DTVM/benchmarks/paper/benchmarks/wapm/irb.wasm"
+    ],
+    "stdin_sha256": "04f6d9225878b81211dbf3a1c1527f3ade244074f24edb6e6ed4f79a25541b40",
+    "stdin": "3+4\n",
+    "cwd": "/workspace/DTVM/benchmarks/paper/benchmarks/wapm",
+    "exit": 0,
+    "stdout_sha256": "774e88801102999b530c8fd2632ce04620f6bcad635824a65ad65fe038459ce6",
+    "lines": 7781,
+    "maps_8gib": 0,
+    "anonymous_maps_8gib": 0,
+    "trace": "irb-wt45.strace.gz"
+  }
+]

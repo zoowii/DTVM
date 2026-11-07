@@ -1,0 +1,34 @@
+[
+  {
+    "engine": "main",
+    "path": "work/pr643/dtvm-pr643-d6f31ef",
+    "symbol": "00000000002755f0 T zen::runtime::WasmMemoryAllocator::enlargeWasmMemory(zen::runtime::WasmMemoryData const&, unsigned long)",
+    "start": "0x2755f0",
+    "end": "0x275850",
+    "bytes": 608
+  },
+  {
+    "engine": "pr644",
+    "path": "work/pr643-research/dtvm-anon-grown-once",
+    "symbol": "00000000002755f0 T zen::runtime::WasmMemoryAllocator::enlargeWasmMemory(zen::runtime::WasmMemoryData const&, unsigned long)",
+    "start": "0x2755f0",
+    "end": "0x2758d0",
+    "bytes": 736
+  },
+  {
+    "engine": "candidate",
+    "path": "work/pr644-research/dtvm-single-capacity",
+    "symbol": "00000000002755f0 T zen::runtime::WasmMemoryAllocator::enlargeWasmMemory(zen::runtime::WasmMemoryData const&, unsigned long)",
+    "start": "0x2755f0",
+    "end": "0x275910",
+    "bytes": 800
+  },
+  {
+    "engine": "wasmtime45",
+    "path": "benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+    "symbol": "00000000020dca40 T <wasmtime::runtime::vm::memory::mmap::MmapMemory as wasmtime::runtime::vm::memory::RuntimeLinearMemory>::grow_to",
+    "start": "0x20dca40",
+    "end": "0x20dcf50",
+    "bytes": 1296
+  }
+]
