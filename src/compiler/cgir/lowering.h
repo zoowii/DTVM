@@ -6,6 +6,7 @@
 #include "compiler/cgir/cg_function.h"
 #include "compiler/cgir/cg_operand.h"
 #include "compiler/cgir/value_types.h"
+#include "compiler/common/research_policy.h"
 #include "compiler/llvm-prebuild/Target/X86/X86Subtarget.h"
 #include "compiler/mir/instructions.h"
 #include "compiler/mir/opcode.h"
@@ -171,6 +172,10 @@ protected:
   }
 
   CgRegister lowerExpr(const MInstruction &Inst) {
+    // Variable registers remain stable across assignments; the expression map
+    // adds no snapshot semantics for a DREAD.
+    if ((compilerResearchMask() & 2) && isa<DreadInstruction>(Inst))
+      return lowerDreadExpr(cast<DreadInstruction>(Inst));
     auto it = _expr_reg_map.find(&Inst);
     if (it != _expr_reg_map.end()) {
       return it->second;
@@ -302,7 +307,9 @@ protected:
     const MInstruction *Operand = inst.getOperand<0>();
 
     CgRegister OperandReg = lowerExpr(*Operand);
-    ZEN_ASSERT(_expr_reg_map.count(Operand));
+    ZEN_ASSERT(
+        ((compilerResearchMask() & 2) && isa<DreadInstruction>(Operand)) ||
+        _expr_reg_map.count(Operand));
 
     const MType &Type = *Operand->getType();
     bool IsInteger = Type.isInteger();
@@ -443,7 +450,9 @@ protected:
       if (auto *IntConst = dyn_cast<MConstantInt>(&ConstInst->getConstant())) {
         if (Inst.isCommutative()) {
           CgRegister Op1 = lowerExpr(*RHS);
-          ZEN_ASSERT(_expr_reg_map.count(RHS));
+          ZEN_ASSERT(
+              ((compilerResearchMask() & 2) && isa<DreadInstruction>(RHS)) ||
+              _expr_reg_map.count(RHS));
           CgRegister ResultReg = fastEmit_ri_(
               VT, ISDOpcode, Op1, IntConst->getValue().getZExtValue(), VT);
           if (ResultReg) {
@@ -454,7 +463,8 @@ protected:
     }
 
     CgRegister Op0 = lowerExpr(*LHS);
-    ZEN_ASSERT(_expr_reg_map.count(LHS));
+    ZEN_ASSERT(((compilerResearchMask() & 2) && isa<DreadInstruction>(LHS)) ||
+               _expr_reg_map.count(LHS));
 
     if (auto *ConstInst = dyn_cast<ConstantInstruction>(RHS)) {
       if (auto *IntConst = dyn_cast<MConstantInt>(&ConstInst->getConstant())) {
@@ -467,7 +477,8 @@ protected:
     }
 
     CgRegister op1 = lowerExpr(*RHS);
-    ZEN_ASSERT(_expr_reg_map.count(RHS));
+    ZEN_ASSERT(((compilerResearchMask() & 2) && isa<DreadInstruction>(RHS)) ||
+               _expr_reg_map.count(RHS));
 
     CgRegister ResultReg = SELF.fastEmit_rr(VT, VT, ISDOpcode, Op0, op1);
     if (!ResultReg) {
@@ -481,7 +492,9 @@ protected:
     const MInstruction *Operand = Inst.getOperand<0>();
 
     CgRegister OperandReg = lowerExpr(*Operand);
-    ZEN_ASSERT(_expr_reg_map.count(Operand));
+    ZEN_ASSERT(
+        ((compilerResearchMask() & 2) && isa<DreadInstruction>(Operand)) ||
+        _expr_reg_map.count(Operand));
 
     llvm::MVT VT = getMVT(*Operand->getType());
     llvm::MVT RetVT = getMVT(*Inst.getType());

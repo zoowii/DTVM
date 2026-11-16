@@ -3,6 +3,7 @@
 
 #include "compiler/cgir/cg_basic_block.h"
 #include "compiler/cgir/cg_function.h"
+#include "compiler/cgir/pass/fast_ra.h"
 #include "compiler/context.h"
 #include "compiler/mir/basic_block.h"
 #include "compiler/mir/constants.h"
@@ -1512,4 +1513,50 @@ TEST(X86CgLowering, WideComparisonKeepsSnapshotsBeforeSourceOverwrite) {
   auto Result = lowerWideComparison(CmpInstruction::ICMP_ULT,
                                     CmpInstruction::ICMP_ULT, false, false, 5);
   EXPECT_EQ(Result.first, 1u) << Result.second;
+}
+
+TEST(X86CgLowering, FastRAImmediateRematerializationPressure) {
+  for (bool MultipleDefinitions : {false, true}) {
+    CompileContext Ctx;
+    Ctx.initialize();
+    MFunction F(Ctx, 0);
+    F.setFunctionType(MFunctionType::create(Ctx, CompileContext::VoidType, {}));
+    {
+      CgFunction MF(Ctx, F);
+      auto *BB = MF.createCgBasicBlock();
+      MF.appendCgBasicBlock(BB);
+      const auto &TII = MF.getTargetInstrInfo();
+      auto &MRI = MF.getRegInfo();
+      std::vector<CgRegister> Values;
+      for (unsigned I = 0; I < 32; ++I) {
+        auto Reg = MRI.createVirtualRegister(&X86::GR64RegClass);
+        Values.push_back(Reg);
+        std::array<CgOperand, 2> Ops = {
+            CgOperand::createRegOperand(Reg, true),
+            CgOperand::createImmOperand(0x123456789abcdefLL + I)};
+        MF.createCgInstruction(*BB, TII.get(X86::MOV64ri), Ops);
+        if (MultipleDefinitions) {
+          Ops[1] = CgOperand::createImmOperand(0x23456789abcdefLL + I);
+          MF.createCgInstruction(*BB, TII.get(X86::MOV64ri), Ops);
+        }
+      }
+      auto Sum = Values[0];
+      for (unsigned I = 1; I < Values.size(); ++I) {
+        auto Next = MRI.createVirtualRegister(&X86::GR64RegClass);
+        MF.createCgInstruction(*BB, TII.get(X86::ADD64rr), Sum, Values[I],
+                               Next);
+        Sum = Next;
+      }
+      MF.createCgInstruction(*BB, TII.get(TargetOpcode::COPY), Sum, X86::RAX);
+      FastRA Allocator(MF);
+      if ((compilerResearchMask() & 1) && !MultipleDefinitions) {
+        EXPECT_EQ(countOpcode(MF, X86::MOV64rm), 0u) << dumpCg(MF);
+        EXPECT_EQ(countOpcode(MF, X86::MOV64mr), 0u) << dumpCg(MF);
+        EXPECT_GT(countOpcode(MF, X86::MOV64ri), 32u) << dumpCg(MF);
+      } else {
+        EXPECT_GT(countOpcode(MF, X86::MOV64rm), 0u) << dumpCg(MF);
+      }
+    }
+    finishLitmus(F);
+  }
 }

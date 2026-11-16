@@ -515,3 +515,15 @@ dispatch, fallback, gas, and runtime ABI behavior are unchanged.
 | vm-interface | EVMAnalyzer, JIT fallback decisions |
 
 - [EVM JIT spec (archived)](../../_archive/2026-02/add-jit-suitability-checker/specs/evm-jit/spec.md): EVM JIT requirements (Multipass-only, suitability analysis, RA-expensive classification)
+
+### Experimental FastRA / lowering ablation
+
+The experimental `DTVM_RESEARCH_COMPILER_MASK` process control defaults to zero
+and is not a supported production policy. Bit 1 snapshots integer MOV-immediate
+recipes before FastRA allocation, optionally following at most four same-class
+whole-register COPY definitions. Recipes require unique definitions and
+same-block whole-register uses, exclude self-loop blocks, and emit flag-neutral
+MOVs rather than spill/reload stack traffic. Bit 2 bypasses expression-result
+caching for DREAD only; variable-register mapping and comparison snapshot guards
+remain in force. Timing must disable `DTVM_RESEARCH_TRACE`, which reports recipe
+and replaced store/reload counts. Neither experiment is enabled by default.

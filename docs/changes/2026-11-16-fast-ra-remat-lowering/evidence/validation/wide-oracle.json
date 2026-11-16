@@ -1,0 +1,16 @@
+{
+  "executions": 9450,
+  "seed": 6461601,
+  "random_cases": 100,
+  "cpu": 0,
+  "modes": [
+    "greedy",
+    "fast",
+    "lazy"
+  ],
+  "binary": "/tmp/dtvm-next-mask3-cli",
+  "binary_sha256": "9d1318135f725791d927814dee43f67c07bcbc0c9966b8a98687dc0772205f73",
+  "fixture_sha256": "11062a6c63f65866a46479433da1a49e06195bc53c0720ffb7537f2f3f5e66ed",
+  "wasm_sha256": "6195afe11d9f798d936209377973fa3cb0b6b6a6599a5293be6d6c9aca87bf45",
+  "oracle": "independent Python unbounded integers, explicit signed high limb, unsigned low limb; each process fresh"
+}

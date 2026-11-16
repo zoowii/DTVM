@@ -1,0 +1,15 @@
+{
+  "baseline": "3d6c27b61ec1342a38fca922b050fbffc91c8290",
+  "compiler": "c++ (Debian 14.2.0-19) 14.2.0",
+  "runtime_sources_sha256": {
+    "src/compiler/cgir/lowering.h": "91efc5200b0ee2c8e761b9835d01877c4e2c4ccff608371fb35ff90418c35a6f",
+    "src/compiler/cgir/pass/fast_ra.cpp": "ffcdf2e8985ca2f71fe6a4a8c85fb4c66d3b0cac0b07a47d0a319ca555af6e9e",
+    "src/compiler/common/research_policy.h": "6233de2d16ba8b8d7fcb77851cd7b93ecc50136d88fc8da22978fc62c221f65e"
+  },
+  "wasmtime_capi_sha256": "a148f4b52f93119dc9b4467abff1bce1462d1f362235d7ee61e96a8c4e07d8f2",
+  "llvm": "15.0.6",
+  "build": "Release -O3, mixed singlepass/multipass, WASI ON, SPEC/ASAN OFF; GCC14",
+  "cpu_max": "200000 100000",
+  "cpu": "model name\t: AMD EPYC 9V74 80-Core Processor",
+  "validation_note": "Oracle/contract validation preceded a diagnostic-counter reset-only change; unit validation was rerun on the final runtime. No EVM or ASAN validation this round."
+}

@@ -9,7 +9,10 @@
 #include "compiler/cgir/pass/cg_frame_info.h"
 #include "compiler/cgir/pass/cg_register_class_info.h"
 #include "compiler/common/llvm_workaround.h"
+#include "compiler/common/research_policy.h"
 #include "compiler/context.h"
+#include "compiler/llvm-prebuild/Target/X86/X86InstrInfo.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/IndexedMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SparseSet.h"
@@ -109,6 +112,56 @@ public:
   CgRegisterClassInfo RegClassInfo;
   IndexedMap<int, VirtReg2IndexFunctor> StackSlotForVirtReg;
 
+  unsigned RematReloads = 0, RematStores = 0;
+  DenseMap<unsigned, std::pair<unsigned, int64_t>> ImmediateDefs;
+
+  // Snapshot recipes before allocation rewrites virtual definitions. Restrict
+  // recipes to unique, whole-register, same-block integer immediate MOVs.
+  void collectImmediateDefs() {
+    ImmediateDefs.clear();
+    RematReloads = RematStores = 0;
+    if (!(compilerResearchMask() & 1))
+      return;
+    for (auto *BB : *_cg_func) {
+      if (BB->isSuccessor(BB))
+        continue;
+      for (auto &MI : *BB) {
+        if (!MI.getNumOperands())
+          continue;
+        auto &Def = MI.getOperand(0);
+        if (!Def.isReg() || !Def.isDef() || !Def.getReg().isVirtual() ||
+            Def.getSubReg() || MRI->getUniqueVRegDef(Def.getReg()) != &MI)
+          continue;
+        const CgInstruction *Source = &MI;
+        unsigned Budget = 4;
+        while (Source && Source->isFullCopy() && Budget--) {
+          auto Reg = Source->getOperand(1).getReg();
+          if (!Reg.isVirtual() || Source->getOperand(1).getSubReg() ||
+              MRI->getRegClass(Reg) != MRI->getRegClass(Def.getReg())) {
+            Source = nullptr;
+            break;
+          }
+          Source = MRI->getUniqueVRegDef(Reg);
+        }
+        if (!Source || Source->getParent() != BB)
+          continue;
+        unsigned Op = Source->getOpcode();
+        if ((Op != X86::MOV32ri && Op != X86::MOV64ri &&
+             Op != X86::MOV64ri32) ||
+            Source->getNumOperands() != 2 || !Source->getOperand(1).isImm())
+          continue;
+        bool Local = true;
+        for (auto &Use : MRI->use_operands(Def.getReg()))
+          if (Use.getParent()->getParent() != BB || Use.getSubReg()) {
+            Local = false;
+            break;
+          }
+        if (Local)
+          ImmediateDefs[Def.getReg()] = {Op, Source->getOperand(1).getImm()};
+      }
+    }
+  }
+
   Impl() : StackSlotForVirtReg(-1) {}
 
   void runOnCgFunction(CgFunction &cg_func) {
@@ -134,10 +187,15 @@ public:
     MayLiveAcrossBlocks.clear();
     MayLiveAcrossBlocks.resize(NumVirtRegs);
 
+    collectImmediateDefs();
     for (auto *bb : cg_func) {
       allocateCgBasicBlock(*bb);
     }
 
+    if (std::getenv("DTVM_RESEARCH_TRACE"))
+      errs() << "remat recipes=" << ImmediateDefs.size()
+             << " reloads=" << RematReloads << " stores=" << RematStores
+             << '\n';
     StackSlotForVirtReg.clear();
   }
 
@@ -397,6 +455,10 @@ public:
              MCPhysReg AssignedReg, bool Kill, bool LiveOut) {
     LLVM_DEBUG(dbgs() << "Spilling " << printReg(VirtReg, TRI) << " in "
                       << printReg(AssignedReg, TRI));
+    if (ImmediateDefs.count(VirtReg)) {
+      ++RematStores;
+      return;
+    }
     int FI = getStackSpaceFor(VirtReg);
     LLVM_DEBUG(dbgs() << " to stack slot #" << FI << '\n');
 
@@ -406,6 +468,16 @@ public:
   }
 
   void reload(inst_iterator Before, Register VirtReg, MCPhysReg PhysReg) {
+    auto Recipe = ImmediateDefs.find(VirtReg);
+    if (Recipe != ImmediateDefs.end()) {
+      ++RematReloads;
+      std::array<CgOperand, 2> Ops = {
+          CgOperand::createRegOperand(PhysReg, true),
+          CgOperand::createImmOperand(Recipe->second.second)};
+      _cg_func->createCgInstruction(*MBB, Before,
+                                    TII->get(Recipe->second.first), Ops);
+      return;
+    }
     //   LLVM_DEBUG(dbgs() << "Reloading " << printReg(VirtReg, TRI) << "
     //   into "
     //                     << printReg(PhysReg, TRI) << '\n');
