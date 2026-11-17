@@ -1,0 +1,551 @@
+{
+  "git": "31953dbe80b13000668305c837c7ee1cab8f0332",
+  "seed": 6531702,
+  "cpu": 0,
+  "rounds_short": 31,
+  "rounds_long": 3,
+  "long_threshold_s": 1,
+  "timeout_s": 60,
+  "warmups": 1,
+  "boundary": "fresh process wall/CPU including startup, compilation, execution and teardown; cache warm; not steady-state or TTFT",
+  "binaries": {
+    "/tmp/dtvm-next-main": "9a30dacd71d791e14775afb02cf7d1ed8f175018c32d4d72a2581d381fa0e44a",
+    "/tmp/dtvm-next-build/dtvm": "732396725093ee45a69bedc84f45245a52eb67836ee361100a74913961763a18",
+    "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c"
+  },
+  "cases": {
+    "base64cli": {
+      "suite": "wapm",
+      "input_sha256": "22dd5d48e40959c8fa25f5968aaf3d5af9430e848d9a582b7a0b6ba2aaf9a438",
+      "commands": {
+        "main-SP": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "both-SP": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "main-F": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "off-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "both-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "main-D": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "both-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "aa-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "off-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "aa-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "--args",
+          "encode",
+          "helloworld"
+        ],
+        "WT45": [
+          "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+          "run",
+          "-C",
+          "cache=n",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/base64cli.wasm",
+          "encode",
+          "helloworld"
+        ]
+      },
+      "cwd": "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm",
+      "stdin": null,
+      "masks": {
+        "main-SP": 0,
+        "both-SP": 3,
+        "main-F": 0,
+        "off-F": 0,
+        "both-F": 3,
+        "main-D": 0,
+        "both-D": 3,
+        "aa-F": 0,
+        "off-D": 0,
+        "aa-D": 0,
+        "WT45": 0
+      },
+      "measured_rounds": 31
+    },
+    "erdtree": {
+      "suite": "wapm",
+      "input_sha256": "1fa2f44be2a81231e01bcd8db2e63195cfd3341d73fb34f4b163ce5d5be162d0",
+      "commands": {
+        "main-SP": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "both-SP": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "main-F": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "off-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "both-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "main-D": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "both-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "aa-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "off-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "aa-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm",
+          "--dir=."
+        ],
+        "WT45": [
+          "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+          "run",
+          "-C",
+          "cache=n",
+          "--dir",
+          ".",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/erdtree.wasm"
+        ]
+      },
+      "cwd": "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm",
+      "stdin": null,
+      "masks": {
+        "main-SP": 0,
+        "both-SP": 3,
+        "main-F": 0,
+        "off-F": 0,
+        "both-F": 3,
+        "main-D": 0,
+        "both-D": 3,
+        "aa-F": 0,
+        "off-D": 0,
+        "aa-D": 0,
+        "WT45": 0
+      },
+      "measured_rounds": 31
+    },
+    "md5": {
+      "suite": "wapm",
+      "input_sha256": "21552b0d4c3d74cf464bc350d03f095ebb5f8f8c499329aca8d66af598ca15aa",
+      "commands": {
+        "main-SP": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "both-SP": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "main-F": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "off-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "both-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "main-D": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "both-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "aa-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "off-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "aa-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "--args",
+          "helloworld"
+        ],
+        "WT45": [
+          "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+          "run",
+          "-C",
+          "cache=n",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/md5.wasm",
+          "helloworld"
+        ]
+      },
+      "cwd": "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm",
+      "stdin": null,
+      "masks": {
+        "main-SP": 0,
+        "both-SP": 3,
+        "main-F": 0,
+        "off-F": 0,
+        "both-F": 3,
+        "main-D": 0,
+        "both-D": 3,
+        "aa-F": 0,
+        "off-D": 0,
+        "aa-D": 0,
+        "WT45": 0
+      },
+      "measured_rounds": 31
+    },
+    "suggest": {
+      "suite": "wapm",
+      "input_sha256": "73b1387fba8d20f42ddced687edfada988fdc2b140e7077e33aed7b80d1303a2",
+      "commands": {
+        "main-SP": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "both-SP": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "singlepass",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "main-F": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "off-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "both-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "main-D": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "both-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "aa-F": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "--disable-multipass-greedyra",
+          "--disable-multipass-multithread",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "off-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "aa-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "--args",
+          "instakk",
+          "update",
+          "install"
+        ],
+        "WT45": [
+          "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+          "run",
+          "-C",
+          "cache=n",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm/suggest.wasm",
+          "instakk",
+          "update",
+          "install"
+        ]
+      },
+      "cwd": "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/wapm",
+      "stdin": null,
+      "masks": {
+        "main-SP": 0,
+        "both-SP": 3,
+        "main-F": 0,
+        "off-F": 0,
+        "both-F": 3,
+        "main-D": 0,
+        "both-D": 3,
+        "aa-F": 0,
+        "off-D": 0,
+        "aa-D": 0,
+        "WT45": 0
+      },
+      "measured_rounds": 31
+    }
+  },
+  "modes": {
+    "F": "lazy-F-ST, explicit FastRA and single-thread compile",
+    "D": "lazy-G-MT, default lazy strategy"
+  },
+  "validation": "exit status and output hashes retained; deterministic PolyBench output checked exactly; WAPM output may contain random/time/path-dependent content, so record hashes without claiming independent semantic validation"
+}

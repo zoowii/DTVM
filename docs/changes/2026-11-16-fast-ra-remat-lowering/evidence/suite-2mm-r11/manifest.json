@@ -1,0 +1,74 @@
+{
+  "git": "31953dbe80b13000668305c837c7ee1cab8f0332",
+  "seed": 6531703,
+  "cpu": 0,
+  "rounds_short": 11,
+  "rounds_long": 11,
+  "long_threshold_s": 1,
+  "timeout_s": 120.0,
+  "warmups": 1,
+  "boundary": "fresh process wall/CPU including startup, compilation, execution and teardown; cache warm; not steady-state or TTFT",
+  "binaries": {
+    "/tmp/dtvm-next-main": "9a30dacd71d791e14775afb02cf7d1ed8f175018c32d4d72a2581d381fa0e44a",
+    "/tmp/dtvm-next-build/dtvm": "732396725093ee45a69bedc84f45245a52eb67836ee361100a74913961763a18",
+    "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime": "d7b7317b34a717f4b809df14657975e2ce83221a697167219abdad6e44c7a12c"
+  },
+  "cases": {
+    "2mm": {
+      "suite": "polybench",
+      "input_sha256": "6d31eeebe685646cf2b8c4460beaf2243064dd8a311cb83a92523f9260260d99",
+      "commands": {
+        "main-D": [
+          "/tmp/dtvm-next-main",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+        ],
+        "off-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+        ],
+        "aa-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+        ],
+        "both-D": [
+          "/tmp/dtvm-next-build/dtvm",
+          "-m",
+          "multipass",
+          "--enable-multipass-lazy",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+        ],
+        "WT45": [
+          "/workspace/DTVM/benchmarks/paper/runtimes/wasmtime-45.0.0/out/wasmtime",
+          "run",
+          "-C",
+          "cache=n",
+          "/workspace/DTVM_contract_bench/benchmarks/paper/benchmarks/polybenchc/2mm.wasm"
+        ]
+      },
+      "cwd": "/workspace/DTVM_contract_bench",
+      "stdin": null,
+      "masks": {
+        "main-D": 0,
+        "off-D": 0,
+        "aa-D": 0,
+        "both-D": 3,
+        "WT45": 0
+      },
+      "measured_rounds": 11
+    }
+  },
+  "modes": {
+    "F": "lazy-F-ST, explicit FastRA and single-thread compile",
+    "D": "lazy-G-MT, default lazy strategy"
+  },
+  "validation": "exit status and output hashes retained; deterministic PolyBench output checked exactly; WAPM output may contain random/time/path-dependent content, so record hashes without claiming independent semantic validation"
+}

@@ -25,3 +25,5 @@ Retain negative and failed experiments. No speedup claim from code size alone.
 
 Implemented and evaluated twice. No replicated qualifying gain; keep disabled
 and retain as experimental draft. See [REPORT.md](REPORT.md) and evidence.
+
+Expanded canonical WAPM/PolyBench comparison: [BENCHMARK_2026-11-17.md](BENCHMARK_2026-11-17.md). The screen and independent confirmations retain negative and timeout results.
