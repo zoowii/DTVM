@@ -8,7 +8,7 @@ namespace COMPILER {
 inline unsigned compilerResearchMask() {
   static const unsigned Mask = [] {
     const char *Value = std::getenv("DTVM_RESEARCH_COMPILER_MASK");
-    return Value && Value[0] >= '0' && Value[0] <= '3' && !Value[1]
+    return Value && Value[0] >= '0' && Value[0] <= '7' && !Value[1]
                ? unsigned(Value[0] - '0')
                : 0u;
   }();

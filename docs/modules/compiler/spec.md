@@ -526,4 +526,10 @@ same-block whole-register uses, exclude self-loop blocks, and emit flag-neutral
 MOVs rather than spill/reload stack traffic. Bit 2 bypasses expression-result
 caching for DREAD only; variable-register mapping and comparison snapshot guards
 remain in force. Timing must disable `DTVM_RESEARCH_TRACE`, which reports recipe
-and replaced store/reload counts. Neither experiment is enabled by default.
+and replaced store/reload counts.
+
+Mask value 4 enables a separate call-lowering experiment. Calls with at least 16
+operands defer materialization of direct i32/i64 literals until each argument's
+ABI copy or stack store. All other expressions and indirect target computation
+retain their original evaluation order. Argument types, argument placement,
+call masks and stack-frame layout follow ordinary lowering.

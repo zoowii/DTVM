@@ -1,0 +1,118 @@
+{
+  "base64cli": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "chkfont": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "code-stock": {
+    "max_params": 7,
+    "number_of_types_at_least_16": 0
+  },
+  "cowsay": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "dice": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "echo": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "erdtree": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "figlet": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "fortune": {
+    "max_params": 7,
+    "number_of_types_at_least_16": 0
+  },
+  "md5": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "pi": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "pkg1": {
+    "max_params": 7,
+    "number_of_types_at_least_16": 0
+  },
+  "qr2text": {
+    "max_params": 6,
+    "number_of_types_at_least_16": 0
+  },
+  "suggest": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "tpl": {
+    "max_params": 10,
+    "number_of_types_at_least_16": 0
+  },
+  "uuid": {
+    "max_params": 9,
+    "number_of_types_at_least_16": 0
+  },
+  "viu": {
+    "max_params": 10,
+    "number_of_types_at_least_16": 0
+  },
+  "atax": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "bicg": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "deriche": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "durbin": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "gemver": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "gesummv": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "jacobi_1d": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "mvt": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "trisolv": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "adi": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "gemm": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  },
+  "2mm": {
+    "max_params": 5,
+    "number_of_types_at_least_16": 0
+  }
+}

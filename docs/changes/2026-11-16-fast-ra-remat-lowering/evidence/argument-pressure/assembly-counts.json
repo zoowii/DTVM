@@ -1,0 +1,152 @@
+{
+  "large-24": {
+    "0": {
+      "mov_mem_rbp": 38,
+      "mov_mem_rsp": 21,
+      "movabs": 24,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 608
+    },
+    "1": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 21,
+      "movabs": 37,
+      "remat_trace": {
+        "recipes": 48,
+        "reloads": 13,
+        "stores": 13
+      },
+      "caller_text_bytes": 598
+    },
+    "4": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 21,
+      "movabs": 24,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 450
+    },
+    "5": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 21,
+      "movabs": 24,
+      "remat_trace": {
+        "recipes": 24,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 450
+    },
+    "wt45": {
+      "mov_mem_rbp": 0,
+      "mov_mem_rsp": 64,
+      "movabs": 24,
+      "remat_trace": null
+    }
+  },
+  "large-48": {
+    "0": {
+      "mov_mem_rbp": 86,
+      "mov_mem_rsp": 45,
+      "movabs": 48,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 1376
+    },
+    "1": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 45,
+      "movabs": 85,
+      "remat_trace": {
+        "recipes": 96,
+        "reloads": 37,
+        "stores": 37
+      },
+      "caller_text_bytes": 1270
+    },
+    "4": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 45,
+      "movabs": 48,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 882
+    },
+    "5": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 45,
+      "movabs": 48,
+      "remat_trace": {
+        "recipes": 48,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 882
+    }
+  },
+  "small-32": {
+    "0": {
+      "mov_mem_rbp": 54,
+      "mov_mem_rsp": 29,
+      "movabs": 0,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 712
+    },
+    "1": {
+      "mov_mem_rbp": 54,
+      "mov_mem_rsp": 29,
+      "movabs": 0,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 712
+    },
+    "4": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 29,
+      "movabs": 0,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 436
+    },
+    "5": {
+      "mov_mem_rbp": 12,
+      "mov_mem_rsp": 29,
+      "movabs": 0,
+      "remat_trace": {
+        "recipes": 0,
+        "reloads": 0,
+        "stores": 0
+      },
+      "caller_text_bytes": 436
+    },
+    "wt45": {
+      "mov_mem_rbp": 0,
+      "mov_mem_rsp": 88,
+      "movabs": 0,
+      "remat_trace": null
+    }
+  }
+}

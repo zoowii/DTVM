@@ -27,3 +27,5 @@ Implemented and evaluated twice. No replicated qualifying gain; keep disabled
 and retain as experimental draft. See [REPORT.md](REPORT.md) and evidence.
 
 Expanded canonical WAPM/PolyBench comparison: [BENCHMARK_2026-11-17.md](BENCHMARK_2026-11-17.md). The screen and independent confirmations retain negative and timeout results.
+
+The [constant argument pressure follow-up](ARGUMENT_PRESSURE_2026-11-19.md) found a repeatable FastRA benefit in synthetic wide calls and evaluated a separate call-lowering prototype.

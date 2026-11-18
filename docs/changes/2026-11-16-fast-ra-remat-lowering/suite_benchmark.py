@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'benchmarks/paper/harness'))
 import run as harness
-p=argparse.ArgumentParser();p.add_argument('--main',type=Path,required=True);p.add_argument('--candidate',type=Path,required=True);p.add_argument('--wasmtime',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--cases');p.add_argument('--variants');p.add_argument('--controls',action='store_true');p.add_argument('--seed',type=int,default=6531701);p.add_argument('--rounds',type=int,default=7);p.add_argument('--long-rounds',type=int,default=3);p.add_argument('--timeout',type=float,default=60);p.add_argument('--cpu',type=int,default=0);a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--main',type=Path,required=True);p.add_argument('--candidate',type=Path,required=True);p.add_argument('--wasmtime',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--cases');p.add_argument('--variants');p.add_argument('--controls',action='store_true');p.add_argument('--candidate-mask',type=int,choices=range(8),default=3);p.add_argument('--seed',type=int,default=6531701);p.add_argument('--rounds',type=int,default=7);p.add_argument('--long-rounds',type=int,default=3);p.add_argument('--timeout',type=float,default=60);p.add_argument('--cpu',type=int,default=0);a=p.parse_args()
 ids=(a.cases or 'base64cli,chkfont,code-stock,cowsay,dice,echo,erdtree,figlet,fortune,md5,pi,pkg1,qr2text,suggest,tpl,uuid,viu,atax,bicg,deriche,durbin,gemver,gesummv,jacobi_1d,mvt,trisolv,adi,gemm,2mm').split(',')
 catalog={c['id']:c for c in harness.load_cases(harness.read_json(harness.CATALOG_PATH))};a.out.mkdir(parents=True,exist_ok=False)
 sha=lambda x:hashlib.sha256(Path(x).read_bytes()).hexdigest()
@@ -14,7 +14,7 @@ manifest={'git':subprocess.check_output(['git','rev-parse','HEAD'],text=True).st
 rng=random.Random(a.seed);rows=[]
 for cid in ids:
  case=catalog[cid];harness.require_wasm(harness.paper_join(case['wasm']))
- configs={'main-SP':(a.main,'singlepass',0),'both-SP':(a.candidate,'singlepass',3),'main-F':(a.main,'lazy-F-ST',0),'off-F':(a.candidate,'lazy-F-ST',0),'both-F':(a.candidate,'lazy-F-ST',3),'main-D':(a.main,'lazy-G-MT',0),'both-D':(a.candidate,'lazy-G-MT',3)}
+ configs={'main-SP':(a.main,'singlepass',0),'both-SP':(a.candidate,'singlepass',a.candidate_mask),'main-F':(a.main,'lazy-F-ST',0),'off-F':(a.candidate,'lazy-F-ST',0),'both-F':(a.candidate,'lazy-F-ST',a.candidate_mask),'main-D':(a.main,'lazy-G-MT',0),'both-D':(a.candidate,'lazy-G-MT',a.candidate_mask)}
  if a.controls:
   configs.update({'aa-F':(a.candidate,'lazy-F-ST',0),'off-D':(a.candidate,'lazy-G-MT',0),'aa-D':(a.candidate,'lazy-G-MT',0)})
  commands={k:harness.dtvm_cmd(b,case,m,False) for k,(b,m,_) in configs.items()};commands['WT45']=harness.wasmtime_cmd(a.wasmtime,case)
