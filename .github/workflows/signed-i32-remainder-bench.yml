@@ -20,12 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          fetch-depth: 4
           submodules: 'true'
       - name: Build both binaries in the same CMake tree
         run: |
           base=5d566d2293ecec95c7a29558ed943c054ae738b9
-          candidate=$(git rev-parse HEAD^)
+          candidate=ed600149bd124d96cdc83dc486f001d60b3c8544
+          git config --global --add safe.directory "$PWD"
           results=$(mktemp -d "$RUNNER_TEMP/srem32.XXXXXX")
           echo "SREM32_RESULTS=$results" >> "$GITHUB_ENV"
           {
