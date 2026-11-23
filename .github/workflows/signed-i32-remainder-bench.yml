@@ -1,4 +1,4 @@
-name: Signed i32 remainder independent bench
+name: Signed i32 remainder launch-control retest
 on:
   push:
     branches: [bench/signed-i32-rem-2026-11-23]
@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 5
+          fetch-depth: 6
           submodules: 'true'
       - name: Build both binaries in the same CMake tree
         run: |
           base=5d566d2293ecec95c7a29558ed943c054ae738b9
-          candidate=ed600149bd124d96cdc83dc486f001d60b3c8544
+          candidate=318a9a92ea8dbef6d4f4d50fcdbb3fea8421f656
           git config --global --add safe.directory "$PWD"
           results=$(mktemp -d "$RUNNER_TEMP/srem32.XXXXXX")
           echo "SREM32_RESULTS=$results" >> "$GITHUB_ENV"
@@ -44,7 +44,9 @@ jobs:
             -DZEN_ENABLE_CPU_EXCEPTION=ON -DZEN_ENABLE_SPEC_TEST=OFF \
             -DZEN_ENABLE_ASAN=OFF -DZEN_ENABLE_EVM=OFF -DZEN_ENABLE_VIRTUAL_STACK=OFF
           cmake --build build --target dtvm -j4
-          cp build/dtvm "$results/main-dtvm"
+          mkdir "$results/a" "$results/b" "$results/c"
+          cp build/dtvm "$results/a/dtvm"
+          cp build/dtvm "$results/c/dtvm"
           git checkout --detach "$candidate"
           for case in polybenchc/{gesummv,atax,bicg} wapm/{md5,qr2text,figlet}; do
             wasm="benchmarks/paper/benchmarks/$case.wasm"
@@ -54,7 +56,7 @@ jobs:
             cp "$fixture" "$wasm"
           done
           cmake --build build --target dtvm -j4
-          cp build/dtvm "$results/pr-dtvm"
+          cp build/dtvm "$results/b/dtvm"
       - name: Compare main, candidate, A/A, and Wasmtime 45
         run: |
           results="$SREM32_RESULTS"
@@ -70,13 +72,13 @@ jobs:
             --export=bucket1009 --export=bucket1024 "$results/buckets.o" -o "$results/buckets.wasm"
           cpu=$(python3 -c 'import os; print(min(os.sched_getaffinity(0)))')
           bench=(python3 docs/changes/2026-11-20-signed-pow2-remainder/benchmark.py
-                 --main "$results/main-dtvm" --candidate "$results/pr-dtvm"
+                 --main "$results/a/dtvm" --main-aa "$results/c/dtvm" --candidate "$results/b/dtvm"
                  --wasmtime "$results/$wt/wasmtime" --wasm "$results/buckets.wasm"
                  --default-lazy-aa --candidate-singlepass --cpu "$cpu")
           "${bench[@]}" --group catalog --cases gesummv,atax,bicg,md5,qr2text,figlet \
-            --seed 6553410 --rounds 41 --out "$results/catalog"
+            --seed 6553585 --rounds 61 --out "$results/catalog"
           "${bench[@]}" --group kernel --signed-i32-kernels --input-seed 463 \
-            --seed 6553413 --rounds 31 --out "$results/kernel"
+            --seed 6553586 --rounds 41 --out "$results/kernel"
       - name: Upload raw data and manifests
         if: always() && env.SREM32_RESULTS != ''
         uses: actions/upload-artifact@v4
