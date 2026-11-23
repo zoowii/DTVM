@@ -1,0 +1,80 @@
+name: Signed i32 remainder independent bench
+on:
+  push:
+    branches: [bench/signed-i32-rem-2026-11-23]
+permissions:
+  contents: read
+jobs:
+  measure:
+    if: github.repository == 'zoowii/DTVM'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: dtvmdev1/dtvm-dev-x64:main
+    defaults:
+      run:
+        shell: bash
+    env:
+      LLVM_DIR: /opt/llvm15/lib/cmake/llvm
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          submodules: 'true'
+      - name: Build both binaries in the same CMake tree
+        run: |
+          base=5d566d2293ecec95c7a29558ed943c054ae738b9
+          candidate=$(git rev-parse HEAD^)
+          results=$(mktemp -d "$RUNNER_TEMP/srem32.XXXXXX")
+          echo "SREM32_RESULTS=$results" >> "$GITHUB_ENV"
+          {
+            printf 'base=%s\ncandidate=%s\n' "$base" "$candidate"
+            uname -a
+            lscpu
+            c++ --version
+            cmake --version
+          } > "$results/runner.txt"
+          git checkout --detach "$base"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_DIR="$LLVM_DIR" -DZEN_ENABLE_SINGLEPASS_JIT=ON \
+            -DZEN_ENABLE_MULTIPASS_JIT=ON -DZEN_ENABLE_BUILTIN_WASI=ON \
+            -DZEN_ENABLE_CPU_EXCEPTION=ON -DZEN_ENABLE_SPEC_TEST=OFF \
+            -DZEN_ENABLE_ASAN=OFF -DZEN_ENABLE_EVM=OFF -DZEN_ENABLE_VIRTUAL_STACK=OFF
+          cmake --build build --target dtvm -j4
+          cp build/dtvm "$results/main-dtvm"
+          git checkout --detach "$candidate"
+          cmake --build build --target dtvm -j4
+          cp build/dtvm "$results/pr-dtvm"
+      - name: Compare main, candidate, A/A, and Wasmtime 45
+        run: |
+          results="$SREM32_RESULTS"
+          wt=wasmtime-v45.0.0-x86_64-linux
+          curl -fsSL --retry 3 "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/$wt.tar.xz" -o "$results/$wt.tar.xz"
+          printf '%s  %s\n' 9d92e6dc04630f617e0e5d532327a5a917ac4898587e07f4fb7a5fc7fffef760 "$results/$wt.tar.xz" | sha256sum -c -
+          tar -xJf "$results/$wt.tar.xz" -C "$results" "$wt/wasmtime"
+          "$results/$wt/wasmtime" --version >> "$results/runner.txt"
+          change=docs/changes/2026-11-21-signed-i32-constant-remainder
+          /opt/llvm15/bin/clang --target=wasm32 -O2 -ffreestanding -fno-unroll-loops \
+            -c "$change/signed_buckets.c" -o "$results/buckets.o"
+          /opt/llvm15/bin/wasm-ld --no-entry --export=bucket3 --export=bucket7 \
+            --export=bucket1009 --export=bucket1024 "$results/buckets.o" -o "$results/buckets.wasm"
+          cpu=$(python3 -c 'import os; print(min(os.sched_getaffinity(0)))')
+          bench=(python3 docs/changes/2026-11-20-signed-pow2-remainder/benchmark.py
+                 --main "$results/main-dtvm" --candidate "$results/pr-dtvm"
+                 --wasmtime "$results/$wt/wasmtime" --wasm "$results/buckets.wasm"
+                 --default-lazy-aa --candidate-singlepass --cpu "$cpu")
+          "${bench[@]}" --group catalog --cases gesummv,atax,bicg,md5,qr2text,figlet \
+            --seed 6553410 --rounds 41 --out "$results/catalog"
+          "${bench[@]}" --group kernel --signed-i32-kernels --input-seed 463 \
+            --seed 6553413 --rounds 31 --out "$results/kernel"
+      - name: Upload raw data and manifests
+        if: always() && env.SREM32_RESULTS != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-i32-remainder-evidence
+          path: |
+            ${{ env.SREM32_RESULTS }}/runner.txt
+            ${{ env.SREM32_RESULTS }}/buckets.wasm
+            ${{ env.SREM32_RESULTS }}/catalog/
+            ${{ env.SREM32_RESULTS }}/kernel/
