@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 4
+          fetch-depth: 5
           submodules: 'true'
       - name: Build both binaries in the same CMake tree
         run: |
@@ -36,6 +36,7 @@ jobs:
             c++ --version
             cmake --version
           } > "$results/runner.txt"
+          cp -a .ci/srem32-fixtures "$results/fixtures"
           git checkout --detach "$base"
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_DIR="$LLVM_DIR" -DZEN_ENABLE_SINGLEPASS_JIT=ON \
@@ -45,6 +46,13 @@ jobs:
           cmake --build build --target dtvm -j4
           cp build/dtvm "$results/main-dtvm"
           git checkout --detach "$candidate"
+          for case in polybenchc/{gesummv,atax,bicg} wapm/{md5,qr2text,figlet}; do
+            wasm="benchmarks/paper/benchmarks/$case.wasm"
+            fixture="$results/fixtures/$case.blob"
+            expected=$(git show "$candidate:$wasm" | sed -n 's/^oid sha256://p')
+            printf '%s  %s\n' "$expected" "$fixture" | sha256sum -c -
+            cp "$fixture" "$wasm"
+          done
           cmake --build build --target dtvm -j4
           cp build/dtvm "$results/pr-dtvm"
       - name: Compare main, candidate, A/A, and Wasmtime 45
