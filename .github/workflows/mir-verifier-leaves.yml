@@ -1,0 +1,87 @@
+name: MIR verifier leaf benchmark
+on:
+  push:
+    branches: [bench/mir-verifier-leaves-2026-11-24]
+permissions:
+  contents: read
+jobs:
+  measure:
+    if: github.repository == 'zoowii/DTVM'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: dtvmdev1/dtvm-dev-x64:main
+    defaults:
+      run:
+        shell: bash
+    env:
+      LLVM_DIR: /opt/llvm15/lib/cmake/llvm
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 6
+          submodules: 'true'
+      - name: Build both binaries in the same CMake tree
+        run: |
+          base=4cf5bca39978f89e73771baf241a9356ba123f6b
+          candidate=cc19d65346ee24aaf2d287a0b6d4cb4095b21e81
+          git config --global --add safe.directory "$PWD"
+          results=$(mktemp -d "$RUNNER_TEMP/srem32.XXXXXX")
+          echo "SREM32_RESULTS=$results" >> "$GITHUB_ENV"
+          {
+            printf 'base=%s\ncandidate=%s\n' "$base" "$candidate"
+            uname -a
+            lscpu
+            c++ --version
+            cmake --version
+          } > "$results/runner.txt"
+          cp -a .ci/srem32-fixtures "$results/fixtures"
+          git checkout --detach "$base"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_DIR="$LLVM_DIR" -DZEN_ENABLE_SINGLEPASS_JIT=ON \
+            -DZEN_ENABLE_MULTIPASS_JIT=ON -DZEN_ENABLE_BUILTIN_WASI=ON \
+            -DZEN_ENABLE_CPU_EXCEPTION=ON -DZEN_ENABLE_SPEC_TEST=OFF \
+            -DZEN_ENABLE_ASAN=OFF -DZEN_ENABLE_EVM=OFF -DZEN_ENABLE_VIRTUAL_STACK=OFF
+          cmake --build build --target dtvm -j4
+          mkdir "$results/a" "$results/b" "$results/c"
+          cp build/dtvm "$results/a/dtvm"
+          cp build/dtvm "$results/c/dtvm"
+          git checkout --detach "$candidate"
+          for case in polybenchc/{atax,bicg} wapm/{md5,qr2text,viu,tpl}; do
+            wasm="benchmarks/paper/benchmarks/$case.wasm"
+            fixture="$results/fixtures/$case.blob"
+            expected=$(git show "$candidate:$wasm" | sed -n 's/^oid sha256://p')
+            printf '%s  %s\n' "$expected" "$fixture" | sha256sum -c -
+            cp "$fixture" "$wasm"
+          done
+          png=benchmarks/paper/benchmarks/wapm/parallel-small.png
+          png_blob="$results/fixtures/wapm/parallel-small.png.blob"
+          expected=$(git show "$candidate:$png" | sed -n 's/^oid sha256://p')
+          printf '%s  %s\n' "$expected" "$png_blob" | sha256sum -c -
+          cp "$png_blob" "$png"
+          cmake --build build --target dtvm -j4
+          cp build/dtvm "$results/b/dtvm"
+      - name: Compare main, candidate, A/A, and Wasmtime 45
+        run: |
+          results="$SREM32_RESULTS"
+          wt=wasmtime-v45.0.0-x86_64-linux
+          curl -fsSL --retry 3 "https://github.com/bytecodealliance/wasmtime/releases/download/v45.0.0/$wt.tar.xz" -o "$results/$wt.tar.xz"
+          printf '%s  %s\n' 9d92e6dc04630f617e0e5d532327a5a917ac4898587e07f4fb7a5fc7fffef760 "$results/$wt.tar.xz" | sha256sum -c -
+          tar -xJf "$results/$wt.tar.xz" -C "$results" "$wt/wasmtime"
+          "$results/$wt/wasmtime" --version >> "$results/runner.txt"
+          cpu=$(python3 -c 'import os; print(min(os.sched_getaffinity(0)))')
+          bench=(python3 docs/changes/2026-11-20-signed-pow2-remainder/benchmark.py
+                 --main "$results/a/dtvm" --main-aa "$results/c/dtvm" --candidate "$results/b/dtvm"
+                 --wasmtime "$results/$wt/wasmtime" --wasm benchmarks/paper/benchmarks/wapm/md5.wasm
+                 --default-lazy-aa --candidate-singlepass --cpu "$cpu")
+          "${bench[@]}" --group catalog --cases md5,qr2text,viu,tpl,atax,bicg \
+            --seed 6581291 --rounds 21 --out "$results/catalog"
+      - name: Upload raw data and manifests
+        if: always() && env.SREM32_RESULTS != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: mir-verifier-leaves-evidence
+          path: |
+            ${{ env.SREM32_RESULTS }}/runner.txt
+            ${{ env.SREM32_RESULTS }}/catalog/
