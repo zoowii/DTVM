@@ -1,4 +1,4 @@
-name: FastRA register unit membership benchmark
+name: FastRA mvt and qr2text confirmation
 on:
   push:
     branches: [bench/fast-ra-regunits-2026-11-25]
@@ -48,7 +48,7 @@ jobs:
           cp build/dtvm "$results/a/dtvm"
           cp build/dtvm "$results/c/dtvm"
           git checkout --detach "$candidate"
-          for case in polybenchc/{atax,bicg} wapm/{md5,qr2text,viu,tpl}; do
+          for case in polybenchc/mvt wapm/qr2text; do
             wasm="benchmarks/paper/benchmarks/$case.wasm"
             fixture="$results/fixtures/$case.blob"
             expected=$(git show "$candidate:$wasm" | sed -n 's/^oid sha256://p')
@@ -75,8 +75,8 @@ jobs:
                  --main "$results/a/dtvm" --main-aa "$results/c/dtvm" --candidate "$results/b/dtvm"
                  --wasmtime "$results/$wt/wasmtime" --wasm benchmarks/paper/benchmarks/wapm/md5.wasm
                  --default-lazy-aa --candidate-singlepass --cpu "$cpu")
-          "${bench[@]}" --group catalog --cases md5,qr2text,viu,tpl,atax,bicg \
-            --seed 661253 --rounds 21 --out "$results/catalog"
+          "${bench[@]}" --group catalog --cases mvt,qr2text \
+            --seed 661279 --rounds 41 --out "$results/catalog"
       - name: Upload raw data and manifests
         if: always() && env.SREM32_RESULTS != ''
         uses: actions/upload-artifact@v4
