@@ -90,46 +90,52 @@ void JITCompilerBase::compileMIRToCgIR(MModule &MMod, MFunction &MFunc,
   }
 
   CgFunction &MF = CgFunc;
-  const uint32_t MFuncIdx = MFunc.getFuncIdx();
-  bool UseFastRA = DisableGreedyRA;
-#ifdef ZEN_ENABLE_DEBUG_GREEDY_RA
-  UseFastRA = UseFastRA || !isFuncNeedGreedyRA(MFuncIdx);
-#endif
 
   // TODO: refactor to pass
-  X86CgLowering CgLowering(MF, UseFastRA);
+  X86CgLowering CgLowering(MF);
   X86CgPeephole CgPeephole(MF);
   CgPhiElimination PhiElimination;
   PhiElimination.runOnCgFunction(MF);
 
-  if (UseFastRA) {
+  uint32_t MFuncIdx = MFunc.getFuncIdx();
+
+  if (DisableGreedyRA) {
     ZEN_LOG_DEBUG("using fast ra for function %d", MFuncIdx);
     FastRA RA(MF);
   } else {
-    ZEN_LOG_DEBUG("using greedy ra for function %d", MFuncIdx);
-    CgDeadCgInstructionElim DCE(MF);
-    CgDominatorTree DomTree(MF);
-    CgLoopInfo Loops(MF);
-    CgSlotIndexes Indexes(MF);
-    CgLiveIntervals LIS(MF);
-    CgLiveStacks LSS(MF);
-    CgBlockFrequencyInfo MBFI(MF);
-    // CgRegisterCoalescer must before CgVirtRegMap
-    CgRegisterCoalescer Coalescer(MF);
-    CgVirtRegMap VRM(MF);
-    if (KeepFirstParamInRegister) {
-      LIS.getInterval(CgLowering.getVarReg(0)).markNotSpillable();
+#ifdef ZEN_ENABLE_DEBUG_GREEDY_RA
+    if (!isFuncNeedGreedyRA(MFuncIdx)) {
+      ZEN_LOG_DEBUG("using fast ra for function %d", MFuncIdx);
+      FastRA RA(MF);
+    } else {
+#endif // ZEN_ENABLE_DEBUG_GREEDY_RA
+      ZEN_LOG_DEBUG("using greedy ra for function %d", MFuncIdx);
+      CgDeadCgInstructionElim DCE(MF);
+      CgDominatorTree DomTree(MF);
+      CgLoopInfo Loops(MF);
+      CgSlotIndexes Indexes(MF);
+      CgLiveIntervals LIS(MF);
+      CgLiveStacks LSS(MF);
+      CgBlockFrequencyInfo MBFI(MF);
+      // CgRegisterCoalescer must before CgVirtRegMap
+      CgRegisterCoalescer Coalescer(MF);
+      CgVirtRegMap VRM(MF);
+      if (KeepFirstParamInRegister) {
+        LIS.getInterval(CgLowering.getVarReg(0)).markNotSpillable();
+      }
+      CgLiveRegMatrix Matrix(MF);
+      // RABasic ra(MF);
+
+      CgEdgeBundles EdgeBundles(MF);
+      CgSpillPlacement SpillPlacer(MF);
+      MF.EvictAdvisor = std::unique_ptr<CgRegAllocEvictionAdvisorAnalysis>(
+          createReleaseModeAdvisor());
+      std::shared_ptr<CgRAGreedy> RA = std::make_shared<CgRAGreedy>(MF);
+
+      CgVirtRegRewriter Rewriter(MF);
+#ifdef ZEN_ENABLE_DEBUG_GREEDY_RA
     }
-    CgLiveRegMatrix Matrix(MF);
-    // RABasic ra(MF);
-
-    CgEdgeBundles EdgeBundles(MF);
-    CgSpillPlacement SpillPlacer(MF);
-    MF.EvictAdvisor = std::unique_ptr<CgRegAllocEvictionAdvisorAnalysis>(
-        createReleaseModeAdvisor());
-    std::shared_ptr<CgRAGreedy> RA = std::make_shared<CgRAGreedy>(MF);
-
-    CgVirtRegRewriter Rewriter(MF);
+#endif // ZEN_ENABLE_DEBUG_GREEDY_RA
   }
 
 #ifdef ZEN_ENABLE_MULTIPASS_JIT_LOGGING
@@ -414,12 +420,9 @@ bool WasmJITCompiler::compileWasmToMC(
       LazyInitialRAPolicy::Decision::Eligible;
   FunctionMirBuilder MIRBuilder(Ctx, MFunc, CollectInitialRAHints);
   MIRBuilder.compile(&Ctx); // pass the ctx argument only for compatibility
-  const bool FP = MIRBuilder.hasCallFreeNestedFPLoop();
-  const bool Word = MIRBuilder.hasCallFreeDeepWordLoop();
-  const bool LoopCarried = CollectInitialRAHints && !FP && !Word &&
-                           MIRBuilder.hasIntegerLoopCarriedLocals();
   const bool LoopGreedy = LazyInitialRAPolicy::isGreedy(InitialRAPolicy.select(
-      Allowed, FuncCode->CodeSize, {FP, Word, LoopCarried},
+      Allowed, FuncCode->CodeSize, MIRBuilder.hasCallFreeNestedFPLoop(),
+      MIRBuilder.hasCallFreeDeepWordLoop(),
       CompileTimer ? CompileTimer->elapsed() : 0));
   if (LoopGreedy)
     DisableGreedyRA = false;
@@ -429,10 +432,8 @@ bool WasmJITCompiler::compileWasmToMC(
     UsesGreedyRA = isFuncNeedGreedyRA(FuncIdx);
 #endif
   Ctx.EnableGreedyScalarAVX = false;
-  // The integer-local hint selects only the allocator.
-  const bool AutoScalarAVX = LoopGreedy && (FP || Word);
   if ((Config.EnableGreedyScalarAVX ||
-       (!Config.DisableAutoGreedyScalarAVX && AutoScalarAVX)) &&
+       (!Config.DisableAutoGreedyScalarAVX && LoopGreedy)) &&
       UsesGreedyRA) {
     static const bool HostHasAVX = [] {
       llvm::StringMap<bool> Features;
@@ -440,7 +441,7 @@ bool WasmJITCompiler::compileWasmToMC(
     }();
     Ctx.EnableGreedyScalarAVX = ScalarAVXPolicy::enabled(
         Config.EnableGreedyScalarAVX, !Config.DisableAutoGreedyScalarAVX,
-        HostHasAVX, UsesGreedyRA, AutoScalarAVX);
+        HostHasAVX, UsesGreedyRA, LoopGreedy);
   }
   // Spill-slot metadata is only consumed by eligible demanded FastRA helpers.
   // Background/initial Greedy, callful and loop-free functions cannot use it.

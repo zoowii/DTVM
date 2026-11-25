@@ -69,7 +69,11 @@ public:
         Ctx.getSubtargetInfo().getFrameLowering()->getStackAlign());
   }
 
-  ~CgFunction();
+  ~CgFunction() {
+    clearCgBasicBlocks();
+    Ctx.MemPool.deleteObject(_cg_register_info);
+    Ctx.MemPool.deleteObject(FrameInfo);
+  }
 
   // Only create basic block but not insert it into function
   CgBasicBlock *createCgBasicBlock() {
