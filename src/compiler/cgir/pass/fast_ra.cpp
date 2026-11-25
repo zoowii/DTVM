@@ -234,25 +234,30 @@ public:
     return false;
   }
 
-  unsigned calcSpillCost(MCPhysReg PhysReg) const {
+  unsigned calcSpillCost(MCPhysReg PhysReg, bool LookAtPhysRegUses) const {
+    if (LookAtPhysRegUses && isClobberedByRegMasks(PhysReg))
+      return spillImpossible;
+
+    // Keep the first occupied unit's spill cost, but check every unit for
+    // conflicts with the current instruction before choosing the register.
+    unsigned Occupant = regFree;
     for (MCRegUnitIterator UI(PhysReg, TRI); UI.isValid(); ++UI) {
-      unsigned VirtReg = RegUnitStates[*UI];
-      switch (VirtReg) {
-      case regFree:
-        break;
-      case regPreAssigned:
-        //  LLVM_DEBUG(dbgs() << "Cannot spill pre-assigned "
-        //					<< printReg(PhysReg, TRI) <<
-        //'\n');
+      const unsigned Unit = *UI;
+      if (UsedInInstr.test(Unit) ||
+          (LookAtPhysRegUses && PhysRegUses.test(Unit)))
         return spillImpossible;
-      default: {
-        bool SureSpill = StackSlotForVirtReg[VirtReg] != -1 ||
-                         findLiveVirtReg(VirtReg)->LiveOut;
-        return SureSpill ? spillClean : spillDirty;
-      }
+      if (Occupant == regFree) {
+        Occupant = RegUnitStates[Unit];
+        if (Occupant == regPreAssigned)
+          return spillImpossible;
       }
     }
-    return 0;
+
+    if (Occupant == regFree)
+      return 0;
+    bool SureSpill = StackSlotForVirtReg[Occupant] != -1 ||
+                     findLiveVirtReg(Occupant)->LiveOut;
+    return SureSpill ? spillClean : spillDirty;
   }
 
   void allocateCgInstruction(CgInstruction &inst);
@@ -592,12 +597,9 @@ void FastRA::Impl::allocVirtReg(CgInstruction &MI, LiveReg &LR,
   for (MCPhysReg PhysReg : CgAllocationOrder) {
     // LLVM_DEBUG(dbgs() << "\tRegister: " << printReg(PhysReg, TRI) << '
     // ');
-    if (isRegUsedInInstr(PhysReg, LookAtPhysRegUses)) {
-      // LLVM_DEBUG(dbgs() << "already used in instr.\n");
+    unsigned Cost = calcSpillCost(PhysReg, LookAtPhysRegUses);
+    if (Cost == spillImpossible)
       continue;
-    }
-
-    unsigned Cost = calcSpillCost(PhysReg);
     // LLVM_DEBUG(dbgs() << "Cost: " << Cost << " BestCost: " << BestCost <<
     // '\n'); Immediate take a register with cost 0.
     if (Cost == 0) {
