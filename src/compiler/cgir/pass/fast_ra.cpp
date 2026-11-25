@@ -10,7 +10,6 @@
 #include "compiler/cgir/pass/cg_register_class_info.h"
 #include "compiler/common/llvm_workaround.h"
 #include "compiler/context.h"
-#include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/IndexedMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SparseSet.h"
@@ -100,9 +99,9 @@ public:
 
   BitVector MayLiveAcrossBlocks;
 
-  // These sets use membership queries only. Register units have dense IDs.
-  BitVector UsedInInstr;
-  BitVector PhysRegUses;
+  using RegUnitSet = SparseSet<uint16_t, identity<uint16_t>>;
+  RegUnitSet UsedInInstr;
+  RegUnitSet PhysRegUses;
   SmallVector<uint16_t, 8> DefOperandIndexes;
   // Register masks attached to the current instruction.
   SmallVector<const uint32_t *> RegMasks;
@@ -124,10 +123,10 @@ public:
     RegClassInfo.runOnCgFunction(cg_func);
 
     unsigned NumRegUnits = TRI->getNumRegUnits();
-    UsedInInstr.resize(NumRegUnits);
-    UsedInInstr.reset();
-    PhysRegUses.resize(NumRegUnits);
-    PhysRegUses.reset();
+    UsedInInstr.clear();
+    UsedInInstr.setUniverse(NumRegUnits);
+    PhysRegUses.clear();
+    PhysRegUses.setUniverse(NumRegUnits);
 
     unsigned NumVirtRegs = MRI->getNumVirtRegs();
     StackSlotForVirtReg.resize(NumVirtRegs);
@@ -305,9 +304,9 @@ public:
     if (LookAtPhysRegUses && isClobberedByRegMasks(PhysReg))
       return true;
     for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units) {
-      if (UsedInInstr.test(*Units))
+      if (UsedInInstr.count(*Units))
         return true;
-      if (LookAtPhysRegUses && PhysRegUses.test(*Units))
+      if (LookAtPhysRegUses && PhysRegUses.count(*Units))
         return true;
     }
     return false;
@@ -316,20 +315,20 @@ public:
   /// Mark a physreg as used in this instruction.
   void markRegUsedInInstr(MCPhysReg PhysReg) {
     for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units)
-      UsedInInstr.set(*Units);
+      UsedInInstr.insert(*Units);
   }
 
   /// Remove mark of physical register being used in the instruction.
   void unmarkRegUsedInInstr(MCPhysReg PhysReg) {
     for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units)
-      UsedInInstr.reset(*Units);
+      UsedInInstr.erase(*Units);
   }
 
   /// Mark physical register as being used in a register use operand.
   /// This is only used by the special livethrough handling code.
   void markPhysRegUsedInInstr(MCPhysReg PhysReg) {
     for (MCRegUnitIterator Units(PhysReg, TRI); Units.isValid(); ++Units)
-      PhysRegUses.set(*Units);
+      PhysRegUses.insert(*Units);
   }
 
   bool isPhysRegFree(MCPhysReg PhysReg) const {
@@ -735,7 +734,7 @@ void FastRA::Impl::useVirtReg(CgInstruction &MI, CgOperand &opnd,
 }
 
 void FastRA::Impl::allocateCgInstruction(CgInstruction &MI) {
-  UsedInInstr.reset();
+  UsedInInstr.clear();
   RegMasks.clear();
 
   // Scan for special cases; Apply pre-assigned register defs to state.
@@ -796,7 +795,7 @@ void FastRA::Impl::allocateCgInstruction(CgInstruction &MI) {
       //   assignments.
       if (NeedToAssignLiveThroughs) {
         DefOperandIndexes.clear();
-        PhysRegUses.reset();
+        PhysRegUses.clear();
 
         LLVM_DEBUG(dbgs() << "Need to assign livethroughs\n");
         for (unsigned I = 0, E = MI.getNumOperands(); I < E; ++I) {
