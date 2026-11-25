@@ -24,7 +24,6 @@ public:
     Eligible,
     GreedyFP,
     GreedyWord,
-    GreedyLoopCarried,
     Disabled,
     ModuleSize,
     FunctionSize,
@@ -36,11 +35,6 @@ public:
     bool FP, Call;
     uint8_t WordLoads;
     bool WordStore, OtherMemory;
-  };
-  struct Hints {
-    bool NestedFP = false;
-    bool DeepWord = false;
-    bool LoopCarried = false;
   };
   static bool trackFP(uint32_t Depth) { return Depth >= FPLoopDepth; }
   static bool trackWord(uint32_t Depth) { return Depth >= WordLoopDepth; }
@@ -55,8 +49,7 @@ public:
            R.WordStore && !R.OtherMemory && !R.Call;
   }
   static bool isGreedy(Decision D) {
-    return D == Decision::GreedyFP || D == Decision::GreedyWord ||
-           D == Decision::GreedyLoopCarried;
+    return D == Decision::GreedyFP || D == Decision::GreedyWord;
   }
 
   LazyInitialRAPolicy(Options Opt, uint64_t ModuleBytes)
@@ -77,17 +70,14 @@ public:
     }
     return Decision::Eligible;
   }
-  Decision select(bool Allowed, uint32_t Bytes, Hints Candidates,
+  Decision select(bool Allowed, uint32_t Bytes, bool FP, bool Word,
                   uint64_t InFlightNs = 0) const {
     auto D = eligibility(Allowed, Bytes, InFlightNs);
     if (D != Decision::Eligible)
       return D;
-    if (Candidates.NestedFP)
-      return Decision::GreedyFP;
-    if (Candidates.DeepWord)
-      return Decision::GreedyWord;
-    return Candidates.LoopCarried ? Decision::GreedyLoopCarried
-                                  : Decision::NoLoop;
+    return FP     ? Decision::GreedyFP
+           : Word ? Decision::GreedyWord
+                  : Decision::NoLoop;
   }
   void recordTime(uint64_t Ns) {
     auto Old = UsedNs.load(std::memory_order_relaxed);
