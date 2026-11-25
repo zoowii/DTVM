@@ -114,7 +114,7 @@ before emitting CMP/SBB/SETcc, preserving their order and the borrow flag chain.
 No memory access, call or potentially trapping expression is moved. This
 requires baseline x86-64 instructions and applies to either register allocator.
 
-### Signed division and remainder by a literal divisor
+### Signed remainder by a literal divisor
 
 The Wasm multipass frontend recognizes i32 and i64 signed remainder with
 a literal divisor whose magnitude is a power of two greater than one.
@@ -123,28 +123,13 @@ the signed minimum divisor. With `mask = |d| - 1` and `bias = (x >>s (w-1))
 & mask`, the remainder is `((x + bias) & mask) - bias`. The frontend
 evaluates the dividend once before applying the identity.
 
-Signed division by a positive power of two uses a bias before an arithmetic
-shift to round toward zero. Division by one returns the dividend.
-
 For i32 literal divisors with a non-power-of-two magnitude greater than one,
 the frontend uses LLVM's signed division multiplier for the positive
-magnitude. It sign-extends the dividend for the i64 product, takes the high
-product bits, and adds the dividend when the multiplier is negative.
-The sign correction rounds the quotient toward zero. Division negates the
-quotient for negative divisors. The remainder is `x - q * |d|` for either
-divisor sign. Zero, minus one, dynamic divisors, and non-power-of-two i64
-divisors use the existing lowering and trap checks. Signed division by a
-negative power of two also uses the existing lowering.
-
-### Register-count integer shifts
-
-x86 lowering uses `SHLX`, `SARX`, and `SHRX` for register-count
-32-bit and 64-bit shifts when FastRA is selected and the host supports
-BMI2. The instructions take independent source and count registers and
-mask the count to five or six bits. The allocator decision takes effect
-before instruction selection. The existing immediate path takes
-precedence, and the legacy `CL` path handles rotates, GreedyRA, and CPUs
-without BMI2.
+magnitude. It sign-extends the dividend for the i64 product, shifts out the
+high quotient bits, and adds the dividend when the multiplier is negative.
+The sign correction rounds the quotient toward zero. The remainder is
+`x - q * |d|` for either divisor sign. The original division and overflow
+checks handle zero, unit, dynamic, and non-power-of-two i64 divisors.
 
 ### Wide x86 call arguments
 
@@ -180,7 +165,7 @@ In multithread LazyJIT, each function stub's `jmp` target is published monotonic
   still lose throughput.
   Eager multipass still compiles the whole module.
 
-### Initial allocator for demanded numeric loops
+### Initial allocator for demanded numeric loop nests
 
 Lazy MT may choose Greedy for a demanded function's first invocation when its
 body is at most 2048 source bytes (excluding local declarations) and frontend
@@ -194,26 +179,16 @@ no other memory access widths/types, and no guest call/call_indirect. Counts
 saturate at two during frontend construction. This favors multi-input integer
 updates over read-only pointer scans and mixed byte-processing loops. A pure
 island below a callful/mixed third-level subtree does not qualify by itself.
-The same 2048-byte body bound applies to this region.
-
-A register-only candidate has one Wasm loop, no guest calls, at most 16 MIR
-blocks, and fewer than 64 Wasm parameters and locals. Its loop block has a
-self-edge and one exit successor. Scan up to 128 integer expression visits
-through assignments and the conditional branch. At least four distinct Wasm
-parameters or locals must be read before their first assignment and written
-by the end of the block. Process each assignment's input before recording the
-write, including self-updates. A memory access or an unsupported expression
-ends this check. The threshold estimates spill pressure from loop-carried
-values.
+The same 2048-byte body bound applies. Shallow, register-only, single-load and
+read-only loops do not qualify. No benchmark names or indices are consulted.
 
 Hints are collected only when the foreground caller may select initial Greedy
 and the source body meets the size bound. This does not disable the independent
 loop/call metadata or loop callbacks used by opt-in private tiering.
-The nested loop hints accumulate during MIR construction. The bounded
-register-loop check runs after construction when neither nested-loop rule
-matches. Initial selection compiles the function once and queues no extra
-background work. The existing nested-loop rules also select automatic
-scalar AVX, and all Greedy compiles respect the explicit scalar AVX option.
+The signal is accumulated in constant time during existing MIR construction;
+it inserts no guest counters, requires no second compilation, and queues no
+additional background functions. It repairs one-shot kernels that cannot
+benefit from later stub upgrades. No function names, IDs or file paths matter.
 
 Functions initially selected for Greedy bypass opt-in private FastRA profiling.
 Eager and serial lazy allocator choices and explicit FastRA remain unchanged.
@@ -224,7 +199,8 @@ publication barrier. The size/depth rule is a static tradeoff, not a guarantee
 of runtime heat. Other integer loop shapes, oversized bodies and low-trip loop nests
 remain limitations; startup and throughput must be measured together.
 
-Initial selection rules and guards live in `LazyInitialRAPolicy`. Optional
+Initial selection rules and guards live in `LazyInitialRAPolicy`; the frontend
+only collects structured effects. Defaults above are unchanged. Optional
 `LazyAutoGreedyMaxModuleBytes` (whole binary),
 `LazyAutoGreedyMaxFunctionBytes` (default 2048), and
 `LazyAutoGreedyBudgetMs` bound automatic selection; zero means unlimited.

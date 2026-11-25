@@ -6,7 +6,6 @@
 #include "compiler/mir/pointer.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/DivisionByConstantInfo.h"
-#include "llvm/Support/MathExtras.h"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -94,70 +93,6 @@ FunctionMirBuilder::FunctionMirBuilder(CompilerContext &Context,
 bool FunctionMirBuilder::compile([[maybe_unused]] CompilerContext *Context) {
   zen::action::WASMByteCodeVisitor<FunctionMirBuilder> Visitor(*this, &Ctx);
   return Visitor.compile();
-}
-
-bool FunctionMirBuilder::hasIntegerLoopCarriedLocals() const {
-  // Wasm parameters and locals occupy the first MIR variables after the
-  // hidden instance parameter. Ignore MIR temporaries when counting.
-  const uint32_t NumWasmVars =
-      Ctx.getWasmFuncType().NumParams + Ctx.getWasmFuncCode().NumLocals;
-  if (Ctx.NumWasmLoops != 1 || Ctx.NumGuestCalls || NumWasmVars < 4 ||
-      NumWasmVars >= 64 || CurFunc->getNumBasicBlocks() > 16) {
-    return false;
-  }
-
-  for (const MBasicBlock *BB : *CurFunc) {
-    auto Succs = BB->successors();
-    if (std::distance(Succs.begin(), Succs.end()) != 2 ||
-        llvm::find(Succs, BB) == Succs.end()) {
-      continue;
-    }
-
-    uint64_t Assigned = 0;
-    uint64_t ReadOnEntry = 0;
-    unsigned NodesLeft = 128;
-    auto Scan = [&](auto &&Self, const MInstruction *Inst) -> bool {
-      if (!Inst || !NodesLeft || !Inst->getType()->isInteger())
-        return false;
-      --NodesLeft;
-      switch (Inst->getKind()) {
-      case MInstruction::DREAD: {
-        const auto Idx = llvm::cast<DreadInstruction>(Inst)->getVarIdx();
-        if (Idx > 0 && Idx <= NumWasmVars)
-          ReadOnEntry |= (uint64_t(1) << Idx) & ~Assigned;
-        return true;
-      }
-      case MInstruction::CONSTANT:
-        return true;
-      case MInstruction::UNARY:
-      case MInstruction::BINARY:
-      case MInstruction::CMP:
-      case MInstruction::CONVERSION:
-        for (OperandNum I = 0; I < Inst->getNumOperands(); ++I) {
-          if (!Self(Self, Inst->getOperand(I)))
-            return false;
-        }
-        return true;
-      default:
-        return false;
-      }
-    };
-    for (const MInstruction *Stmt : *BB) {
-      if (Stmt->getKind() != MInstruction::DASSIGN &&
-          Stmt->getKind() != MInstruction::BR_IF)
-        return false;
-      if (!Scan(Scan, Stmt->getOperand<0>()))
-        return false;
-      // Process a self-update's input before publishing its new value.
-      if (const auto *Write = llvm::dyn_cast<DassignInstruction>(Stmt)) {
-        const auto Idx = Write->getVarIdx();
-        if (Idx > 0 && Idx <= NumWasmVars)
-          Assigned |= uint64_t(1) << Idx;
-      }
-    }
-    return llvm::countPopulation(ReadOnEntry & Assigned) >= 4;
-  }
-  return false;
 }
 
 void FunctionMirBuilder::initFunction(
@@ -978,9 +913,8 @@ void FunctionMirBuilder::handleGasCall(Operand Delta) {
   setInstanceElement(&Ctx.I64Type, NewGasLeft, Layout.GasOffset);
 }
 
-MInstruction *FunctionMirBuilder::tryFoldSignedConstDiv(MInstruction *LHS,
-                                                        MInstruction *RHS,
-                                                        MType *Mtype) {
+MInstruction *FunctionMirBuilder::tryFoldSignedPositivePow2Div(
+    MInstruction *LHS, MInstruction *RHS, MType *Mtype) {
   ZEN_ASSERT(LHS && RHS && Mtype);
   if (!Mtype->isInteger()) {
     return nullptr;
@@ -994,25 +928,11 @@ MInstruction *FunctionMirBuilder::tryFoldSignedConstDiv(MInstruction *LHS,
     return nullptr;
   }
   const llvm::APInt Divisor = CI->getValue();
+  // Strictly positive power of two: excludes 0, negatives, and INT_MIN
+  // (unsigned 2^(w-1)), so overflow (INT_MIN / -1) is impossible.
   if (!Divisor.isStrictlyPositive() || !Divisor.isPowerOf2()) {
-    if (!Mtype->isI32()) {
-      return nullptr;
-    }
-    const llvm::APInt Magnitude = Divisor.abs();
-    // Keep trap handling for zero and -1, and keep negative powers of two
-    // (including INT_MIN) on the existing path.
-    if (Magnitude.ule(1) || Magnitude.isPowerOf2()) {
-      return nullptr;
-    }
-    MInstruction *X = makeReusableValue(LHS, Mtype);
-    MInstruction *Quotient = makeSignedI32Quotient(X, Magnitude);
-    if (Divisor.isNegative()) {
-      return createInstruction<BinaryInstruction>(
-          false, OP_sub, Mtype, createIntConstInstruction(Mtype, 0), Quotient);
-    }
-    return Quotient;
+    return nullptr;
   }
-  // Divide by a positive power of two with a bias for negative inputs.
   const unsigned ShiftAmt = Divisor.logBase2();
   if (ShiftAmt == 0) {
     return LHS;
@@ -1047,16 +967,7 @@ MInstruction *FunctionMirBuilder::tryFoldSignedConstRem(MInstruction *LHS,
     return nullptr;
   }
   if (!Magnitude.isPowerOf2()) {
-    if (!Mtype->isI32()) {
-      return nullptr;
-    }
-    MInstruction *X = makeReusableValue(LHS, Mtype);
-    MInstruction *Quotient = makeSignedI32Quotient(X, Magnitude);
-    MInstruction *Product = createInstruction<BinaryInstruction>(
-        false, OP_mul, Mtype, Quotient,
-        createIntConstInstruction(Mtype, Magnitude.getZExtValue()));
-    return createInstruction<BinaryInstruction>(false, OP_sub, Mtype, X,
-                                                Product);
+    return Mtype->isI32() ? lowerSignedI32ConstRem(LHS, Magnitude) : nullptr;
   }
 
   // With mask = |d| - 1, bias is mask for negative x and 0 otherwise.
@@ -1078,14 +989,15 @@ MInstruction *FunctionMirBuilder::tryFoldSignedConstRem(MInstruction *LHS,
 }
 
 MInstruction *
-FunctionMirBuilder::makeSignedI32Quotient(MInstruction *X,
-                                          const llvm::APInt &Magnitude) {
-  const auto Info = llvm::SignedDivisionByConstantInfo::get(Magnitude);
+FunctionMirBuilder::lowerSignedI32ConstRem(MInstruction *LHS,
+                                           const llvm::APInt &Divisor) {
+  const auto Info = llvm::SignedDivisionByConstantInfo::get(Divisor);
   MType *I32 = &Ctx.I32Type;
   MType *I64 = &Ctx.I64Type;
   auto Bin = [this](Opcode Op, MType *Type, MInstruction *L, MInstruction *R) {
     return createInstruction<BinaryInstruction>(false, Op, Type, L, R);
   };
+  MInstruction *X = makeReusableValue(LHS, I32);
   MInstruction *Wide =
       createInstruction<ConversionInstruction>(false, OP_sext, I64, X);
   MInstruction *Product =
@@ -1107,7 +1019,10 @@ FunctionMirBuilder::makeSignedI32Quotient(MInstruction *X,
   // Reading the sign from X lets the correction run alongside the multiply.
   MInstruction *Correction =
       Bin(OP_ushr, I32, X, createIntConstInstruction(I32, 31));
-  return Bin(OP_add, I32, Quotient, Correction);
+  Quotient = Bin(OP_add, I32, Quotient, Correction);
+  return Bin(OP_sub, I32, X,
+             Bin(OP_mul, I32, Quotient,
+                 createIntConstInstruction(I32, Divisor.getZExtValue())));
 }
 
 // ==================== MIR Opcode Methods ====================
