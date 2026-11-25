@@ -1,4 +1,4 @@
-name: MIR peephole fast paths benchmark
+name: MIR peephole atax confirmation
 on:
   push:
     branches: [bench/mir-peephole-fast-paths-2026-11-25]
@@ -75,8 +75,8 @@ jobs:
                  --main "$results/a/dtvm" --main-aa "$results/c/dtvm" --candidate "$results/b/dtvm"
                  --wasmtime "$results/$wt/wasmtime" --wasm benchmarks/paper/benchmarks/wapm/md5.wasm
                  --default-lazy-aa --candidate-singlepass --cpu "$cpu")
-          "${bench[@]}" --group catalog --cases md5,qr2text,viu,tpl,atax,bicg \
-            --seed 660253 --rounds 21 --out "$results/catalog"
+          "${bench[@]}" --group catalog --cases atax \
+            --seed 660291 --rounds 41 --out "$results/catalog"
       - name: Upload raw data and manifests
         if: always() && env.SREM32_RESULTS != ''
         uses: actions/upload-artifact@v4
